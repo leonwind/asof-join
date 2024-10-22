@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-Wextra -g -fsanitize=address")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 include_directories(include)
-add_library(asof_join src/relation.cc)
+add_library(asof_join src/relation.cc src/asof_join.cpp)
 
 # Tests
 # add_executable(test_all test/WeeDB.cpp)

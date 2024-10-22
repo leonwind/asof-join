@@ -23,4 +23,3 @@ def read_and_delete_csv(source_path, target_path):
 
 if __name__ == "__main__":
     read_and_delete_csv("../data/btcusd_1-min_data.csv", "../data/btc_usd_data.csv")
-
