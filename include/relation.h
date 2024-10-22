@@ -6,11 +6,13 @@
 #include <cstdint>
 
 struct Relation {
-    std::vector<uint64_t> time;
+    std::vector<uint64_t> timestamps;
     std::vector<std::string> stock_ids;
-    std::vector<uint64_t> price;
+    std::vector<uint64_t> prices;
 
-    size_t len;
+    size_t size;
 };
+
+Relation load_data(std::string_view path, char delimiter = ',');
 
 #endif //ASOF_JOIN_RELATION_H
