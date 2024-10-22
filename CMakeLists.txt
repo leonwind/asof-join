@@ -7,7 +7,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(asof-join)
 
 include(lib/gtest.cmake)
-
 find_package(Threads REQUIRED)
 
 # Set compile flags
@@ -16,13 +15,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "-Wextra -g -fsanitize=address")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 include_directories(include)
-### Library for weeDB
-add_library(asof_join src/BaseOperator.cpp src/DBData.cpp src/OperatorsColumnar.cpp src/OperatorsVolcano.cpp src/OperatorsVector.cpp)
+add_library(asof_join src/AsofOp.cc src/Relation.cc)
 
-### Tests
+# Tests
 # add_executable(test_all test/WeeDB.cpp)
 # target_link_libraries(test_all wee_db gtest gtest_main pthread)
 
-### Performance Measurements
-add_executable(asofOp src/asofOp.cpp)
+add_executable(asofOp src/AsofOp.cc)
 target_link_libraries(asofOp asof_join)
