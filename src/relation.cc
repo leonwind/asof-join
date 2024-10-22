@@ -31,19 +31,18 @@ Prices load_prices(std::string_view path, char delimiter) {
     }
 
     return {
-        .timestamps = timestamps,
-        .stock_ids = stock_ids,
-        .prices = prices,
-        .size = timestamps.size()
-    };
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* prices= */ prices,
+        /* size= */ timestamps.size()};
 }
 
-Orderbook load_order_book(std::string_view path, char delimiter) {
+OrderBook load_order_book(std::string_view path, char delimiter) {
     auto data = load_prices(path, delimiter);
     return {
-        .timestamps = data.timestamps,
-        .stock_ids = data.stock_ids,
-        .amounts = data.prices,
-        .size = data.size
+        /* timestamps= */ data.timestamps,
+        /* stock_ids= */ data.stock_ids,
+        /* amounts= */ data.prices,
+        /* size= */ data.size
     };
 }
