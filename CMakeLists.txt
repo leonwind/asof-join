@@ -11,7 +11,7 @@ find_package(Threads REQUIRED)
 
 # Set compile flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
-set(CMAKE_CXX_FLAGS_DEBUG "-Wextra -g -fsanitize=address")
+set(CMAKE_CXX_FLAGS_DEBUG "-Wextra -g -fsanitize=address -O2")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 include_directories(include)

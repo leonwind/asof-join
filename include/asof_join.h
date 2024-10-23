@@ -61,9 +61,9 @@ inline void run_join(ASOFJoin& asof_op, std::string_view strategy) {
     for (auto value : result.values) { total_sum += value; }
 
     std::cout << "### ASOF JOIN TOTAL VALUE SUM: " << total_sum << std::endl;
+    // result.print();
     std::cout << "### FINISHED ASOF JOIN WITH " << strategy
         << " IN " << duration << "[us] ###" << std::endl;
-
 }
 
 #endif //ASOF_JOIN_ASOF_JOIN_H
