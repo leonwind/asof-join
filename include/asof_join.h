@@ -3,6 +3,7 @@
 
 #include <relation.h>
 #include <timer.h>
+#include <perfevent.h>
 #include <iostream>
 
 enum Comparison {
@@ -53,13 +54,17 @@ public:
 };
 
 inline void run_join(ASOFJoin& asof_op, std::string_view strategy) {
+    PerfEvent e;
     Timer timer = Timer::start();
+    e.startCounters();
     auto result = asof_op.join();
+    e.stopCounters();
     auto duration = timer.end();
 
     uint64_t total_sum = 0;
     for (auto value : result.values) { total_sum += value; }
 
+    e.printReport(std::cout, result.size);
     std::cout << "### ASOF JOIN TOTAL VALUE SUM: " << total_sum << std::endl;
     // result.print();
     std::cout << "### FINISHED ASOF JOIN WITH " << strategy
