@@ -1,5 +1,5 @@
-#ifndef ASOF_JOIN_RELATION_H
-#define ASOF_JOIN_RELATION_H
+#ifndef ASOF_JOIN_RELATION_HPP
+#define ASOF_JOIN_RELATION_HPP
 
 #include <utility>
 #include <vector>
@@ -87,4 +87,4 @@ struct ResultRelation : Relation {
     }
 };
 
-#endif //ASOF_JOIN_RELATION_H
+#endif //ASOF_JOIN_RELATION_HPP

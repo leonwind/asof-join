@@ -1,5 +1,5 @@
-#ifndef ASOF_JOIN_MMAP_FILE_H
-#define ASOF_JOIN_MMAP_FILE_H
+#ifndef ASOF_JOIN_MMAP_FILE_HPP
+#define ASOF_JOIN_MMAP_FILE_HPP
 
 #include <iostream>
 #include <string>
@@ -38,4 +38,4 @@ private:
     void* mapping;
 };
 
-#endif //ASOF_JOIN_MMAP_FILE_H
+#endif //ASOF_JOIN_MMAP_FILE_HPP

@@ -1,9 +1,9 @@
-#ifndef ASOF_JOIN_ASOF_JOIN_H
-#define ASOF_JOIN_ASOF_JOIN_H
+#ifndef ASOF_JOIN_ASOF_JOIN_HPP
+#define ASOF_JOIN_ASOF_JOIN_HPP
 
-#include <relation.h>
-#include <timer.h>
-#include <perfevent.h>
+#include <relation.hpp>
+#include <timer.hpp>
+#include <perfevent.hpp>
 #include <iostream>
 
 enum Comparison {
@@ -55,11 +55,15 @@ public:
 
 inline void run_join(ASOFJoin& asof_op, std::string_view strategy) {
     PerfEvent e;
-    Timer timer = Timer::start();
+    Timer timer;
+
     e.startCounters();
+    timer.start();
+
     auto result = asof_op.join();
+
     e.stopCounters();
-    auto duration = timer.end();
+    auto duration = timer.stop();
 
     uint64_t total_sum = 0;
     for (auto value : result.values) { total_sum += value; }
@@ -71,4 +75,4 @@ inline void run_join(ASOFJoin& asof_op, std::string_view strategy) {
         << " IN " << duration << "[us] ###" << std::endl;
 }
 
-#endif //ASOF_JOIN_ASOF_JOIN_H
+#endif //ASOF_JOIN_ASOF_JOIN_HPP

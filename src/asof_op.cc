@@ -1,6 +1,6 @@
 #include <iostream>
-#include "relation.h"
-#include <asof_join.h>
+#include "relation.hpp"
+#include <asof_join.hpp>
 
 int main() {
     Prices prices = load_prices("../data/btc_usd_data.csv");

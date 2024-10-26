@@ -1,5 +1,5 @@
-#include "asof_join.h"
-#include "timer.h"
+#include "asof_join.hpp"
+#include "timer.hpp"
 #include <unordered_map>
 #include <algorithm>
 
@@ -66,7 +66,9 @@ std::pair<bool, size_t> binary_search_closest_match(
 ResultRelation PartitioningASOFJoin::join() {
     ResultRelation result(prices, order_book);
 
-    Timer hash_timer = Timer::start();
+    Timer timer;
+    timer.start();
+
     std::unordered_map<std::string_view, std::vector<std::pair<uint64_t, uint64_t>>>
         prices_lookup;
     prices_lookup.reserve(prices.size);
@@ -89,8 +91,8 @@ ResultRelation PartitioningASOFJoin::join() {
         std::sort(iter.second.begin(), iter.second.end());
     }
 
-    auto duration = hash_timer.end();
-    std::cout << "HASHING AND SORTING IN " << duration << std::endl;
+    auto hashing_duration = timer.lap();
+    std::cout << "HASHING AND SORTING IN " << hashing_duration << std::endl;
 
     for (size_t i = 0; i < order_book.size; ++i) {
         if (!prices_lookup.contains(order_book.stock_ids[i])) {
@@ -124,6 +126,9 @@ ResultRelation PartitioningASOFJoin::join() {
             result.values.push_back(prices.prices[match_idx] * order_book.amounts[i]);
         }
     }
+
+    auto searching_duration = timer.lap();
+    std::cout << "SEARCHING IN " << searching_duration << std::endl;
 
     result.finalize();
     return result;

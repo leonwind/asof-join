@@ -1,6 +1,6 @@
 #include <string>
-#include "relation.h"
-#include "mmap_file.h"
+#include "relation.hpp"
+#include "mmap_file.hpp"
 
 Prices load_prices(std::string_view path, char delimiter) {
     MemoryMappedFile file(path);
