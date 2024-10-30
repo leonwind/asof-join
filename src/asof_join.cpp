@@ -79,9 +79,9 @@ ResultRelation SortingASOFJoin::join() {
 
         size_t last_match = i;
         bool found_match = false;
-        while (i < prices.size
-            && prices.stock_ids[price_idx] == order_book.stock_ids[order_book_idx]
-            && prices.timestamps[price_idx] <= order_book.timestamps[order_book_idx]) {
+        while (i < prices.size &&
+            prices.stock_ids[price_idx] == order_book.stock_ids[order_book_idx] &&
+            prices.timestamps[price_idx] <= order_book.timestamps[order_book_idx]) {
 
             last_match = i;
             ++i;
@@ -181,3 +181,9 @@ ResultRelation PartitioningLeftASOFJoin::join() {
     return result;
 }
 
+ResultRelation PartitioningRightASOFJoin::join() {
+    ResultRelation result(prices, order_book);
+
+    result.finalize();
+    return result;
+}

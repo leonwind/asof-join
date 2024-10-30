@@ -21,5 +21,6 @@ add_library(asof_join src/relation.cc src/asof_join.cpp)
 add_executable(test_all test/asof_join.cpp)
 target_link_libraries(test_all asof_join gtest gtest_main)
 
+# Main executable
 add_executable(asofOp src/asof_op.cc)
 target_link_libraries(asofOp asof_join)

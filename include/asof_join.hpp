@@ -21,8 +21,6 @@ enum JoinType {
 
 class ASOFJoin {
 public:
-    const std::string STRATEGY_NAME;
-
     ASOFJoin(Prices prices, OrderBook order_book, Comparison comp_type, JoinType join_type):
         prices(std::move(prices)), order_book(std::move(order_book)),
         comp_type(comp_type), join_type(join_type) {}
@@ -39,36 +37,24 @@ protected:
 class BaselineASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-
-    const std::string STRATEGY_NAME = "nested loop";
-
     [[nodiscard]] ResultRelation join() override;
 };
 
 class SortingASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-
-    const std::string STRATEGY_NAME = "sorted merge join";
-
     [[nodiscard]] ResultRelation join() override;
 };
 
 class PartitioningLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-
-    const std::string STRATEGY_NAME = "partition left side + binary search";
-
     [[nodiscard]] ResultRelation join() override;
 };
 
 class PartitioningRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-
-    const std::string STRATEGY_NAME = "partition right side + binary search";
-
     [[nodiscard]] ResultRelation join() override;
 };
 

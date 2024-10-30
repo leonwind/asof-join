@@ -76,7 +76,7 @@ TEST(asof_join_sorted_merge_join, TestMediumBTCExample) {
     ASSERT_EQ(total_value, 70580346356);
 }
 
-TEST(asof_join_partitioning, TestSmallDuckDBExample) {
+TEST(asof_join_partitioning_left, TestSmallDuckDBExample) {
     Prices prices = load_prices("../data/prices_small.csv");
     OrderBook order_book = load_order_book("../data/orderbook_small.csv");
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
@@ -97,7 +97,7 @@ TEST(asof_join_partitioning, TestSmallDuckDBExample) {
     ASSERT_EQ(total_sum, 9581);
 }
 
-TEST(asof_join_partitioning, TestSmallBTCExample) {
+TEST(asof_join_partitioning_left, TestSmallBTCExample) {
     Prices prices = load_prices("../data/btc_usd_data.csv");
     OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv");
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
@@ -115,10 +115,62 @@ TEST(asof_join_partitioning, TestSmallBTCExample) {
     }
 }
 
-TEST(asof_join_partitioning, TestMediumBTCExample) {
+TEST(asof_join_partitioning_left, TestMediumBTCExample) {
     Prices prices = load_prices("../data/btc_usd_data.csv");
     OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv");
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    auto result = join.join();
+
+    ASSERT_EQ(result.values.size(), 10000);
+    uint64_t total_value = 0;
+    for (auto value : result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 70580346356);
+}
+
+TEST(asof_join_partitioning_right, TestSmallDuckDBExample) {
+    Prices prices = load_prices("../data/prices_small.csv");
+    OrderBook order_book = load_order_book("../data/orderbook_small.csv");
+    PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    auto result = join.join();
+
+    ASSERT_EQ(result.values.size(), 4);
+    uint64_t appl_sum = 0;
+    uint64_t goog_sum = 0;
+    uint64_t total_sum = 0;
+    for (size_t i = 0; i < result.size; ++i) {
+        if (result.prices_stock_ids[i] == "APPL") { appl_sum += result.values[i]; }
+        if (result.prices_stock_ids[i] == "GOOG") { goog_sum += result.values[i]; }
+        total_sum += result.values[i];
+    }
+    ASSERT_EQ(appl_sum, 5120);
+    ASSERT_EQ(goog_sum, 4461);
+    ASSERT_EQ(total_sum, 9581);
+}
+
+TEST(asof_join_partitioning_right, TestSmallBTCExample) {
+    Prices prices = load_prices("../data/btc_usd_data.csv");
+    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv");
+    PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    auto result = join.join();
+    auto& result_values = result.values;
+    std::sort(result_values.begin(), result_values.end());
+
+    std::vector<uint64_t> correct_values = {
+        5244, 9632, 247800, 523980, 4648032, 11277600, 11787330, 13727200, 33081768, 35807400
+    };
+    ASSERT_EQ(result_values.size(), correct_values.size());
+    for (size_t i = 0; i < result_values.size(); ++i) {
+        ASSERT_EQ(result_values[i], correct_values[i]) << "Failed at index " << i;
+    }
+}
+
+TEST(asof_join_partitioning_right, TestMediumBTCExample) {
+    Prices prices = load_prices("../data/btc_usd_data.csv");
+    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv");
+    PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     auto result = join.join();
 
