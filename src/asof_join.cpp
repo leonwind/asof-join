@@ -77,18 +77,21 @@ ResultRelation SortingASOFJoin::join() {
 
         assert(prices.stock_ids[price_idx] == order_book.stock_ids[order_book_idx]);
 
-        size_t best_match = i;
+        size_t last_match = i;
+        bool found_match = false;
         while (i < prices.size
             && prices.stock_ids[price_idx] == order_book.stock_ids[order_book_idx]
             && prices.timestamps[price_idx] <= order_book.timestamps[order_book_idx]) {
 
-            best_match = i;
+            last_match = i;
             ++i;
+            found_match = true;
             price_idx = prices_indices[i];
         }
 
-        price_idx = prices_indices[best_match];
-        if (prices.timestamps[price_idx] <= order_book.timestamps[order_book_idx]) {
+        if (found_match) {
+            price_idx = prices_indices[last_match];
+
             result.prices_timestamps.push_back(prices.timestamps[price_idx]);
             result.prices_stock_ids.push_back(prices.stock_ids[price_idx]);
             result.prices.push_back(prices.prices[price_idx]);
@@ -99,12 +102,10 @@ ResultRelation SortingASOFJoin::join() {
 
             result.values.push_back(
                 prices.prices[price_idx] * order_book.amounts[order_book_idx]);
-
-        } else {
-            std::cout << "DID NOT MATCH" << std::endl;
         }
 
         ++j;
+        i = last_match;
     }
 
     result.finalize();
