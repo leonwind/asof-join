@@ -6,5 +6,6 @@ pkgs.mkShell {
         clang-tools
         ninja
         cmake
+        gtest
     ];
 }

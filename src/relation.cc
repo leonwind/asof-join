@@ -34,7 +34,8 @@ Prices load_prices(std::string_view path, char delimiter) {
         /* timestamps= */ timestamps,
         /* stock_ids= */ stock_ids,
         /* prices= */ prices,
-        /* size= */ timestamps.size()};
+        /* size= */ timestamps.size()
+    };
 }
 
 OrderBook load_order_book(std::string_view path, char delimiter) {

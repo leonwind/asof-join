@@ -2,7 +2,6 @@
 #define ASOF_JOIN_ASOF_JOIN_HPP
 
 #include <relation.hpp>
-#include <timer.hpp>
 #include <perfevent.hpp>
 #include <iostream>
 
@@ -22,6 +21,8 @@ enum JoinType {
 
 class ASOFJoin {
 public:
+    const std::string STRATEGY_NAME;
+
     ASOFJoin(Prices prices, OrderBook order_book, Comparison comp_type, JoinType join_type):
         prices(std::move(prices)), order_book(std::move(order_book)),
         comp_type(comp_type), join_type(join_type) {}
@@ -38,41 +39,37 @@ protected:
 class BaselineASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
+
+    const std::string STRATEGY_NAME = "nested loop";
+
     [[nodiscard]] ResultRelation join() override;
 };
 
 class SortingASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
+
+    const std::string STRATEGY_NAME = "sorted merge join";
+
     [[nodiscard]] ResultRelation join() override;
 };
 
-class PartitioningASOFJoin : public ASOFJoin {
+class PartitioningLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
+
+    const std::string STRATEGY_NAME = "partition left side + binary search";
+
     [[nodiscard]] ResultRelation join() override;
 };
 
-inline void run_join(ASOFJoin& asof_op, std::string_view strategy) {
-    PerfEvent e;
-    Timer timer;
+class PartitioningRightASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
 
-    e.startCounters();
-    timer.start();
+    const std::string STRATEGY_NAME = "partition right side + binary search";
 
-    auto result = asof_op.join();
-
-    e.stopCounters();
-    auto duration = timer.stop();
-
-    uint64_t total_sum = 0;
-    for (auto value : result.values) { total_sum += value; }
-
-    e.printReport(std::cout, result.size);
-    std::cout << "### ASOF JOIN TOTAL VALUE SUM: " << total_sum << std::endl;
-    // result.print();
-    std::cout << "### FINISHED ASOF JOIN WITH " << strategy
-        << " IN " << duration << "[us] ###" << std::endl;
-}
+    [[nodiscard]] ResultRelation join() override;
+};
 
 #endif //ASOF_JOIN_ASOF_JOIN_HPP

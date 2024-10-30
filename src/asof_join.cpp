@@ -63,7 +63,7 @@ std::pair<bool, size_t> binary_search_closest_match(
     return !result.first ? std::make_pair(true, mid) : result;
 }
 
-ResultRelation PartitioningASOFJoin::join() {
+ResultRelation PartitioningLeftASOFJoin::join() {
     ResultRelation result(prices, order_book);
 
     Timer timer;
@@ -91,30 +91,14 @@ ResultRelation PartitioningASOFJoin::join() {
         std::sort(iter.second.begin(), iter.second.end());
     }
 
-    auto hashing_duration = timer.lap();
-    std::cout << "HASHING AND SORTING IN " << hashing_duration << std::endl;
-
     for (size_t i = 0; i < order_book.size; ++i) {
         if (!prices_lookup.contains(order_book.stock_ids[i])) {
             continue;
         }
 
-        //bool found_join_partner = false;
-        //size_t match_idx = 0;
         auto& values = prices_lookup[order_book.stock_ids[i]];
-
         const auto& [found_join_partner, match_idx] =
             binary_search_closest_match(values, order_book.timestamps[i], 0, values.size());
-
-        /*
-        for (size_t j = 0; j < values.size(); ++j) {
-            auto timestamp = values[j].first;
-            if (timestamp > order_book.timestamps[i]) {
-                break;
-            }
-            match_idx = j;
-            found_join_partner = true;
-        }*/
 
         if (found_join_partner) {
             result.prices_timestamps.push_back(values[match_idx].first);
@@ -126,9 +110,6 @@ ResultRelation PartitioningASOFJoin::join() {
             result.values.push_back(prices.prices[match_idx] * order_book.amounts[i]);
         }
     }
-
-    auto searching_duration = timer.lap();
-    std::cout << "SEARCHING IN " << searching_duration << std::endl;
 
     result.finalize();
     return result;
