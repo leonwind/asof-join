@@ -26,7 +26,7 @@ struct Prices : Relation {
         prices(std::move(prices)) {};
 };
 
-Prices load_prices(std::string_view path, char delimiter = ',');
+Prices load_prices(std::string_view path, char delimiter = ',', bool shuffle = false);
 
 struct OrderBook : Relation {
     std::vector<uint64_t> timestamps;
@@ -43,7 +43,7 @@ struct OrderBook : Relation {
         amounts(std::move(amounts)) {};
 };
 
-OrderBook load_order_book(std::string_view path, char delimiter = ',');
+OrderBook load_order_book(std::string_view path, char delimiter = ',', bool shuffle = false);
 
 struct ResultRelation : Relation {
     std::vector<uint64_t> prices_timestamps;

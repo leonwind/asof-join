@@ -6,6 +6,7 @@ pkgs.mkShell {
         clang-tools
         ninja
         cmake
+        valgrind
         gtest
     ];
 }

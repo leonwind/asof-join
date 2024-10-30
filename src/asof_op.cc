@@ -27,22 +27,22 @@ void run_join(ASOFJoin& asof_op, std::string_view strategy_name = "") {
 }
 
 int main() {
-    Prices prices = load_prices("../data/btc_usd_data.csv");
-    // Prices prices = load_prices("../data/prices_small.csv");
+    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
+    //Prices prices = load_prices("../data/prices_small.csv");
     std::cout << "### FINISHED LOADING PRICES CSV ###" << std::endl;
 
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv");
-    // OrderBook order_book = load_order_book("../data/orderbook_small.csv");
+    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    //OrderBook order_book = load_order_book("../data/orderbook_small.csv");
     std::cout << "### FINISHED LOADING ORDERBOOK CSV ###" << std::endl;
 
-    SortingASOFJoin sorting_asof_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(sorting_asof_join, "sorted merge join") ;
+    //SortingASOFJoin sorting_asof_join(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(sorting_asof_join, "sorted merge join") ;
 
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(left_partitioning, "partitioning + binary search");
 
-    // PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    // run_join(right_partitioning);
+    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(right_partitioning, "partitioning right");
 
     return 0;
 }
