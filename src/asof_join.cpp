@@ -45,6 +45,9 @@ ResultRelation BaselineASOFJoin::join() {
 ResultRelation SortingASOFJoin::join() {
     ResultRelation result(prices, order_book);
 
+    Timer timer;
+    timer.start();
+
     std::vector<size_t> prices_indices(prices.size);
     for (size_t i = 0; i < prices.size; ++i) { prices_indices[i] = i; }
     std::sort(prices_indices.begin(), prices_indices.end(),
@@ -54,6 +57,8 @@ ResultRelation SortingASOFJoin::join() {
             : prices.timestamps[i] < prices.timestamps[j];
     });
 
+    std::cout << "Sorted prices in " << timer.lap() << std::endl;
+
     std::vector<size_t> order_book_indices(order_book.size);
     for (size_t i = 0; i < order_book.size; ++i) { order_book_indices[i] = i; }
     std::sort(order_book_indices.begin(), order_book_indices.end(),
@@ -62,6 +67,8 @@ ResultRelation SortingASOFJoin::join() {
             ? order_book.stock_ids[i] < order_book.stock_ids[j]
             : order_book.timestamps[i] < order_book.timestamps[j];
     });
+
+    std::cout << "Sorted order book in " << timer.lap() << std::endl;
 
     size_t i = 0, j = 0;
     while (i < prices.size && j < order_book.size) {
@@ -109,6 +116,8 @@ ResultRelation SortingASOFJoin::join() {
         i = last_match;
     }
 
+    std::cout << "Sorted merge join in " << timer.lap() << std::endl;
+
     result.finalize();
     return result;
 }
@@ -140,6 +149,9 @@ std::pair<bool, size_t> binary_search_closest_match_less_than(
 ResultRelation PartitioningLeftASOFJoin::join() {
     ResultRelation result(prices, order_book);
 
+    Timer timer;
+    timer.start();
+
     std::unordered_map<std::string_view, std::vector<std::pair<uint64_t, uint64_t>>>
         prices_lookup;
     prices_lookup.reserve(prices.size);
@@ -158,9 +170,13 @@ ResultRelation PartitioningLeftASOFJoin::join() {
         }
     }
 
+    std::cout << "Partioning in " << timer.lap() << std::endl;
+
     for (auto& iter : prices_lookup) {
         std::sort(iter.second.begin(), iter.second.end());
     }
+
+    std::cout << "Sorting in " << timer.lap() << std::endl;
 
     for (size_t i = 0; i < order_book.size; ++i) {
         if (!prices_lookup.contains(order_book.stock_ids[i])) {
@@ -182,6 +198,8 @@ ResultRelation PartitioningLeftASOFJoin::join() {
             result.values.push_back(values[match_idx].second * order_book.amounts[i]);
         }
     }
+
+    std::cout << "Binary Search in " << timer.lap() << std::endl;
 
     result.finalize();
     return result;
@@ -215,9 +233,9 @@ std::pair<bool, size_t> binary_search_closest_match_greater_than(
         if (data[mid].timestamp >= target) {
             result_index = mid;
             found = true;
-            right = mid; // Narrow the search to the left side
+            right = mid;
         } else {
-            left = mid + 1; // Move to the right half
+            left = mid + 1;
         }
     }
 
@@ -229,6 +247,9 @@ std::pair<bool, size_t> binary_search_closest_match_greater_than(
 
 ResultRelation PartitioningRightASOFJoin::join() {
     ResultRelation result(prices, order_book);
+
+    Timer timer;
+    timer.start();
 
     std::unordered_map<std::string_view, std::vector<Entry>>
         order_book_lookup;
@@ -246,9 +267,13 @@ ResultRelation PartitioningRightASOFJoin::join() {
         }
     }
 
+    std::cout << "Partioning in " << timer.lap() << std::endl;
+
     for (auto& iter : order_book_lookup) {
         std::sort(iter.second.begin(), iter.second.end());
     }
+
+    std::cout << "Sorting in " << timer.lap() << std::endl;
 
     for (size_t i = 0; i < prices.size; ++i) {
         if (!order_book_lookup.contains(prices.stock_ids[i])) {
@@ -275,13 +300,18 @@ ResultRelation PartitioningRightASOFJoin::join() {
         values[match_idx].matched = true;
     }
 
+     std::cout << "Binary Search in " << timer.lap() << std::endl;
+
     for (auto& iter : order_book_lookup) {
         auto& values = iter.second;
 
-        for (size_t i = 0; i < values.size(); ++i) {
-            auto& entry = values[i];
-
+        Entry* last_match = nullptr;
+        for (auto& entry : values) {
             if (entry.matched) {
+                last_match = &entry;
+            }
+
+            if (last_match && last_match->matched) {
                 result.prices_timestamps.push_back(prices.timestamps[entry.price_idx]);
                 result.prices_stock_ids.push_back(prices.stock_ids[entry.price_idx]);
                 result.prices.push_back(prices.prices[entry.price_idx]);
@@ -290,34 +320,12 @@ ResultRelation PartitioningRightASOFJoin::join() {
                 result.order_book_stock_ids.push_back(order_book.stock_ids[entry.order_idx]);
                 result.amounts.push_back(order_book.amounts[entry.order_idx]);
                 result.values.push_back(
-                    prices.prices[entry.price_idx] * order_book.amounts[entry.order_idx]);
-                continue;
-            }
-
-            if (i == 0) { continue; }
-
-            size_t j = i - 1;
-            while(true) {
-                auto& prev_entry = values[j];
-
-                if (prev_entry.matched) {
-                    result.prices_timestamps.push_back(prices.timestamps[prev_entry.price_idx]);
-                    result.prices_stock_ids.push_back(prices.stock_ids[prev_entry.price_idx]);
-                    result.prices.push_back(prices.prices[prev_entry.price_idx]);
-
-                    result.order_book_timestamps.push_back(order_book.timestamps[entry.order_idx]);
-                    result.order_book_stock_ids.push_back(order_book.stock_ids[entry.order_idx]);
-                    result.amounts.push_back(order_book.amounts[entry.order_idx]);
-                    result.values.push_back(
-                        prices.prices[prev_entry.price_idx] * order_book.amounts[entry.order_idx]);
-                    break;
-                }
-
-                if (j == 0) { break; }
-                --j;
+                    prices.prices[last_match->price_idx] * order_book.amounts[entry.order_idx]);
             }
         }
     }
+
+    std::cout << "Finding match in " << timer.lap() << std::endl;
 
     result.finalize();
     return result;

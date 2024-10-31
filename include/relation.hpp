@@ -72,7 +72,7 @@ struct ResultRelation : Relation {
 
     void print() {
         std::cout
-            << "Price t, Price Stock, Price,"
+            << "Price t, Price Stock, Price, "
             << "OrderBook t, OrderBook Stock, Amount, Value" << std::endl;
         for (size_t i = 0; i < size; ++i) {
             std::cout

@@ -27,12 +27,12 @@ def write_csv(num_orders, stock_ids, earliest_time, latest_time, max_amount, fil
 
 def generate_btc_orderbook():
     write_csv(
-        num_orders=10000,
+        num_orders=1000000,
         stock_ids=["BTC"],
         earliest_time=1325412060,
         latest_time=1729122660,
         max_amount=10,
-        file_name="../data/btc_orderbook_medium.csv")
+        file_name="../data/btc_orderbook_large.csv")
 
 
 if __name__ == "__main__":

@@ -51,6 +51,9 @@ Prices load_prices(std::string_view path, char delimiter, bool shuffle) {
         prices.push_back(std::stoull(columns[2]));
     }
 
+    assert(timestamps.size() == stock_ids.size() &&
+        stock_ids.size() == prices.size());
+
     Prices result = {
         /* timestamps= */ timestamps,
         /* stock_ids= */ stock_ids,
