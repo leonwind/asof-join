@@ -1,7 +1,12 @@
 .idea
 
 cmake-build-debug/
+release/
 build/
 debug/
 
+# For oneTBB
+.installed/
+
+# Data files
 *.csv
