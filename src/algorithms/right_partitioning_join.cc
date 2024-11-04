@@ -2,7 +2,9 @@
 #include "timer.hpp"
 #include <unordered_map>
 #include <algorithm>
-#include <cassert>
+#include <mutex>
+#include "tbb/parallel_for.h"
+#include "tbb/parallel_for_each.h"
 
 
 struct Entry {
@@ -11,12 +13,42 @@ struct Entry {
     size_t price_idx;
     uint64_t diff;
     bool matched;
+    mutable std::mutex _mutex;
 
-    Entry(uint64_t timestamp, size_t order_idx):
-        timestamp(timestamp), order_idx(order_idx), price_idx(0),
-        diff(UINT64_MAX), matched(false) {}
+    Entry(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
+        price_idx(0), diff(UINT64_MAX), matched(false), _mutex() {}
 
-    std::strong_ordering operator <=>(const Entry& other) const {
+     Entry(const Entry& other): timestamp(other.timestamp), order_idx(other.order_idx),
+        price_idx(other.price_idx), diff(other.diff), matched(other.matched),
+        _mutex() {}
+
+    Entry(Entry&& other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
+          price_idx(other.price_idx), diff(other.diff), matched(other.matched),
+          _mutex() {}
+
+    Entry& operator = (const Entry& other) {
+        if (this != &other) {
+            timestamp = other.timestamp;
+            order_idx = other.order_idx;
+            price_idx = other.price_idx;
+            diff = other.diff;
+            matched = other.matched;
+        }
+        return *this;
+    }
+
+    Entry& operator = (Entry&& other)  noexcept {
+        if (this != &other) {
+            timestamp = other.timestamp;
+            order_idx = other.order_idx;
+            price_idx = other.price_idx;
+            diff = other.diff;
+            matched = other.matched;
+        }
+        return *this;
+    }
+
+    std::strong_ordering operator <=> (const Entry& other) const {
         return timestamp <=> other.timestamp;
     }
 };
@@ -60,42 +92,50 @@ ResultRelation PartitioningRightASOFJoin::join() {
         }
     }
 
-    std::cout << "Partioning in " << timer.lap() << std::endl;
+    std::cout << "Partitioning in " << timer.lap() << std::endl;
 
-    for (auto& iter : order_book_lookup) {
+    tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
+            [&](auto& iter) {
         std::sort(iter.second.begin(), iter.second.end());
-    }
+    });
 
     std::cout << "Sorting in " << timer.lap() << std::endl;
 
-    for (size_t i = 0; i < prices.size; ++i) {
-        if (!order_book_lookup.contains(prices.stock_ids[i])) {
-            continue;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size),
+            [&](tbb::blocked_range<size_t>& range) {
+        for (size_t i = range.begin(); i < range.end(); ++i) {
+            if (!order_book_lookup.contains(prices.stock_ids[i])) {
+                continue;
+            }
+
+            auto& values = order_book_lookup[prices.stock_ids[i]];
+            const auto& [found_join_partner, match_idx] =
+                binary_search_closest_match_greater_than(
+                    values, prices.timestamps[i], 0, values.size() - 1);
+
+            if (!found_join_partner) {
+                continue;
+            }
+
+            size_t order_book_idx = values[match_idx].order_idx;
+            // Lock protected area
+            {
+                std::scoped_lock lock{values[match_idx]._mutex};
+                uint64_t diff = order_book.timestamps[order_book_idx] - prices.timestamps[i];
+                if (diff < values[match_idx].diff) {
+                    values[match_idx].diff = diff;
+                    values[match_idx].price_idx = i;
+                }
+            }
+            values[match_idx].matched = true;
         }
+    });
 
-        auto& values = order_book_lookup[prices.stock_ids[i]];
-        const auto& [found_join_partner, match_idx] =
-            binary_search_closest_match_greater_than(
-                values, prices.timestamps[i], 0, values.size() - 1);
+    std::cout << "Binary Search in " << timer.lap() << std::endl;
 
-        if (!found_join_partner) {
-            continue;
-        }
-
-        size_t order_book_idx = values[match_idx].order_idx;
-        assert(order_book.timestamps[order_book_idx] >= prices.timestamps[i]);
-
-        uint64_t diff = order_book.timestamps[order_book_idx] - prices.timestamps[i];
-        if (diff < values[match_idx].diff) {
-           values[match_idx].diff = diff;
-           values[match_idx].price_idx = i;
-        }
-        values[match_idx].matched = true;
-    }
-
-     std::cout << "Binary Search in " << timer.lap() << std::endl;
-
-    for (auto& iter : order_book_lookup) {
+    std::mutex result_lock;
+    tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
+            [&](auto& iter) {
         auto& values = iter.second;
 
         Entry* last_match = nullptr;
@@ -105,6 +145,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
             }
 
             if (last_match && last_match->matched) {
+                std::scoped_lock lock{result_lock};
                 result.prices_timestamps.push_back(prices.timestamps[entry.price_idx]);
                 result.prices_stock_ids.push_back(prices.stock_ids[entry.price_idx]);
                 result.prices.push_back(prices.prices[entry.price_idx]);
@@ -116,7 +157,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
                     prices.prices[last_match->price_idx] * order_book.amounts[entry.order_idx]);
             }
         }
-    }
+    });
 
     std::cout << "Finding match in " << timer.lap() << std::endl;
 

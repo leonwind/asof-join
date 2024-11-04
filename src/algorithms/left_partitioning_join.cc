@@ -2,6 +2,9 @@
 #include "timer.hpp"
 #include <unordered_map>
 #include <algorithm>
+#include <mutex>
+#include "tbb/parallel_for.h"
+#include "tbb/parallel_for_each.h"
 
 
 std::pair<bool, size_t> binary_search_closest_match_less_than(
@@ -52,34 +55,40 @@ ResultRelation PartitioningLeftASOFJoin::join() {
         }
     }
 
-    std::cout << "Partioning in " << timer.lap() << std::endl;
+    std::cout << "Partitioning in " << timer.lap() << std::endl;
 
-    for (auto& iter : prices_lookup) {
+    tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
+                           [&](auto& iter) {
         std::sort(iter.second.begin(), iter.second.end());
-    }
+    });
 
     std::cout << "Sorting in " << timer.lap() << std::endl;
 
-    for (size_t i = 0; i < order_book.size; ++i) {
-        if (!prices_lookup.contains(order_book.stock_ids[i])) {
-            continue;
-        }
+    std::mutex result_lock;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size),
+            [&](tbb::blocked_range<size_t>& range) {
+        for (size_t i = range.begin(); i < range.end(); ++i) {
+            if (!prices_lookup.contains(order_book.stock_ids[i])) {
+                continue;
+            }
 
-        auto& values = prices_lookup[order_book.stock_ids[i]];
-        const auto& [found_join_partner, match_idx] =
-            binary_search_closest_match_less_than(
-                values, order_book.timestamps[i], 0, values.size() - 1);
+            auto &values = prices_lookup[order_book.stock_ids[i]];
+            const auto &[found_join_partner, match_idx] =
+                    binary_search_closest_match_less_than(
+                            values, order_book.timestamps[i], 0, values.size() - 1);
 
-        if (found_join_partner) {
-            result.prices_timestamps.push_back(values[match_idx].first);
-            result.prices_stock_ids.push_back(order_book.stock_ids[i]);
-            result.prices.push_back(values[match_idx].second);
-            result.order_book_timestamps.push_back(order_book.timestamps[i]);
-            result.order_book_stock_ids.push_back(order_book.stock_ids[i]);
-            result.amounts.push_back(order_book.amounts[i]);
-            result.values.push_back(values[match_idx].second * order_book.amounts[i]);
+            if (found_join_partner) {
+                std::scoped_lock lock{result_lock};
+                result.prices_timestamps.push_back(values[match_idx].first);
+                result.prices_stock_ids.push_back(order_book.stock_ids[i]);
+                result.prices.push_back(values[match_idx].second);
+                result.order_book_timestamps.push_back(order_book.timestamps[i]);
+                result.order_book_stock_ids.push_back(order_book.stock_ids[i]);
+                result.amounts.push_back(order_book.amounts[i]);
+                result.values.push_back(values[match_idx].second * order_book.amounts[i]);
+            }
         }
-    }
+    });
 
     std::cout << "Binary Search in " << timer.lap() << std::endl;
 

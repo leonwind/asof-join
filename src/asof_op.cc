@@ -45,9 +45,9 @@ int main() {
     //run_join(sorting_asof_join, "sorted merge join") ;
     //std::cout << std::endl;
 
-    //PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(left_partitioning, "partitioning left");
-    //std::cout << std::endl;
+    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(left_partitioning, "partitioning left");
+    std::cout << std::endl;
 
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(right_partitioning, "partitioning right");

@@ -9,9 +9,7 @@ using namespace std::chrono;
 class Timer {
 
 public:
-    Timer() = default; //start_time_({}), lap_time_({}) {}
-
-    //static Timer start() { return {}; }
+    Timer() = default;
 
     void start() {
         steady_clock::time_point curr_time = steady_clock::now();
@@ -19,12 +17,12 @@ public:
         lap_time_ = curr_time;
     }
 
-    template<typename unit = microseconds> uint64_t stop() {
+    template<typename unit = milliseconds> uint64_t stop() {
         steady_clock::time_point end_time = steady_clock::now();
         return duration_cast<unit>(end_time - start_time_).count();
     }
 
-    template<typename unit = microseconds> uint64_t lap() {
+    template<typename unit = milliseconds> uint64_t lap() {
         steady_clock::time_point curr_time = steady_clock::now();
         auto duration = duration_cast<unit>(curr_time - lap_time_).count();
         lap_time_ = curr_time;
