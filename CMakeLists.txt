@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fsanitize=address,leak,undefined -O3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 include_directories(include)
-add_library(asof_join src/relation.cc src/asof_join.cpp)
+add_library(asof_join src/relation.cc src/algorithms/asof_join.cpp)
 
 # Tests
 add_executable(test_all test/asof_join.cpp)
