@@ -7,6 +7,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(asof-join)
 
 include(lib/gtest.cmake)
+
+find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
 
 # Set compile flags
@@ -15,7 +17,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fsanitize=address,leak,undefined -O3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 include_directories(include)
-add_library(asof_join
+add_library(asof_join_lib
         src/relation.cc
         src/algorithms/nested_loop_join.cc
         src/algorithms/sorted_merge_join.cc
@@ -24,8 +26,10 @@ add_library(asof_join
 
 # Tests
 add_executable(test_all test/asof_join.cc)
-target_link_libraries(test_all asof_join gtest gtest_main)
+target_link_libraries(test_all asof_join_lib gtest gtest_main)
+
 
 # Main executable
 add_executable(asofOp src/asof_op.cc)
-target_link_libraries(asofOp asof_join)
+target_link_libraries(asofOp asof_join_lib)
+
