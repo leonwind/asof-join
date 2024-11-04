@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from random import randrange
 import numpy as np
+from random import randrange
 import pandas as pd
 
 from generate_price_list import StockPrices
@@ -19,6 +19,7 @@ class ZipfStockGenerator(RandomStockGenerator):
         self.zipf_skew = zipf_skew
 
     def generate(self):
+        # Zipf generates in [1, INFINITY), so we do -1 for the index
         idx = np.random.zipf(self.zipf_skew, 1)[0] - 1
         if idx >= self.num_stocks:
             return self.generate()
@@ -35,7 +36,14 @@ class UniformStockGenerator(RandomStockGenerator):
 
 
 class Positions:
-    def __init__(self, stock_prices: StockPrices, num_positions, random_stock_generator: RandomStockGenerator):
+    MIN_AMOUNT = 0
+    MAX_AMOUNT = 100
+
+    def __init__(
+            self,
+            stock_prices: StockPrices,
+            num_positions,
+            random_stock_generator: RandomStockGenerator):
         self.stock_names = stock_prices.stock_names
         self.num_stocks = len(self.stock_names)
         self.num_positions = num_positions
@@ -44,9 +52,6 @@ class Positions:
         self.start_time = 0
         self.end_time = stock_prices.get_end_time()
 
-        self.min_amount = 1
-        self.max_amount = 10
-
     def _get_random_stock(self):
         return self.stock_names[self.random_stock_generator.generate()]
     
@@ -54,7 +59,7 @@ class Positions:
         return randrange(self.start_time, self.end_time)
 
     def _get_random_amount(self):
-        return randrange(self.min_amount, self.max_amount)
+        return randrange(self.MIN_AMOUNT, self.MAX_AMOUNT)
 
     def generate(self):
         positions = []

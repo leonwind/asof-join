@@ -21,11 +21,8 @@ def generate_data(
     stock_prices_df.to_csv(output_prices, index=False)
     positions_df.to_csv(output_positions, index=False)
 
-    print(stock_prices_df)
-    print(positions_df)
 
-
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--num_stocks", type=int, required=True)
     parser.add_argument("--num_rows_per_stock", type=int, required=True)
@@ -34,7 +31,11 @@ if __name__ == "__main__":
     parser.add_argument("--uniform", action="store_true", required=False)
     parser.add_argument("--output_prices", type=str, required=True)
     parser.add_argument("--output_positions", type=str, required=True)
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args() 
 
     use_zipf_distribution = args.zipf_skew is not None
     use_uniform_distribution = args.uniform

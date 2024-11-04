@@ -6,12 +6,15 @@ class StockPrices:
     SAMPLING_RATE = 10
     START_OFFSET = 10
 
+    MIN_PRICE = 0
+    MAX_PRICE = 100
+
     def __init__(self, num_stocks, data_points_per_stock):
         self.stock_names = [f"S-{i}" for i in range(num_stocks)]
         self._data_points_per_stock = data_points_per_stock 
 
-    def _get_random_price(self, min_price=0, max_price=10):
-        return randrange(min_price, max_price)
+    def _get_random_price(self):
+        return randrange(self.MIN_PRICE, self.MAX_PRICE)
 
     def _get_time_point(self, curr_row):
         return self.START_OFFSET + self.SAMPLING_RATE * curr_row 
