@@ -29,23 +29,25 @@ void run_join(ASOFJoin& asof_op, std::string_view strategy_name = "") {
 
 int main() {
     Prices prices =
-        load_prices("../data/btc_usd_data.csv", ',', /* shuffle= */ true);
+        //load_prices("../data/btc_usd_data.csv", ',', /* shuffle= */ true);
+        load_prices("../data/zipf_prices.csv", ',', /* shuffle= */ true);
     //Prices prices = load_prices("../data/prices_small.csv");
     std::cout << "### FINISHED LOADING PRICES CSV ###" << std::endl;
 
     OrderBook order_book =
-        load_order_book("../data/btc_orderbook_medium.csv", ',', /* shuffle= */ true);
+        //load_order_book("../data/btc_orderbook_medium.csv", ',', /* shuffle= */ true);
+        load_order_book("../data/zipf_positions.csv", ',', /* shuffle= */ true);
     //OrderBook order_book = load_order_book("../data/orderbook_small.csv");
     std::cout << "### FINISHED LOADING ORDERBOOK CSV ###" << std::endl;
     std::cout << std::endl;
 
-    SortingASOFJoin sorting_asof_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(sorting_asof_join, "sorted merge join") ;
-    std::cout << std::endl;
+    //SortingASOFJoin sorting_asof_join(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(sorting_asof_join, "sorted merge join") ;
+    //std::cout << std::endl;
 
-    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(left_partitioning, "partitioning left");
-    std::cout << std::endl;
+    //PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(left_partitioning, "partitioning left");
+    //std::cout << std::endl;
 
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(right_partitioning, "partitioning right");

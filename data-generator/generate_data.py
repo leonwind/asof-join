@@ -14,12 +14,17 @@ def generate_data(
         output_positions):
     stock_prices = StockPrices(num_stocks, data_per_stock)
     stock_prices_df = stock_prices.generate()
+    print("### FINISHED STOCK PRICES GENERATION ###")
+
+    stock_prices_df.to_csv(output_prices, index=False)
+    print("### FINISHED WRITING STOCK PRICES CSV ###")
 
     positions = Positions(stock_prices, num_positions, stock_generator)
     positions_df = positions.generate()
+    print("### FINISHED POSITIONS GENERATION ###")
 
-    stock_prices_df.to_csv(output_prices, index=False)
     positions_df.to_csv(output_positions, index=False)
+    print("### FINISHED WRITING POSITIONS CSV ###")
 
 
 def parse_args():

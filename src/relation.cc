@@ -46,6 +46,15 @@ Prices load_prices(std::string_view path, char delimiter, bool shuffle) {
             }
         }
 
+        // Check if a header exists for the first row.
+        // Currently, it only checks if the first field starts with "time".
+        // If so, we assume that it is a header for our specific csv format.
+        if (timestamps.empty()) {
+            if (columns[0].starts_with("time")) {
+                continue;
+            }
+        }
+
         timestamps.push_back(std::stoull(columns[0]));
         stock_ids.push_back(columns[1]);
         prices.push_back(std::stoull(columns[2]));
