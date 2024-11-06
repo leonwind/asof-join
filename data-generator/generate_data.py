@@ -10,20 +10,28 @@ def generate_data(
         data_per_stock, 
         num_positions, 
         stock_generator: RandomStockGenerator,
-        output_prices,
-        output_positions):
+        output_prices_file,
+        output_positions_file,
+        shuffle = True):
     stock_prices = StockPrices(num_stocks, data_per_stock)
     stock_prices_df = stock_prices.generate()
     print("### FINISHED STOCK PRICES GENERATION ###")
 
-    stock_prices_df.to_csv(output_prices, index=False)
+    if shuffle:
+        stock_prices_df = stock_prices_df.sample(frac=1).reset_index(drop=True)
+        print("### FINISHED SHUFFLING STOCK PRICES ###")
+
+    stock_prices_df.to_csv(output_prices_file, index=False)
     print("### FINISHED WRITING STOCK PRICES CSV ###")
 
     positions = Positions(stock_prices, num_positions, stock_generator)
     positions_df = positions.generate()
     print("### FINISHED POSITIONS GENERATION ###")
 
-    positions_df.to_csv(output_positions, index=False)
+    if shuffle:
+        positions_df = positions_df.sample(frac=1).reset_index(drop=True)
+        print("### FINISHED SHUFFLING POSITIONS ###")
+    positions_df.to_csv(output_positions_file, index=False)
     print("### FINISHED WRITING POSITIONS CSV ###")
 
 
