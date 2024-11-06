@@ -70,6 +70,24 @@ struct ResultRelation : Relation {
         size = prices_timestamps.size();
     }
 
+    void insert(
+            uint64_t price_timestamp,
+            std::string& price_stock_id,
+            uint64_t price,
+            uint64_t order_book_timestamp,
+            std::string& order_book_stock_id,
+            uint64_t amount) {
+       prices_timestamps.push_back(price_timestamp);
+       prices_stock_ids.push_back(price_stock_id);
+       prices.push_back(price);
+
+       order_book_timestamps.push_back(order_book_timestamp);
+       order_book_stock_ids.push_back(order_book_stock_id);
+       amounts.push_back(amount);
+
+       values.push_back(price * amount);
+    }
+
     void print() {
         std::cout
             << "Price t, Price Stock, Price, "

@@ -36,4 +36,3 @@ target_link_libraries(test_all asof_join_lib tbb gtest gtest_main)
 # Main executable
 add_executable(asofOp src/asof_op.cc)
 target_link_libraries(asofOp asof_join_lib tbb)
-
