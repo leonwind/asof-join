@@ -142,23 +142,35 @@ ResultRelation PartitioningRightASOFJoin::join() {
             [&](auto& iter) {
         auto& values = iter.second;
 
-        Entry* last_match = nullptr;
-        for (auto& entry : values) {
-            if (entry.matched) {
-                last_match = &entry;
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, values.size(), 10000),
+            [&](tbb::blocked_range<size_t>& range) {
+
+            Entry* last_match = nullptr;
+            for (size_t i = range.begin(); i != 0; --i) {
+                if (values[i].matched) {
+                    last_match = &values[i];
+                    break;
+                }
             }
 
-            if (last_match && last_match->matched) {
-                std::scoped_lock lock{result_lock};
-                result.insert(
-                    /* price_timestamp= */ prices.timestamps[last_match->price_idx],
-                    /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
-                    /* price= */ prices.prices[last_match->price_idx],
-                    /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
-                    /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
-                    /* amount= */ order_book.amounts[entry.order_idx]);
+            for (size_t i = range.begin(); i != range.end(); ++i) {
+                auto& entry = values[i];
+                if (entry.matched) {
+                    last_match = &entry;
+                }
+
+                if (last_match && last_match->matched) {
+                    std::scoped_lock lock{result_lock};
+                    result.insert(
+                        /* price_timestamp= */ prices.timestamps[last_match->price_idx],
+                        /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
+                        /* price= */ prices.prices[last_match->price_idx],
+                        /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
+                        /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
+                        /* amount= */ order_book.amounts[entry.order_idx]);
+                }
             }
-        }
+        });
     });
 
     std::cout << "Finding match in " << timer.lap() << std::endl;
