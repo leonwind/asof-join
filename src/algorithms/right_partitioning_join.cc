@@ -2,7 +2,6 @@
 #include "timer.hpp"
 #include "spin_lock.hpp"
 #include <unordered_map>
-#include <algorithm>
 #include <mutex>
 #include "tbb/parallel_sort.h"
 #include "tbb/parallel_for.h"
@@ -119,8 +118,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
                     /* target= */ timestamp);
 
             if (found_join_partner) {
-                size_t order_book_idx = values[match_idx].order_idx;
-                uint64_t diff = order_book.timestamps[order_book_idx] - timestamp;
+                uint64_t diff = values[match_idx].timestamp - timestamp;
 
                 // Lock while comparing and exchanging the diffs
                 values[match_idx].lock.lock();
