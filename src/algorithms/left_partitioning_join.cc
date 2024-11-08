@@ -1,13 +1,14 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
 #include <unordered_map>
-#include <algorithm>
 #include <mutex>
 #include "tbb/parallel_for.h"
 #include "tbb/parallel_for_each.h"
 #include "tbb/parallel_sort.h"
-#include "tbb/concurrent_hash_map.h"
 
+
+// Morsel size is 16384
+#define MORSEL_SIZE (2<<14)
 
 std::pair<bool, size_t> binary_search_closest_match_less_than(
         std::vector<std::pair<uint64_t, uint64_t>>& data,
@@ -35,7 +36,6 @@ ResultRelation PartitioningLeftASOFJoin::join() {
     timer.start();
 
     std::unordered_map<std::string_view, std::vector<std::pair<uint64_t, uint64_t>>>
-    //tbb::concurrent_hash_map<std::string_view, std::vector<std::pair<uint64_t, uint64_t>>>
         prices_lookup;
 
     for (size_t i = 0; i < prices.size; ++i) {
@@ -57,13 +57,12 @@ ResultRelation PartitioningLeftASOFJoin::join() {
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
                            [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
-        //std::sort(iter.second.begin(), iter.second.end());
     });
 
     std::cout << "Sorting in " << timer.lap() << std::endl;
 
     std::mutex result_lock;
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, 10000),
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
             auto& stock_id = order_book.stock_ids[i];

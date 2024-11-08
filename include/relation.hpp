@@ -16,9 +16,9 @@ struct Prices : Relation {
     std::vector<std::string> stock_ids;
     std::vector<uint64_t> prices;
 
-    Prices(std::vector<uint64_t> timestamps,
-           std::vector<std::string> stock_ids,
-           std::vector<uint64_t> prices,
+    Prices(std::vector<uint64_t>& timestamps,
+           std::vector<std::string>& stock_ids,
+           std::vector<uint64_t>& prices,
            size_t size):
         Relation(size),
         timestamps(std::move(timestamps)),
@@ -33,9 +33,9 @@ struct OrderBook : Relation {
     std::vector<std::string> stock_ids;
     std::vector<uint64_t> amounts;
 
-    OrderBook(std::vector<uint64_t> timestamps,
-              std::vector<std::string> stock_ids,
-              std::vector<uint64_t> amounts,
+    OrderBook(std::vector<uint64_t>& timestamps,
+              std::vector<std::string>& stock_ids,
+              std::vector<uint64_t>& amounts,
               size_t size):
         Relation(size),
         timestamps(std::move(timestamps)),

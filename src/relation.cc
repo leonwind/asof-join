@@ -23,23 +23,35 @@ Prices shuffle_prices(Prices& prices) {
     return {timestamps_tmp, stock_ids_tmp, prices_tmp, prices.size};
 }
 
+uint64_t string_view_to_uint64_t(std::string_view strv) {
+    uint64_t result{};
+
+    auto [_, ec] = std::from_chars(strv.data(), strv.data() + strv.size(), result);
+
+    if (ec != std::errc()) {
+        throw std::runtime_error("Failed to parse uint64_t from string_view " + std::string(strv));
+    }
+
+    return result;
+}
+
 Prices load_prices(std::string_view path, char delimiter, bool shuffle) {
     MemoryMappedFile file(path);
 
     std::vector<uint64_t> timestamps;
     std::vector<std::string> stock_ids;
     std::vector<uint64_t> prices;
-    std::string columns[3];
+    std::string_view columns[3];
 
     for (auto iter = file.begin(), limit = file.end(); iter < limit;) {
         size_t column_idx = 0;
         for (auto last = iter;; ++iter) {
             if (*iter == delimiter) {
-                const std::string entry(last, iter - last);
+                std::string_view entry(last, iter - last);
                 columns[column_idx++] = entry;
                 last = iter + 1;
             } else if (*iter == '\n') {
-                const std::string entry(last, iter - last);
+                std::string_view entry(last, iter - last);
                 columns[column_idx] = entry;
                 ++iter;
                 break;
@@ -49,15 +61,13 @@ Prices load_prices(std::string_view path, char delimiter, bool shuffle) {
         // Check if a header exists for the first row.
         // Currently, it only checks if the first field starts with "time".
         // If so, we assume that it is a header for our specific csv format.
-        if (timestamps.empty()) {
-            if (columns[0].starts_with("time")) {
-                continue;
-            }
+        if (timestamps.empty() && columns[0].starts_with("time")) {
+            continue;
         }
 
-        timestamps.push_back(std::stoull(columns[0]));
-        stock_ids.push_back(columns[1]);
-        prices.push_back(std::stoull(columns[2]));
+        timestamps.push_back(string_view_to_uint64_t(columns[0]));
+        stock_ids.emplace_back(columns[1]);
+        prices.push_back(string_view_to_uint64_t(columns[2]));
     }
 
     assert(timestamps.size() == stock_ids.size() &&

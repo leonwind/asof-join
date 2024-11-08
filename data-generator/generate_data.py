@@ -20,7 +20,6 @@ def generate_data(
     if shuffle:
         stock_prices_df = stock_prices_df.sample(frac=1).reset_index(drop=True)
         print("### FINISHED SHUFFLING STOCK PRICES ###")
-
     stock_prices_df.to_csv(output_prices_file, index=False)
     print("### FINISHED WRITING STOCK PRICES CSV ###")
 

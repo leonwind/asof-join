@@ -6,7 +6,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(asof-join)
 
-
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/.installed/oneTBB)
 
 include(lib/gtest.cmake)
@@ -34,5 +33,5 @@ target_link_libraries(test_all asof_join_lib tbb gtest gtest_main)
 
 
 # Main executable
-add_executable(asofOp src/asof_op.cc)
-target_link_libraries(asofOp asof_join_lib tbb)
+add_executable(asof_join src/asof_op.cc)
+target_link_libraries(asof_join asof_join_lib tbb)

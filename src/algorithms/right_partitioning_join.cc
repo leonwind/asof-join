@@ -7,6 +7,8 @@
 #include "tbb/parallel_for.h"
 #include "tbb/parallel_for_each.h"
 
+// Morsel size is 16384
+#define MORSEL_SIZE (2<<14)
 
 struct Entry {
     uint64_t timestamp;
@@ -77,7 +79,6 @@ ResultRelation PartitioningRightASOFJoin::join() {
     timer.start();
 
     std::unordered_map<std::string_view, std::vector<Entry>> order_book_lookup;
-    order_book_lookup.reserve(order_book.size);
 
     for (size_t i = 0; i < order_book.size; ++i) {
         if (order_book_lookup.contains(order_book.stock_ids[i])) {
@@ -95,13 +96,12 @@ ResultRelation PartitioningRightASOFJoin::join() {
 
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
-        //std::sort(iter.second.begin(), iter.second.end());
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
     std::cout << "Sorting in " << timer.lap() << std::endl;
 
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, 10000),
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
             auto& stock_id = prices.stock_ids[i];
@@ -138,15 +138,28 @@ ResultRelation PartitioningRightASOFJoin::join() {
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
-        auto& values = iter.second;
+        std::vector<Entry>& values = iter.second;
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, values.size(), 10000),
+        std::vector<Entry*> last_match_per_range((values.size() + MORSEL_SIZE - 1) / MORSEL_SIZE);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, values.size(), MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
-
             Entry* last_match = nullptr;
-            for (size_t i = range.begin(); i != 0; --i) {
+            for (size_t i = range.end() - 1; i != range.begin(); --i) {
                 if (values[i].matched) {
                     last_match = &values[i];
+                    break;
+                }
+            }
+
+            last_match_per_range[range.begin() / MORSEL_SIZE] = last_match;
+        });
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, values.size(), MORSEL_SIZE),
+            [&](tbb::blocked_range<size_t>& range) {
+            Entry* last_match = nullptr;
+            for (size_t morsel_idx = range.begin() / MORSEL_SIZE; morsel_idx != 0; --morsel_idx) {
+                if (last_match_per_range[morsel_idx]) {
+                    last_match = last_match_per_range[morsel_idx];
                     break;
                 }
             }
