@@ -1,5 +1,6 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
+#include <algorithm>
 #include <unordered_map>
 #include <mutex>
 #include "tbb/parallel_for.h"
@@ -10,23 +11,19 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-std::pair<bool, size_t> binary_search_closest_match_less_than(
+std::optional<size_t> binary_search_closest_match_less_than(
         std::vector<std::pair<uint64_t, uint64_t>>& data,
         uint64_t target) {
-    size_t left = 0;
-    size_t right = data.size();
+    auto iter = std::lower_bound(data.begin(), data.end(), target,
+       [](const std::pair<uint64_t, uint64_t>& a, uint64_t b) {
+            return a.first <= b;
+       });
 
-    while (left < right) {
-        size_t mid = left + (right - left) / 2;
-
-        if (data[mid].first <= target) {
-            left = mid + 1;
-        } else {
-            right = mid;
-        }
+    if (iter == data.begin()) {
+        return {};
     }
 
-    return {left > 0 && data[left - 1].first <= target, left - 1};
+    return {(iter - 1) - data.begin()};
 }
 
 ResultRelation PartitioningLeftASOFJoin::join() {
@@ -37,25 +34,16 @@ ResultRelation PartitioningLeftASOFJoin::join() {
 
     std::unordered_map<std::string_view, std::vector<std::pair<uint64_t, uint64_t>>>
         prices_lookup;
-
     for (size_t i = 0; i < prices.size; ++i) {
-        if (prices_lookup.contains(prices.stock_ids[i])) {
-            prices_lookup[prices.stock_ids[i]].emplace_back(
-                prices.timestamps[i],
-                prices.prices[i]
-            );
-        } else {
-            prices_lookup[prices.stock_ids[i]] = {{
-                prices.timestamps[i],
-                prices.prices[i]
-            }};
-        }
+        prices_lookup[prices.stock_ids[i]].emplace_back(
+            prices.timestamps[i],
+            prices.prices[i]);
     }
 
     std::cout << "Partitioning in " << timer.lap() << std::endl;
 
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
-                           [&](auto& iter) {
+            [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
@@ -73,12 +61,13 @@ ResultRelation PartitioningLeftASOFJoin::join() {
                 continue;
             }
 
-            auto [found_join_partner, match_idx] =
-                binary_search_closest_match_less_than(
-                    /* data= */ values,
-                    /* target= */ timestamp);
+            auto match_idx_opt = binary_search_closest_match_less_than(
+                /* data= */ values,
+                /* target= */ timestamp);
 
-            if (found_join_partner) {
+            if (match_idx_opt.has_value()) {
+                size_t match_idx = match_idx_opt.value();
+
                 std::scoped_lock lock{result_lock};
                 result.insert(
                     /* price_timestamp= */values[match_idx].first,

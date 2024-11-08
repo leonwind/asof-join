@@ -1,11 +1,13 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
 #include "spin_lock.hpp"
+#include <algorithm>
 #include <unordered_map>
 #include <mutex>
 #include "tbb/parallel_sort.h"
 #include "tbb/parallel_for.h"
 #include "tbb/parallel_for_each.h"
+
 
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
@@ -54,22 +56,18 @@ struct Entry {
     }
 };
 
-std::pair<bool, size_t> binary_search_closest_match_greater_than(
+std::optional<size_t> binary_search_closest_match_greater_than(
         const std::vector<Entry>& data, uint64_t target) {
-    size_t left = 0;
-    size_t right = data.size();
+    auto iter = std::upper_bound(data.begin(), data.end(), target,
+       [](uint64_t a, const Entry& b) {
+            return a <= b.timestamp;
+       });
 
-    while (left < right) {
-        size_t mid = left + (right - left) / 2;
-
-        if (data[mid].timestamp < target) {
-            left = mid + 1;
-        } else {
-            right = mid;
-        }
+    if (iter == data.end()) {
+        return {};
     }
 
-    return {left < data.size() && data[left].timestamp >= target, left};
+    return {iter - data.begin()};
 }
 
 ResultRelation PartitioningRightASOFJoin::join() {
@@ -79,17 +77,10 @@ ResultRelation PartitioningRightASOFJoin::join() {
     timer.start();
 
     std::unordered_map<std::string_view, std::vector<Entry>> order_book_lookup;
-
     for (size_t i = 0; i < order_book.size; ++i) {
-        if (order_book_lookup.contains(order_book.stock_ids[i])) {
-            order_book_lookup[order_book.stock_ids[i]].emplace_back(
-                order_book.timestamps[i], i
-            );
-        } else {
-            order_book_lookup[order_book.stock_ids[i]] = std::vector<Entry>{
-                {order_book.timestamps[i], i}
-            };
-        }
+        order_book_lookup[order_book.stock_ids[i]].emplace_back(
+            /* timestamp= */ order_book.timestamps[i],
+            /* order_idx= */ i);
     }
 
     std::cout << "Partitioning in " << timer.lap() << std::endl;
@@ -104,7 +95,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
-            auto& stock_id = prices.stock_ids[i];
+            const auto& stock_id = prices.stock_ids[i];
             auto timestamp = prices.timestamps[i];
 
             auto& values = order_book_lookup[stock_id];
@@ -112,12 +103,12 @@ ResultRelation PartitioningRightASOFJoin::join() {
                 continue;
             }
 
-            auto [found_join_partner, match_idx] =
-                binary_search_closest_match_greater_than(
-                    /* data= */ values,
-                    /* target= */ timestamp);
+            auto match_idx_opt= binary_search_closest_match_greater_than(
+                /* data= */ values,
+                /* target= */ timestamp);
 
-            if (found_join_partner) {
+            if (match_idx_opt.has_value()) {
+                size_t match_idx = match_idx_opt.value();
                 uint64_t diff = values[match_idx].timestamp - timestamp;
 
                 // Lock while comparing and exchanging the diffs
@@ -142,7 +133,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
 
         std::vector<Entry*> last_match_per_range((values.size() + MORSEL_SIZE - 1) / MORSEL_SIZE);
         tbb::parallel_for(tbb::blocked_range<size_t>(0, values.size(), MORSEL_SIZE),
-            [&](tbb::blocked_range<size_t>& range) {
+                [&](tbb::blocked_range<size_t>& range) {
             Entry* last_match = nullptr;
             for (size_t i = range.end() - 1; i != range.begin(); --i) {
                 if (values[i].matched) {
@@ -155,7 +146,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
         });
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, values.size(), MORSEL_SIZE),
-            [&](tbb::blocked_range<size_t>& range) {
+                [&](tbb::blocked_range<size_t>& range) {
             Entry* last_match = nullptr;
             for (size_t morsel_idx = range.begin() / MORSEL_SIZE; morsel_idx != 0; --morsel_idx) {
                 if (last_match_per_range[morsel_idx]) {
