@@ -1,8 +1,8 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
 #include <unordered_map>
-#include <algorithm>
 #include <cassert>
+#include "tbb/parallel_sort.h"
 
 
 ResultRelation SortingASOFJoin::join() {
@@ -13,7 +13,7 @@ ResultRelation SortingASOFJoin::join() {
 
     std::vector<size_t> prices_indices(prices.size);
     for (size_t i = 0; i < prices.size; ++i) { prices_indices[i] = i; }
-    std::sort(prices_indices.begin(), prices_indices.end(),
+    tbb::parallel_sort(prices_indices.begin(), prices_indices.end(),
         [&](size_t i, size_t j) {
         return prices.stock_ids[i] != prices.stock_ids[j]
             ? prices.stock_ids[i] < prices.stock_ids[j]
@@ -24,7 +24,7 @@ ResultRelation SortingASOFJoin::join() {
 
     std::vector<size_t> order_book_indices(order_book.size);
     for (size_t i = 0; i < order_book.size; ++i) { order_book_indices[i] = i; }
-    std::sort(order_book_indices.begin(), order_book_indices.end(),
+    tbb::parallel_sort(order_book_indices.begin(), order_book_indices.end(),
         [&](size_t i, size_t j) {
         return order_book.stock_ids[i] != order_book.stock_ids[j]
             ? order_book.stock_ids[i] < order_book.stock_ids[j]
