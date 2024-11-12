@@ -25,7 +25,8 @@ add_library(asof_join_lib
         src/algorithms/nested_loop_join.cc
         src/algorithms/sorted_merge_join.cc
         src/algorithms/left_partitioning_join.cc
-        src/algorithms/right_partitioning_join.cc)
+        src/algorithms/right_partitioning_join.cc
+        src/algorithms/partition_sorted_merge_join.cc)
 
 # Tests
 add_executable(test_all test/asof_join.cc)

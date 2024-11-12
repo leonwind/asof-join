@@ -67,5 +67,8 @@ int main() {
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(right_partitioning, input_size, "partitioning right");
 
+    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(partition_sort, input_size, "partitioning sort");
+
     return 0;
 }

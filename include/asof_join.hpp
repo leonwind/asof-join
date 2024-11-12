@@ -58,4 +58,10 @@ public:
     [[nodiscard]] ResultRelation join() override;
 };
 
+class PartitioningSortedMergeJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    [[nodiscard]] ResultRelation join() override;
+};
+
 #endif //ASOF_JOIN_ASOF_JOIN_HPP

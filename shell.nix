@@ -11,4 +11,9 @@ pkgs.mkShell {
 
         valgrind
     ];
+
+
+    shellHook = ''
+        ./enable_perf_counters.sh
+    '';
 }
