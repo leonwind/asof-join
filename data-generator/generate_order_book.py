@@ -1,3 +1,6 @@
+import sys
+import argparse
+
 from abc import ABC, abstractmethod
 import numpy as np
 from random import randrange
@@ -69,3 +72,58 @@ class Positions:
             amount = self._get_random_amount()
             positions.append((time, stock, amount))
         return pd.DataFrame(positions, columns=["time", "stock", "amount"], dtype="string")
+
+
+def generate_positions(
+        num_stocks,
+        data_points_per_stock,
+        num_positions,
+        random_stock_generator,
+        output_positions_file,
+        shuffle = True):
+    prices = StockPrices(num_stocks, data_points_per_stock)
+    
+    positions = Positions(prices, num_positions, random_stock_generator)
+    positions_df = positions.generate()
+
+    if shuffle:
+        positions_df = positions_df.sample(frac=1).reset_index(drop=True)
+
+    positions_df.to_csv(output_positions_file, index=False)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num_stocks", type=int, required=True)
+    parser.add_argument("--num_rows_per_stock", type=int, required=True)
+    parser.add_argument("--num_positions", type=int, required=True)
+    parser.add_argument("--zipf_skew", type=float, required=False)
+    parser.add_argument("--uniform", action="store_true", required=False)
+    parser.add_argument("--output_positions", type=str, required=True)
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    use_zipf_distribution = args.zipf_skew is not None
+    use_uniform_distribution = args.uniform
+    if not use_zipf_distribution and not use_uniform_distribution:
+        print("Use either zipf or uniform distribution.")
+        sys.exit(1)
+    elif use_zipf_distribution and use_uniform_distribution:
+        print("Use only one of zipf or uniform distribution.")
+        sys.exit(1)
+
+    random_stock_name_generator = None
+    if use_zipf_distribution:
+        random_stock_name_generator = ZipfStockGenerator(args.num_stocks, args.zipf_skew)
+    else:
+        random_stock_name_generator = UniformStockGenerator(args.num_stocks)
+
+    generate_positions(
+        args.num_stocks,
+        args.num_rows_per_stock,
+        args.num_positions,
+        random_stock_name_generator,
+        args.output_positions)
