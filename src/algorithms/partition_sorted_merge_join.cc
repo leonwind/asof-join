@@ -12,22 +12,24 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-struct TimestampIdx {
+namespace {
+struct Entry {
     uint64_t timestamp;
     size_t idx;
 
-    TimestampIdx(uint64_t timestamp, size_t idx): timestamp(timestamp), idx(idx) {}
+    Entry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
 
-    std::strong_ordering operator <=> (const TimestampIdx& other) const {
+    std::strong_ordering operator<=>(const Entry &other) const {
         return timestamp <=> other.timestamp;
     }
 };
+} // namespace
 
 void PartitioningSortedMergeJoin::join() {
     Timer timer;
     timer.start();
 
-    std::unordered_map<std::string_view, std::vector<TimestampIdx>> prices_index;
+    std::unordered_map<std::string_view, std::vector<Entry>> prices_index;
     for (size_t i = 0; i < prices.size; ++i) {
         prices_index[prices.stock_ids[i]].emplace_back(
             /* timestamp = */ prices.timestamps[i],
@@ -36,7 +38,7 @@ void PartitioningSortedMergeJoin::join() {
 
     log(fmt::format("Left Partitioning in {}", timer.lap()));
 
-    std::unordered_map<std::string_view, std::vector<TimestampIdx>> order_book_index;
+    std::unordered_map<std::string_view, std::vector<Entry>> order_book_index;
     for (size_t i = 0; i < order_book.size; ++i) {
         order_book_index[order_book.stock_ids[i]].emplace_back(
             /* timestamp= */ order_book.timestamps[i],
@@ -60,8 +62,13 @@ void PartitioningSortedMergeJoin::join() {
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_index.begin(), order_book_index.end(),
             [&](auto& iter) {
-        const std::vector<TimestampIdx>& orders_bin = order_book_index[iter.first];
-        const std::vector<TimestampIdx>& prices_bin = prices_index[iter.first];
+        const std::vector<Entry>& orders_bin = order_book_index[iter.first];
+
+        if (!prices_index.contains(iter.first)) {
+            return;
+        }
+
+        const std::vector<Entry>& prices_bin = prices_index[iter.first];
 
         size_t l = 0;
         size_t r = 0;

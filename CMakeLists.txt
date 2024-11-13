@@ -17,25 +17,44 @@ find_package(TBB REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -fsanitize=address,leak,undefined -O2")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+# Set -DBENCHMARK_MODE to suppress logging while benchmarking.
 set(CMAKE_CXX_FLAGS_BENCHMARK "-O3 -DBENCHMARK_MODE")
 
 include_directories(include)
+
 add_library(asof_join_lib
-        src/relation.cc
-        src/algorithms/nested_loop_join.cc
-        src/algorithms/sorted_merge_join.cc
-        src/algorithms/left_partitioning_join.cc
-        src/algorithms/right_partitioning_join.cc
-        src/algorithms/partition_sorted_merge_join.cc)
+    src/relation.cc
+    src/algorithms/nested_loop_join.cc
+    src/algorithms/sorted_merge_join.cc
+    src/algorithms/left_partitioning_join.cc
+    src/algorithms/right_partitioning_join.cc
+    src/algorithms/partition_sorted_merge_join.cc)
+
+add_library(asof_benchmark_lib
+    src/benchmark/benchmark.cc
+    src/benchmark/diff_zipf_skews.cc)
+# Link main lib sources into benchmark lib
+target_link_libraries(asof_benchmark_lib asof_join_lib)
 
 # Tests
 add_executable(test_all test/asof_join.cc)
-target_link_libraries(test_all asof_join_lib tbb gtest gtest_main -lfmt)
+target_link_libraries(test_all
+    asof_join_lib
+    tbb
+    -lfmt
+    gtest
+    gtest_main)
 
 # Benchmark
 add_executable(asof_benchmark src/asof_benchmark.cpp)
-target_link_libraries(asof_benchmark asof_join_lib tbb -lfmt)
+target_link_libraries(asof_benchmark
+    asof_benchmark_lib
+    tbb
+    -lfmt)
 
-# Main executable
+# Executable
 add_executable(asof_join src/asof_op.cc)
-target_link_libraries(asof_join asof_join_lib tbb fmt -lfmt)
+target_link_libraries(asof_join
+    asof_join_lib
+    tbb
+    -lfmt)

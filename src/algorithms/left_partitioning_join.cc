@@ -13,13 +13,14 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
+namespace {
 std::optional<size_t> binary_search_closest_match_less_than(
-        std::vector<std::pair<uint64_t, uint64_t>>& data,
+        std::vector<std::pair<uint64_t, uint64_t>> &data,
         uint64_t target) {
     auto iter = std::lower_bound(data.begin(), data.end(), target,
-       [](const std::pair<uint64_t, uint64_t>& a, uint64_t b) {
-            return a.first <= b;
-       });
+                                 [](const std::pair<uint64_t, uint64_t> &a, uint64_t b) {
+                                     return a.first <= b;
+                                 });
 
     if (iter == data.begin()) {
         return {};
@@ -27,6 +28,7 @@ std::optional<size_t> binary_search_closest_match_less_than(
 
     return {(iter - 1) - data.begin()};
 }
+} // namespace
 
 void PartitioningLeftASOFJoin::join() {
     Timer timer;
