@@ -7,6 +7,7 @@ pkgs.mkShell {
         ninja
         cmake
         gtest
+        fmt
         tbb
 
         valgrind

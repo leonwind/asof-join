@@ -1,6 +1,8 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
+#include "log.hpp"
 #include "spin_lock.hpp"
+#include <fmt/format.h>
 #include <unordered_map>
 #include <mutex>
 #include "tbb/parallel_sort.h"
@@ -21,18 +23,9 @@ struct TimestampIdx {
     }
 };
 
-ResultRelation PartitioningSortedMergeJoin::join() {
-    ResultRelation result(prices, order_book);
-
+void PartitioningSortedMergeJoin::join() {
     Timer timer;
     timer.start();
-
-    std::unordered_map<std::string_view, std::vector<TimestampIdx>> order_book_index;
-    for (size_t i = 0; i < order_book.size; ++i) {
-        order_book_index[order_book.stock_ids[i]].emplace_back(
-            /* timestamp= */ order_book.timestamps[i],
-            /* idx= */ i);
-    }
 
     std::unordered_map<std::string_view, std::vector<TimestampIdx>> prices_index;
     for (size_t i = 0; i < prices.size; ++i) {
@@ -41,7 +34,16 @@ ResultRelation PartitioningSortedMergeJoin::join() {
             /* idx= */ i);
     }
 
-    std::cout << "Partitioning in " << timer.lap() << std::endl;
+    log(fmt::format("Left Partitioning in {}", timer.lap()));
+
+    std::unordered_map<std::string_view, std::vector<TimestampIdx>> order_book_index;
+    for (size_t i = 0; i < order_book.size; ++i) {
+        order_book_index[order_book.stock_ids[i]].emplace_back(
+            /* timestamp= */ order_book.timestamps[i],
+            /* idx= */ i);
+    }
+
+    log(fmt::format("Right Partitioning in {}", timer.lap()));
 
     tbb::parallel_for_each(prices_index.begin(), prices_index.end(),
             [&](auto& iter) {
@@ -53,7 +55,7 @@ ResultRelation PartitioningSortedMergeJoin::join() {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
-    std::cout << "Sorting in " << timer.lap() << std::endl;
+    log(fmt::format("Sorting in {}", timer.lap()));
 
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_index.begin(), order_book_index.end(),
@@ -94,8 +96,7 @@ ResultRelation PartitioningSortedMergeJoin::join() {
         }
     });
 
-    std::cout << "Merge join in " << timer.lap() << std::endl;
+    log(fmt::format("Merge join in {}", timer.lap()));
 
     result.finalize();
-    return result;
 }

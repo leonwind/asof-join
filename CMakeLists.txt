@@ -14,10 +14,10 @@ find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
 find_package(TBB REQUIRED)
 
-# Set compile flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -fsanitize=address,leak,undefined -O2")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_BENCHMARK "-O3 -DBENCHMARK_MODE")
 
 include_directories(include)
 add_library(asof_join_lib
@@ -30,9 +30,12 @@ add_library(asof_join_lib
 
 # Tests
 add_executable(test_all test/asof_join.cc)
-target_link_libraries(test_all asof_join_lib tbb gtest gtest_main)
+target_link_libraries(test_all asof_join_lib tbb gtest gtest_main -lfmt)
 
+# Benchmark
+add_executable(asof_benchmark src/asof_benchmark.cpp)
+target_link_libraries(asof_benchmark asof_join_lib tbb -lfmt)
 
 # Main executable
 add_executable(asof_join src/asof_op.cc)
-target_link_libraries(asof_join asof_join_lib tbb)
+target_link_libraries(asof_join asof_join_lib tbb fmt -lfmt)

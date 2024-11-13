@@ -2,9 +2,7 @@
 #include "timer.hpp"
 #include <unordered_map>
 
-ResultRelation BaselineASOFJoin::join() {
-    ResultRelation result(prices, order_book);
-
+void BaselineASOFJoin::join() {
     for (size_t i = 0; i < order_book.size; ++i) {
         bool found_join_partner = false;
         size_t match_idx = 0;
@@ -36,5 +34,4 @@ ResultRelation BaselineASOFJoin::join() {
     }
 
     result.finalize();
-    return result;
 }

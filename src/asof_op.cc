@@ -34,12 +34,12 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
 
     timer.start();
     e.startCounters();
-    auto result = asof_op.join();
+    asof_op.join();
     e.stopCounters();
     auto duration = timer.stop<std::chrono::milliseconds>();
 
     uint64_t total_sum = 0;
-    for (auto value : result.values) { total_sum += value; }
+    for (auto value : asof_op.result.values) { total_sum += value; }
 
     e.printReport(std::cout, input_size);
     std::cout << "### ASOF JOIN TOTAL VALUE SUM: " << total_sum << std::endl;

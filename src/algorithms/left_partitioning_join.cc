@@ -1,5 +1,7 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
+#include "log.hpp"
+#include <fmt/core.h>
 #include <algorithm>
 #include <unordered_map>
 #include <mutex>
@@ -26,9 +28,7 @@ std::optional<size_t> binary_search_closest_match_less_than(
     return {(iter - 1) - data.begin()};
 }
 
-ResultRelation PartitioningLeftASOFJoin::join() {
-    ResultRelation result(prices, order_book);
-
+void PartitioningLeftASOFJoin::join() {
     Timer timer;
     timer.start();
 
@@ -40,14 +40,14 @@ ResultRelation PartitioningLeftASOFJoin::join() {
             prices.prices[i]);
     }
 
-    std::cout << "Partitioning in " << timer.lap() << std::endl;
+    log(fmt::format("Partitioning in {}", timer.lap()));
 
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
-    std::cout << "Sorting in " << timer.lap() << std::endl;
+    log(fmt::format("Sorting in {}", timer.lap()));
 
     std::mutex result_lock;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, MORSEL_SIZE),
@@ -80,8 +80,7 @@ ResultRelation PartitioningLeftASOFJoin::join() {
         }
     });
 
-    std::cout << "Binary Search in " << timer.lap() << std::endl;
+    log(fmt::format("Binary Search in {}", timer.lap()));
 
     result.finalize();
-    return result;
 }

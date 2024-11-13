@@ -54,20 +54,18 @@ struct ResultRelation : Relation {
     std::vector<uint64_t> amounts;
     std::vector<uint64_t> values;
 
-    ResultRelation(Relation& left, Relation& right) : Relation() {
-        size_t capacity = left.size > right.size ? left.size : right.size;
-
-        prices_timestamps.reserve(capacity);
-        prices_stock_ids.reserve(capacity);
-        prices.reserve(capacity);
-        order_book_timestamps.reserve(capacity);
-        order_book_stock_ids.reserve(capacity);
-        amounts.reserve(capacity);
-        values.reserve(capacity);
-    }
-
     void finalize() {
         size = prices_timestamps.size();
+    }
+
+    void reset() {
+        prices_timestamps.clear();
+        prices_stock_ids.clear();
+        prices.clear();
+        order_book_timestamps.clear();
+        order_book_stock_ids.clear();
+        amounts.clear();
+        values.clear();
     }
 
     void insert(

@@ -1,6 +1,8 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
 #include "spin_lock.hpp"
+#include "log.hpp"
+#include <fmt/format.h>
 #include <algorithm>
 #include <unordered_map>
 #include <mutex>
@@ -70,9 +72,7 @@ std::optional<size_t> binary_search_closest_match_greater_than(
     return {iter - data.begin()};
 }
 
-ResultRelation PartitioningRightASOFJoin::join() {
-    ResultRelation result(prices, order_book);
-
+void PartitioningRightASOFJoin::join() {
     Timer timer;
     timer.start();
 
@@ -83,14 +83,14 @@ ResultRelation PartitioningRightASOFJoin::join() {
             /* order_idx= */ i);
     }
 
-    std::cout << "Partitioning in " << timer.lap() << std::endl;
+    log(fmt::format("Partitioning in {}", timer.lap()));
 
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
-    std::cout << "Sorting in " << timer.lap() << std::endl;
+    log(fmt::format("Sorting in {}", timer.lap()));
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
@@ -124,7 +124,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
         }
     });
 
-    std::cout << "Binary Search in " << timer.lap() << std::endl;
+    log(fmt::format("Binary Search in {}", timer.lap()));
 
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
@@ -175,8 +175,7 @@ ResultRelation PartitioningRightASOFJoin::join() {
         });
     });
 
-    std::cout << "Finding match in " << timer.lap() << std::endl;
+    log(fmt::format("Finding match in {}", timer.lap()));
 
     result.finalize();
-    return result;
 }

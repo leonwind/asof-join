@@ -1,13 +1,13 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
+#include "log.hpp"
 #include <unordered_map>
 #include <cassert>
+#include <fmt/format.h>
 #include "tbb/parallel_sort.h"
 
 
-ResultRelation SortingASOFJoin::join() {
-    ResultRelation result(prices, order_book);
-
+void SortingASOFJoin::join() {
     Timer timer;
     timer.start();
 
@@ -20,7 +20,7 @@ ResultRelation SortingASOFJoin::join() {
             : prices.timestamps[i] < prices.timestamps[j];
     });
 
-    std::cout << "Sorted prices in " << timer.lap() << std::endl;
+    log(fmt::format("Sorted prices in {}", timer.lap()));
 
     std::vector<size_t> order_book_indices(order_book.size);
     for (size_t i = 0; i < order_book.size; ++i) { order_book_indices[i] = i; }
@@ -31,7 +31,7 @@ ResultRelation SortingASOFJoin::join() {
             : order_book.timestamps[i] < order_book.timestamps[j];
     });
 
-    std::cout << "Sorted order book in " << timer.lap() << std::endl;
+    log(fmt::format("Sorted order book in {}", timer.lap()));
 
     size_t i = 0, j = 0;
     while (i < prices.size && j < order_book.size) {
@@ -79,8 +79,7 @@ ResultRelation SortingASOFJoin::join() {
         i = last_match;
     }
 
-    std::cout << "Sorted merge join in " << timer.lap() << std::endl;
+    log(fmt::format("Sorted merge join in {}", timer.lap()));
 
     result.finalize();
-    return result;
 }

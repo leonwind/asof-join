@@ -21,15 +21,17 @@ enum JoinType {
 
 class ASOFJoin {
 public:
-    ASOFJoin(Prices prices, OrderBook order_book, Comparison comp_type, JoinType join_type):
-        prices(std::move(prices)), order_book(std::move(order_book)),
+    ASOFJoin(Prices& prices, OrderBook& order_book, Comparison comp_type, JoinType join_type):
+        result(), prices(prices), order_book(order_book),
         comp_type(comp_type), join_type(join_type) {}
 
-    [[nodiscard]] virtual ResultRelation join() = 0;
+    virtual void join() = 0;
+
+    ResultRelation result;
 
 protected:
-    Prices prices;
-    OrderBook order_book;
+    Prices& prices;
+    OrderBook& order_book;
     Comparison comp_type;
     JoinType join_type;
 };
@@ -37,31 +39,31 @@ protected:
 class BaselineASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    [[nodiscard]] ResultRelation join() override;
+    void join() override;
 };
 
 class SortingASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    [[nodiscard]] ResultRelation join() override;
+    void join() override;
 };
 
 class PartitioningLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    [[nodiscard]] ResultRelation join() override;
+    void join() override;
 };
 
 class PartitioningRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    [[nodiscard]] ResultRelation join() override;
+    void join() override;
 };
 
 class PartitioningSortedMergeJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    [[nodiscard]] ResultRelation join() override;
+    void join() override;
 };
 
 #endif //ASOF_JOIN_ASOF_JOIN_HPP
