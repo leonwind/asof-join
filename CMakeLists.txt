@@ -30,6 +30,8 @@ add_library(asof_join_lib
     src/algorithms/right_partitioning_join.cc
     src/algorithms/partition_sorted_merge_join.cc)
 
+target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt)
+
 add_library(asof_benchmark_lib
     src/benchmark/benchmark.cc
     src/benchmark/diff_zipf_skews.cc)
@@ -40,21 +42,15 @@ target_link_libraries(asof_benchmark_lib asof_join_lib)
 add_executable(test_all test/asof_join.cc)
 target_link_libraries(test_all
     asof_join_lib
-    tbb
-    -lfmt
     gtest
     gtest_main)
 
 # Benchmark
 add_executable(asof_benchmark src/asof_benchmark.cpp)
 target_link_libraries(asof_benchmark
-    asof_benchmark_lib
-    tbb
-    -lfmt)
+    asof_benchmark_lib)
 
 # Executable
 add_executable(asof_join src/asof_op.cc)
 target_link_libraries(asof_join
-    asof_join_lib
-    tbb
-    -lfmt)
+    asof_join_lib)

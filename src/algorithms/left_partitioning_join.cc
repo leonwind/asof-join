@@ -58,10 +58,10 @@ void PartitioningLeftASOFJoin::join() {
             auto& stock_id = order_book.stock_ids[i];
             auto timestamp = order_book.timestamps[i];
 
-            auto& values = prices_lookup[stock_id];
-            if (values.empty()) {
-                continue;
+            if (!prices_lookup.contains(stock_id)) {
+               continue;
             }
+            auto& values = prices_lookup[stock_id];
 
             auto match_idx_opt = binary_search_closest_match_less_than(
                 /* data= */ values,

@@ -100,10 +100,10 @@ void PartitioningRightASOFJoin::join() {
             const auto& stock_id = prices.stock_ids[i];
             auto timestamp = prices.timestamps[i];
 
-            auto& values = order_book_lookup[stock_id];
-            if (values.empty()) {
+            if (!order_book_lookup.contains(stock_id)) {
                 continue;
             }
+            auto& values = order_book_lookup[stock_id];
 
             auto match_idx_opt= binary_search_closest_match_greater_than(
                 /* data= */ values,

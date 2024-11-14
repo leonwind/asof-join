@@ -67,7 +67,6 @@ void PartitioningSortedMergeJoin::join() {
         if (!prices_index.contains(iter.first)) {
             return;
         }
-
         const std::vector<Entry>& prices_bin = prices_index[iter.first];
 
         size_t l = 0;
