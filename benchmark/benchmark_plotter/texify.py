@@ -59,7 +59,7 @@ def latexify(fig_width=None, fig_height=None, columns=1, width_heigth_ratio=None
               'text.usetex': True,
               'figure.figsize': [fig_width, fig_height],
               'font.family': 'serif',
-              'pgf.preamble': [r'\usepackage{xcolor}', r'\usepackage{xfrac}', r'\usepackage{tikz}', r'\usepackage{amssymb}']
+              #'pgf.preamble': [r'\usepackage{xcolor}', r'\usepackage{xfrac}', r'\usepackage{tikz}', r'\usepackage{amssymb}']
               }
     if custom_params is not None:
         for k, v in custom_params.items():

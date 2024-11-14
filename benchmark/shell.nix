@@ -5,6 +5,7 @@ let
         # Plotting
         matplotlib 
         seaborn
+        regex
     ]);
 
 in pkgs.mkShell {
