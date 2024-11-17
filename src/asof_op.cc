@@ -33,9 +33,11 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
     std::cout << "### START ASOF JOIN WITH [" << strategy_name << "] ###" << std::endl;
 
     timer.start();
+
     e.startCounters();
     asof_op.join();
     e.stopCounters();
+
     auto duration = timer.stop<std::chrono::milliseconds>();
 
     uint64_t total_sum = 0;
@@ -49,17 +51,11 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
 
 int main() {
     auto [prices, order_book] = load_data(
-        ///* prices_path= */ "../data/btc_usd_data.csv",
-        ///* positions_path= */ "../data/btc_orderbook_small.csv",
         /* prices_path= */ "../data/zipf_prices.csv",
         /* positions_path= */"../data/zipf_positions.csv",
         /* delimiter= */ ',',
         /* shuffle= */ false);
     size_t input_size = prices.size + order_book.size;
-
-    //SortingASOFJoin sorting_asof_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(sorting_asof_join, input_size, "sorted merge join") ;
-    //std::cout << std::endl;
 
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(left_partitioning, input_size, "partitioning left");

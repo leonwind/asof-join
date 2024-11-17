@@ -1,7 +1,7 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
 #include "log.hpp"
-#include "spin_lock.hpp"
+#include "parallel_multi_map.hpp"
 #include <fmt/format.h>
 #include <unordered_map>
 #include <mutex>
@@ -12,40 +12,15 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-namespace {
-struct Entry {
-    uint64_t timestamp;
-    size_t idx;
-
-    Entry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
-
-    std::strong_ordering operator<=>(const Entry &other) const {
-        return timestamp <=> other.timestamp;
-    }
-};
-} // namespace
-
 void PartitioningSortedMergeJoin::join() {
-    Timer timer;
+    Timer<milliseconds> timer;
     timer.start();
 
-    std::unordered_map<std::string_view, std::vector<Entry>> prices_index;
-    for (size_t i = 0; i < prices.size; ++i) {
-        prices_index[prices.stock_ids[i]].emplace_back(
-            /* timestamp = */ prices.timestamps[i],
-            /* idx= */ i);
-    }
+    MultiMap<Entry> prices_index(prices.stock_ids, prices.timestamps);
+    log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    log(fmt::format("Left Partitioning in {}", timer.lap()));
-
-    std::unordered_map<std::string_view, std::vector<Entry>> order_book_index;
-    for (size_t i = 0; i < order_book.size; ++i) {
-        order_book_index[order_book.stock_ids[i]].emplace_back(
-            /* timestamp= */ order_book.timestamps[i],
-            /* idx= */ i);
-    }
-
-    log(fmt::format("Right Partitioning in {}", timer.lap()));
+    MultiMap<Entry> order_book_index(order_book.stock_ids, order_book.timestamps);
+    log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
 
     tbb::parallel_for_each(prices_index.begin(), prices_index.end(),
             [&](auto& iter) {
@@ -56,8 +31,7 @@ void PartitioningSortedMergeJoin::join() {
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-
-    log(fmt::format("Sorting in {}", timer.lap()));
+    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_index.begin(), order_book_index.end(),
@@ -102,7 +76,7 @@ void PartitioningSortedMergeJoin::join() {
         }
     });
 
-    log(fmt::format("Merge join in {}", timer.lap()));
+    log(fmt::format("Partitioned Sorted Merge join in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
 }

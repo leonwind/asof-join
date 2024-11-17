@@ -30,6 +30,23 @@ public:
         return duration;
     }
 
+    std::string_view unit() {
+        if (std::is_same<T, seconds>::value) {
+            return "[s]";
+        }
+        if (std::is_same<T, milliseconds>::value) {
+            return "[ms]";
+        }
+        if (std::is_same<T, microseconds>::value) {
+            return "[us]";
+        }
+        if (std::is_same<T, nanoseconds>::value) {
+            return "[ns]";
+        }
+
+        return "[]";
+    }
+
 private:
     steady_clock::time_point start_time_;
     steady_clock::time_point lap_time_;
