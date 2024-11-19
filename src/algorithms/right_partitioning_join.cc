@@ -14,18 +14,19 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-inline std::optional<size_t> PartitioningRightASOFJoin::binary_search_closest_match_greater_than(
-        const std::vector<PartitioningRightASOFJoin::Entry> &data, uint64_t target) {
+inline PartitioningRightASOFJoin::Entry* PartitioningRightASOFJoin::binary_search_closest_match_greater_than(
+        std::vector<Entry> &data, uint64_t target) {
     auto iter = std::upper_bound(data.begin(), data.end(), target,
-        [](uint64_t a, const PartitioningRightASOFJoin::Entry &b) {
+        [](uint64_t a, const Entry &b) {
             return a <= b.timestamp;
     });
 
     if (iter == data.end()) {
-        return {};
+        return nullptr;
     }
 
-    return {iter - data.begin()};
+    return &(*iter);
+    //return {iter - data.begin()};
 }
 
 void PartitioningRightASOFJoin::join() {
@@ -62,23 +63,23 @@ void PartitioningRightASOFJoin::join() {
             }
             auto& partition_bin = order_book_lookup[stock_id];
 
-            auto match_idx_opt= binary_search_closest_match_greater_than(
+            auto match= binary_search_closest_match_greater_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
 
-            if (match_idx_opt.has_value()) {
-                size_t match_idx = match_idx_opt.value();
-                uint64_t diff = partition_bin[match_idx].timestamp - timestamp;
+            if (match != nullptr) {
+                //size_t match_idx = match_idx_opt.value();
+                uint64_t diff = match->timestamp - timestamp;
 
                 // Lock while comparing and exchanging the diffs
-                partition_bin[match_idx].lock.lock();
-                if (diff < partition_bin[match_idx].diff) {
-                    partition_bin[match_idx].diff = diff;
-                    partition_bin[match_idx].price_idx = i;
+                match->lock.lock();
+                if (diff < match->diff) {
+                    match->diff = diff;
+                    match->price_idx = i;
                 }
-                partition_bin[match_idx].lock.unlock();
+                match->lock.unlock();
 
-                partition_bin[match_idx].matched = true;
+                match->matched = true;
             }
         }
     });

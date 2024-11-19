@@ -66,7 +66,7 @@ public:
     };
 
 private:
-    static std::optional<size_t> binary_search_closest_match_less_than(
+    static Entry* binary_search_closest_match_less_than(
         std::vector<Entry>& data, uint64_t target);
 };
 
@@ -120,8 +120,8 @@ struct Entry {
 };
 
 private:
-    static std::optional<size_t> binary_search_closest_match_greater_than(
-            const std::vector<Entry>&data, uint64_t target);
+    static Entry* binary_search_closest_match_greater_than(
+            std::vector<Entry>&data, uint64_t target);
 };
 
 class PartitioningSortedMergeJoin : public ASOFJoin {

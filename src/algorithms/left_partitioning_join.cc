@@ -14,7 +14,7 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-std::optional<size_t> PartitioningLeftASOFJoin::binary_search_closest_match_less_than(
+PartitioningLeftASOFJoin::Entry* PartitioningLeftASOFJoin::binary_search_closest_match_less_than(
         std::vector<Entry>& data, uint64_t target) {
     auto iter = std::lower_bound(data.begin(), data.end(), target,
         [](const Entry& a, uint64_t b) {
@@ -22,10 +22,10 @@ std::optional<size_t> PartitioningLeftASOFJoin::binary_search_closest_match_less
     });
 
     if (iter == data.begin()) {
-        return {};
+        return nullptr;
     }
 
-    return {(iter - 1) - data.begin()};
+    return &(*--iter);
 }
 
 void PartitioningLeftASOFJoin::join() {
@@ -63,17 +63,16 @@ void PartitioningLeftASOFJoin::join() {
             }
             auto& partition_bin = prices_lookup[stock_id];
 
-            auto match_idx_opt = binary_search_closest_match_less_than(
+            auto match = binary_search_closest_match_less_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
 
-            if (match_idx_opt.has_value()) {
-                size_t match_idx = match_idx_opt.value();
+            if (match != nullptr) {
                 std::scoped_lock lock{result_lock};
                 result.insert(
-                    /* price_timestamp= */partition_bin[match_idx].timestamp,
+                    /* price_timestamp= */match->timestamp,
                     /* price_stock_id= */ stock_id,
-                    /* price= */ prices.prices[partition_bin[match_idx].idx],
+                    /* price= */ prices.prices[match->idx],
                     /* order_book_timestamp= */ timestamp,
                     /* order_book_stock_id= */ order_book.stock_ids[i],
                     /* amount= */ order_book.amounts[i]);
