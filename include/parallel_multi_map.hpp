@@ -6,6 +6,7 @@
 
 #include "tbb/enumerable_thread_specific.h"
 #include "tbb/parallel_for.h"
+#include "tbb/parallel_for_each.h"
 
 
 template<typename Entry>
@@ -17,8 +18,8 @@ public:
     using iterator = std::unordered_map<MapKey, std::vector<Entry>>::iterator;
 
     MultiMap(const std::vector<Key>& equality_keys, const std::vector<Value>& sort_by_keys,
-             size_t num_partitions = 1024):
-             equality_keys(equality_keys), sort_by_keys(sort_by_keys), num_partitions(num_partitions),
+             size_t num_partitions = 1024): equality_keys(equality_keys),
+             sort_by_keys(sort_by_keys), num_partitions(num_partitions),
              mask(num_partitions - 1), thread_data(Partitions(num_partitions)) {
         partition();
         combine_partitions();
@@ -57,6 +58,7 @@ private:
     }
 
     void combine_partitions() {
+        std::atomic<size_t> total_size;
         tbb::blocked_range<size_t> range(0, num_partitions);
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& local_range) {
             auto& local_map = local_maps.local();
@@ -67,14 +69,13 @@ private:
                     }
                 }
             }
+            total_size += local_map.bucket_count();
         });
 
-        /// TODO: Fix with HyperLogLog sketches.
-        /// Should also be done parallel.
-        partitioned_map.reserve(num_partitions);
-        for (auto& local_map : local_maps) {
+        partitioned_map.reserve(total_size * (1 + partitioned_map.max_load_factor()));
+        tbb::parallel_for_each(local_maps.begin(), local_maps.end(), [&](auto& local_map) {
             partitioned_map.merge(local_map);
-        }
+        });
     }
 
     struct Partitions {

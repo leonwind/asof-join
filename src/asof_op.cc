@@ -1,7 +1,9 @@
 #include <iostream>
+#include <sys/wait.h>
 #include "relation.hpp"
 #include "asof_join.hpp"
 #include "timer.hpp"
+#include "tbb/global_control.h"
 
 
 std::pair<Prices, OrderBook> load_data(
@@ -25,6 +27,21 @@ std::pair<Prices, OrderBook> load_data(
     return {std::move(prices), std::move(order_book)};
 }
 
+void run_join_in_new_process(ASOFJoin& asof_op) {
+    // Since TBB is keeping the internal thread pool alive and there is no way to completely killing it,
+    // we start a new process to force a new thread pool.
+    // Otherwise, PerfEvent is not able to detect the correct number of CPU utilization since
+    // the threads are created before Perf.
+    pid_t pid = fork();
+    if (pid == 0) {
+        //tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
+        asof_op.join();
+        _exit(0);
+    } else {
+        wait(nullptr);
+    }
+}
+
 void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_name = "") {
     Timer timer;
     PerfEvent e;
@@ -33,18 +50,14 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
     std::cout << "### START ASOF JOIN WITH [" << strategy_name << "] ###" << std::endl;
 
     timer.start();
-
     e.startCounters();
-    asof_op.join();
-    e.stopCounters();
 
+    run_join_in_new_process(asof_op);
     auto duration = timer.stop<std::chrono::milliseconds>();
 
-    uint64_t total_sum = 0;
-    for (auto value : asof_op.result.values) { total_sum += value; }
-
+    e.stopCounters();
     e.printReport(std::cout, input_size);
-    std::cout << "### ASOF JOIN TOTAL VALUE SUM: " << total_sum << std::endl;
+
     std::cout << "### FINISHED ASOF JOIN WITH [" << strategy_name
         << "] IN " << duration << "[ms] ###" << std::endl;
 }
@@ -52,7 +65,7 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
 int main() {
     auto [prices, order_book] = load_data(
         /* prices_path= */ "../data/zipf_prices.csv",
-        /* positions_path= */"../data/zipf_positions.csv",
+        /* positions_path= */"../data/zipf_1_5_positions_2000000.csv",
         /* delimiter= */ ',',
         /* shuffle= */ false);
     size_t input_size = prices.size + order_book.size;

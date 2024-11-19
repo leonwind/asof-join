@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <mutex>
 #include "tbb/parallel_sort.h"
+#include "tbb/parallel_for.h"
 #include "tbb/parallel_for_each.h"
 
 
@@ -28,18 +29,28 @@ inline std::optional<size_t> PartitioningRightASOFJoin::binary_search_closest_ma
 }
 
 void PartitioningRightASOFJoin::join() {
+    PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
 
+    e.startCounters();
     MultiMap<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    e.stopCounters();
+    log("Partitioning Perf");
+    e.printReport(std::cout, order_book.size);
     log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
+    e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
+    e.stopCounters();
+    log("\n\nSorting Perf: ");
+    e.printReport(std::cout, prices.size);
     log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
+    e.startCounters();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
@@ -71,14 +82,19 @@ void PartitioningRightASOFJoin::join() {
             }
         }
     });
+    e.stopCounters();
+    std::cout << "\n\nBinary Search Perf: " << std::endl;
+    e.printReport(std::cout, prices.size);
     log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
+    e.startCounters();
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         std::vector<Entry>& partition_bin = iter.second;
+        const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
+        std::vector<Entry*> last_match_per_range(num_thread_chunks);
 
-        std::vector<Entry*> last_match_per_range((partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE);
         tbb::parallel_for(tbb::blocked_range<size_t>(0, partition_bin.size(), MORSEL_SIZE),
                 [&](tbb::blocked_range<size_t>& range) {
             Entry* last_match = nullptr;
@@ -95,9 +111,10 @@ void PartitioningRightASOFJoin::join() {
         tbb::parallel_for(tbb::blocked_range<size_t>(0, partition_bin.size(), MORSEL_SIZE),
                 [&](tbb::blocked_range<size_t>& range) {
             Entry* last_match = nullptr;
-            for (size_t morsel_idx = range.begin() / MORSEL_SIZE; morsel_idx != 0; --morsel_idx) {
-                if (last_match_per_range[morsel_idx] != nullptr) {
-                    last_match = last_match_per_range[morsel_idx];
+            size_t morsel_pos = range.begin() / MORSEL_SIZE;
+            for (size_t i = morsel_pos; i != 0; --i) {
+                if (last_match_per_range[i] != nullptr) {
+                    last_match = last_match_per_range[i];
                     break;
                 }
             }
@@ -121,6 +138,9 @@ void PartitioningRightASOFJoin::join() {
             }
         });
     });
+    e.stopCounters();
+    std::cout << "\n\nFinding Match Perf: " << std::endl;
+    e.printReport(std::cout, prices.size);
     log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
