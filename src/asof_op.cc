@@ -34,7 +34,7 @@ void run_join_in_new_process(ASOFJoin& asof_op) {
     // the threads are created before Perf.
     pid_t pid = fork();
     if (pid == 0) {
-        //tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
+        tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
         asof_op.join();
         _exit(0);
     } else {
@@ -70,14 +70,14 @@ int main() {
         /* shuffle= */ false);
     size_t input_size = prices.size + order_book.size;
 
-    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(left_partitioning, input_size, "partitioning left");
+    //PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(left_partitioning, input_size, "partitioning left");
 
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(right_partitioning, input_size, "partitioning right");
 
-    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(partition_sort, input_size, "partitioning sort");
+    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(partition_sort, input_size, "partitioning sort");
 
     return 0;
 }

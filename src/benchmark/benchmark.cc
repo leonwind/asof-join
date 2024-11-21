@@ -5,12 +5,8 @@
 #include "timer.hpp"
 #include "benchmark/benchmark.hpp"
 
-void benchmarks::run_all() {
-    run_diff_zipf_skews_benchmarks();
-}
 
 namespace {
-
 uint64_t run_join_return_median_time(ASOFJoin &asof_op, size_t num_runs) {
     Timer<std::chrono::microseconds> timer;
     timer.start();
@@ -27,8 +23,11 @@ uint64_t run_join_return_median_time(ASOFJoin &asof_op, size_t num_runs) {
     std::sort(times.begin(), times.end());
     return times[num_runs / 2];
 }
-
 } // namespace
+
+void benchmarks::run_all() {
+    run_diff_zipf_skews_benchmarks();
+}
 
 void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num_runs) {
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
