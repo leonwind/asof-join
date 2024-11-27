@@ -30,6 +30,16 @@ public:
 
     ResultRelation result;
 
+    struct JoinEntry {
+        virtual ~JoinEntry() = default;
+
+        [[nodiscard]] inline virtual uint64_t getKey() const = 0;
+        
+        virtual std::strong_ordering operator<=>(const JoinEntry &other) const {
+            return getKey() <=> other.getKey();
+        }
+    };
+
 protected:
     Prices& prices;
     OrderBook& order_book;
@@ -54,14 +64,14 @@ public:
     using ASOFJoin::ASOFJoin;
     void join() override;
 
-    struct Entry {
+    struct Entry : JoinEntry {
         uint64_t timestamp;
         size_t idx;
 
         Entry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
 
-        std::strong_ordering operator<=>(const Entry &other) const {
-            return timestamp <=> other.timestamp;
+        [[nodiscard]] inline uint64_t getKey() const override {
+            return timestamp;
         }
     };
 
@@ -75,7 +85,7 @@ public:
     using ASOFJoin::ASOFJoin;
     void join() override;
 
-struct Entry {
+struct Entry : JoinEntry {
     uint64_t timestamp;
     size_t order_idx;
     size_t price_idx;
@@ -114,8 +124,8 @@ struct Entry {
         return *this;
     }
 
-    std::strong_ordering operator<=>(const Entry &other) const {
-        return timestamp <=> other.timestamp;
+    [[nodiscard]] inline uint64_t getKey() const override {
+        return timestamp;
     }
 };
 
@@ -129,14 +139,31 @@ public:
     using ASOFJoin::ASOFJoin;
     void join() override;
 
-    struct Entry {
+    struct Entry : JoinEntry {
+        uint64_t timestamp;
+        size_t idx;
+
+        Entry(uint64_t timestamp, size_t idx): timestamp(timestamp), idx(idx) {}
+
+        [[nodiscard]] inline uint64_t getKey() const override {
+            return timestamp;
+        }
+    };
+};
+
+class PartitioningLeftBTreeASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    void join() override;
+
+    struct Entry : JoinEntry{
         uint64_t timestamp;
         size_t idx;
 
         Entry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
 
-        std::strong_ordering operator<=>(const Entry &other) const {
-            return timestamp <=> other.timestamp;
+        [[nodiscard]] inline uint64_t getKey() const override {
+            return timestamp;
         }
     };
 };

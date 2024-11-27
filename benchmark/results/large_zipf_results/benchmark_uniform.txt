@@ -1,0 +1,44 @@
+Run [uniform-102400000.csv]
+Left partitioning time: 79140136
+Right partitioning time: 126292781
+Sort partitioning time: 86291875
+Run [uniform-51200000.csv]
+Left partitioning time: 39464284
+Right partitioning time: 59825727
+Sort partitioning time: 58404636
+Run [uniform-25600000.csv]
+Left partitioning time: 23287441
+Right partitioning time: 25948224
+Sort partitioning time: 31107483
+Run [uniform-12800000.csv]
+Left partitioning time: 13741574
+Right partitioning time: 19512094
+Sort partitioning time: 11000893
+Run [uniform-3200000.csv]
+Left partitioning time: 6895593
+Right partitioning time: 5576848
+Sort partitioning time: 7518119
+Run [uniform-1600000.csv]
+Left partitioning time: 5879233
+Right partitioning time: 4169681
+Sort partitioning time: 5359045
+Run [uniform-800000.csv]
+Left partitioning time: 4901804
+Right partitioning time: 2754381
+Sort partitioning time: 5040779
+Run [uniform-400000.csv]
+Left partitioning time: 4997772
+Right partitioning time: 3755617
+Sort partitioning time: 4868935
+Run [uniform-6400000.csv]
+Left partitioning time: 9040471
+Right partitioning time: 13421027
+Sort partitioning time: 9793600
+Run [uniform-100000.csv]
+Left partitioning time: 4769550
+Right partitioning time: 2256891
+Sort partitioning time: 4440224
+Run [uniform-200000.csv]
+Left partitioning time: 4844179
+Right partitioning time: 2584563
+Sort partitioning time: 4836315

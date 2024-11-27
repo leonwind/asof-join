@@ -26,7 +26,6 @@ inline PartitioningRightASOFJoin::Entry* PartitioningRightASOFJoin::binary_searc
     }
 
     return &(*iter);
-    //return {iter - data.begin()};
 }
 
 void PartitioningRightASOFJoin::join() {

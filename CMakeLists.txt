@@ -28,7 +28,8 @@ add_library(asof_join_lib
     src/algorithms/sorted_merge_join.cc
     src/algorithms/left_partitioning_join.cc
     src/algorithms/right_partitioning_join.cc
-    src/algorithms/partition_sorted_merge_join.cc)
+    src/algorithms/partition_sorted_merge_join.cc
+    src/algorithms/left_partitioning_btree.cc)
 
 target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt)
 
@@ -39,7 +40,9 @@ add_library(asof_benchmark_lib
 target_link_libraries(asof_benchmark_lib asof_join_lib)
 
 # Tests
-add_executable(test_all test/asof_join.cc)
+add_executable(test_all
+    test/asof_join_test.cc
+    test/btree_test.cc)
 target_link_libraries(test_all
     asof_join_lib
     gtest

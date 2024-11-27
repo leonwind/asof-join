@@ -37,7 +37,7 @@ def _parse_data(data):
     return groups
 
 
-def _plot_distribution(distribution_name, num_positions):
+def _plot_distribution(distribution_name, num_positions, dir_name):
     data_sizes = sorted(num_positions.keys())
 
     left_partitioning_times = [num_positions[key][0] for key in data_sizes]
@@ -55,20 +55,23 @@ def _plot_distribution(distribution_name, num_positions):
     plt.title(distribution_name)
     plt.legend()
 
-    filename = f"plots/{distribution_name}_plot.pdf"
+    filename = f"plots/{dir_name}/{distribution_name}_plot.pdf"
     plt.savefig(filename, dpi=400)
     os.system(f"pdfcrop {filename} {filename}")
 
-    plt.show()
+    #plt.show()
+    plt.close()
 
 
 def plot_data(path):
     raw_data = _read_data(path)
     groups = _parse_data(raw_data)
+    dir_name = path.split("/")[1].split(".")[0]
 
     for distribution, num_positions in groups.items():
-        _plot_distribution(distribution, num_positions)
+        _plot_distribution(distribution, num_positions, dir_name)
     
 
 if __name__ == "__main__":
-    plot_data("results/zipf_uniform_benchmark.txt")
+    #plot_data("results/zipf_uniform_benchmark.txt")
+    plot_data("results/zipf_large_benchmark.txt")
