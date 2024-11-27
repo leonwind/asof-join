@@ -31,21 +31,15 @@ public:
     std::optional<Entry> find_less_equal_than(KeyT target) {
         Node* node = root;
         while (node && !node->is_leaf()) {
-            std::cout << "Node is inner" << std::endl;
             auto* inner = static_cast<InnerNode*>(node);
             node = inner->lower_bound(target);
         }
 
         if (!node) {
-            std::cout << "Node is nullptr" << std::endl;
             return std::nullopt;
         }
 
-        std::cout << "Node is leaf" << std::endl;
         auto* leaf = static_cast<LeafNode*>(node);
-        std::cout << leaf->data[0].str() << std::endl;
-        std::cout << "Data size: " << leaf->data.size() << std::endl;
-
         return leaf->lower_bound(target);
     }
 
@@ -69,7 +63,9 @@ public:
     }
 
 private:
+    struct Node; struct InnerNode; struct LeafNode;
     static constexpr size_t capacity = 32;
+    Node* root;
 
     struct Node {
         size_t level;
@@ -96,7 +92,7 @@ private:
             return children[this->count]->get_max_key();
         }
 
-        Node* lower_bound(KeyT& target) {
+        Node* lower_bound(const KeyT& target) {
             auto iter = std::lower_bound(
                 keys.begin(),
                 keys.begin() + this->count,
@@ -105,20 +101,17 @@ private:
                     return a < b;
                 });
 
-            std::cout << "Found idx " << iter - keys.begin() << std::endl;
             return children[iter - keys.begin()];
         }
 
-        Node* upper_bound(KeyT& target) {
+        Node* upper_bound(const KeyT& target) {
             auto end = keys.begin() + this->count;
-            auto iter = std::upper_bound(
+            auto iter = std::lower_bound(
                 keys.begin(),
                 end,
                 target);
 
-            return iter != end
-                ? children[iter - keys.begin()]
-                : nullptr;
+            return children[iter - keys.begin()];
         }
     };
 
@@ -132,17 +125,16 @@ private:
         ~LeafNode() override = default;
 
         inline KeyT get_max_key() override {
-            return data.back().getKey();
+            return (data.begin() + this->count - 1)->getKey();
         }
 
         std::optional<Entry> lower_bound(const KeyT& target) {
-            std::cout << "Leaf lower bound" << std::endl;
-            std::cout << "Data size: " << data.size() << std::endl;
-            std::cout << "Count: " << this->count << std::endl;
-            std::cout << "Search for target " << target << std::endl;
+            //std::cout << "Leaf lower bound" << std::endl;
+            //std::cout << "Data size: " << data.size() << std::endl;
+            //std::cout << "Count: " << this->count << std::endl;
+            //std::cout << "Search for target " << target << std::endl;
             //std::cout << "Data[0]: " << data[0].str() << std::endl;
             auto end = data.begin() + this->count;
-
             for (auto iter = data.begin(); iter != end; ++iter) {
                 if (iter->getKey() > target) {
                     return iter != data.begin()
@@ -151,35 +143,40 @@ private:
                 }
             }
             auto last_elem = *--end;
-            return end->getKey() <= target
+            return last_elem.getKey() <= target
                 ? std::optional(last_elem)
                 : std::nullopt;
         }
 
-        std::optional<Entry> upper_bound(KeyT& target) {
-            auto end = data.begin() + this->count;
-            auto iter = std::upper_bound(
-                data.begin(),
-                end,
-                target,
-                [](KeyT key, const Entry& b) {
-                    return key <= b.getKey();
-                });
+        std::optional<Entry> upper_bound(const KeyT& target) {
+            //std::cout << "Leaf upper bound bound" << std::endl;
+            //std::cout << "Data size: " << data.size() << std::endl;
+            //std::cout << "Count: " << this->count << std::endl;
+            //std::cout << "Search for target " << target << std::endl;
+            //std::cout << "Data[0]: " << data[0].str() << std::endl;
+            //std::cout << "Max: " << (data.begin() + this->count - 1)->str() << std::endl;
 
-            return iter != end
-                ? std::optional(*iter)
+            auto end = data.begin() + this->count;
+            for (auto iter = end; iter != data.begin(); --iter) {
+                auto& curr = *(iter - 1);
+                if (curr.getKey() < target) {
+                    return iter != end
+                        ? std::optional(*iter)
+                        : std::nullopt;
+                }
+            }
+            auto first_elem = *data.begin();
+            return first_elem.getKey() >= target
+                ? std::optional(first_elem)
                 : std::nullopt;
         }
     };
-
-    Node* root;
 
     std::vector<Node*> build_leaf_nodes(std::vector<Entry>& entries) {
         std::vector<Node*> leaves;
         for (size_t i = 0; i < entries.size(); i += capacity) {
             auto* leaf = new LeafNode();
             size_t end = std::min(i + capacity, entries.size());
-            std::cout << "Start: " << i << ", end: " << end << std::endl;
             leaf->data.assign(entries.begin() + i, entries.begin() + end);
             leaf->count = end - i;
             leaves.push_back(leaf);
@@ -188,7 +185,6 @@ private:
     }
 
     std::vector<Node*> build_inner_nodes(std::vector<Node*>& children) {
-        std::cout << "Build inner nodes" << std::endl;
         std::vector<Node*> parents;
         size_t next_level = children[0]->level + 1;
         for (size_t i = 0; i < children.size(); i += capacity) {
