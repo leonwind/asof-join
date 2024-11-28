@@ -56,13 +56,12 @@ void PartitioningLeftASOFJoin::join() {
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
             auto& stock_id = order_book.stock_ids[i];
-            auto& timestamp = order_book.timestamps[i];
-
             if (!prices_lookup.contains(stock_id)) {
                continue;
             }
-            auto& partition_bin = prices_lookup[stock_id];
 
+            auto& partition_bin = prices_lookup[stock_id];
+            auto timestamp = order_book.timestamps[i];
             auto match = binary_search_closest_match_less_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);

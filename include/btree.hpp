@@ -12,21 +12,22 @@
 #include "tbb/parallel_for_each.h"
 
 template<typename Entry,
-        typename=std::enable_if<std::is_base_of<ASOFJoin::JoinEntry, Entry>::value>::type>
+    typename=std::enable_if<std::is_base_of<ASOFJoin::JoinEntry, Entry>::value>::type>
 class Btree {
     using KeyT = uint64_t;
 
 public:
     explicit Btree(std::vector<Entry>& data) {
         auto nodes = build_leaf_nodes(data);
-        std::cout << "After build leaf node" << std::endl;
+        //std::cout << "After build leaf node" << std::endl;
         while (nodes.size() > 1) {
+            //std::cout << "Build inner nodes" << std::endl;
             nodes = build_inner_nodes(nodes);
         }
         root = nodes.front();
     }
 
-    ~Btree() { delete_tree(root); }
+    ~Btree() { /*delete_tree(root);*/ }
 
     std::optional<Entry> find_less_equal_than(KeyT target) {
         Node* node = root;
@@ -93,15 +94,23 @@ private:
         }
 
         Node* lower_bound(const KeyT& target) {
-            auto iter = std::lower_bound(
-                keys.begin(),
-                keys.begin() + this->count,
-                target,
-                [](KeyT a, KeyT b) {
-                    return a < b;
-                });
+            auto end = keys.begin() + this->count;
+            for (auto iter = keys.begin(); iter != end; ++iter) {
+                if (*iter >= target) {
+                    return children[iter - keys.begin()];
+                }
+            }
+            return children[end - keys.begin()];
 
-            return children[iter - keys.begin()];
+            //auto iter = std::lower_bound(
+            //    keys.begin(),
+            //    keys.begin() + this->count,
+            //    target,
+            //    [](KeyT a, KeyT b) {
+            //        return a <= b;
+            //    });
+
+            //return children[iter - keys.begin()];
         }
 
         Node* upper_bound(const KeyT& target) {
