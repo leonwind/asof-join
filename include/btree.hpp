@@ -33,7 +33,7 @@ public:
         Node* node = root;
         while (node && !node->is_leaf()) {
             auto* inner = static_cast<InnerNode*>(node);
-            node = inner->lower_bound(target);
+            node = inner->get_closest_child_smaller_equal(target);
         }
 
         if (!node) {
@@ -41,14 +41,14 @@ public:
         }
 
         auto* leaf = static_cast<LeafNode*>(node);
-        return leaf->lower_bound(target);
+        return leaf->get_closest_entry_less_equal(target);
     }
 
     std::optional<Entry> find_greater_equal_than(KeyT target) {
         Node* node = root;
         while (node && !node->is_leaf()) {
             auto* inner = static_cast<InnerNode*>(node);
-            node = inner->upper_bound(target);
+            node = inner->get_closest_child_greater_equal(target);
         }
 
         if (!node) {
@@ -56,7 +56,7 @@ public:
         }
 
         auto* leaf = static_cast<LeafNode*>(node);
-        return leaf->upper_bound(target);
+        return leaf->get_closest_entry_greater_equal(target);
     }
 
     void print_tree() {
@@ -78,7 +78,7 @@ private:
 
         [[nodiscard]] inline bool is_leaf() const { return level == 0; }
 
-        virtual KeyT get_max_key() = 0;
+        virtual KeyT get_min_key() = 0;
     };
 
     struct InnerNode: Node {
@@ -89,37 +89,19 @@ private:
 
         ~InnerNode() override = default;
 
-        inline KeyT get_max_key() override {
-            return children[this->count]->get_max_key();
+        inline KeyT get_min_key() override {
+            return children[0]->get_min_key();
         }
 
-        Node* lower_bound(const KeyT& target) {
+        Node* get_closest_child_smaller_equal(const KeyT& target) {
             auto end = keys.begin() + this->count;
-            for (auto iter = keys.begin(); iter != end; ++iter) {
-                if (*iter >= target) {
-                    return children[iter - keys.begin()];
-                }
-            }
-            return children[end - keys.begin()];
-
-            //auto iter = std::lower_bound(
-            //    keys.begin(),
-            //    keys.begin() + this->count,
-            //    target,
-            //    [](KeyT a, KeyT b) {
-            //        return a <= b;
-            //    });
-
-            //return children[iter - keys.begin()];
+            auto iter = std::upper_bound(keys.begin(), end, target);
+            return children[iter - keys.begin()];
         }
 
-        Node* upper_bound(const KeyT& target) {
+        Node* get_closest_child_greater_equal(const KeyT& target) {
             auto end = keys.begin() + this->count;
-            auto iter = std::lower_bound(
-                keys.begin(),
-                end,
-                target);
-
+            auto iter = std::upper_bound(keys.begin(), end, target);
             return children[iter - keys.begin()];
         }
     };
@@ -133,52 +115,33 @@ private:
 
         ~LeafNode() override = default;
 
-        inline KeyT get_max_key() override {
-            return (data.begin() + this->count - 1)->getKey();
+        inline KeyT get_min_key() override {
+            return data[0].getKey();
         }
 
-        std::optional<Entry> lower_bound(const KeyT& target) {
-            //std::cout << "Leaf lower bound" << std::endl;
-            //std::cout << "Data size: " << data.size() << std::endl;
-            //std::cout << "Count: " << this->count << std::endl;
-            //std::cout << "Search for target " << target << std::endl;
-            //std::cout << "Data[0]: " << data[0].str() << std::endl;
+        std::optional<Entry> get_closest_entry_less_equal(const KeyT& target) {
             auto end = data.begin() + this->count;
-            for (auto iter = data.begin(); iter != end; ++iter) {
-                if (iter->getKey() > target) {
-                    return iter != data.begin()
-                        ? std::optional(*--iter)
-                        : std::nullopt;
-                }
-            }
-            auto last_elem = *--end;
-            return last_elem.getKey() <= target
-                ? std::optional(last_elem)
+            auto iter = std::upper_bound(data.begin(), end, target,
+                [](const KeyT& value, const Entry& entry) {
+                    return value < entry.getKey();
+            });
+
+            return iter != data.begin()
+                ? std::optional(*--iter)
                 : std::nullopt;
         }
 
-        std::optional<Entry> upper_bound(const KeyT& target) {
-            //std::cout << "Leaf upper bound bound" << std::endl;
-            //std::cout << "Data size: " << data.size() << std::endl;
-            //std::cout << "Count: " << this->count << std::endl;
-            //std::cout << "Search for target " << target << std::endl;
-            //std::cout << "Data[0]: " << data[0].str() << std::endl;
-            //std::cout << "Max: " << (data.begin() + this->count - 1)->str() << std::endl;
-
+        std::optional<Entry> get_closest_entry_greater_equal(const KeyT& target) {
             auto end = data.begin() + this->count;
-            for (auto iter = end; iter != data.begin(); --iter) {
-                auto& curr = *(iter - 1);
-                if (curr.getKey() < target) {
-                    return iter != end
-                        ? std::optional(*iter)
-                        : std::nullopt;
-                }
-            }
-            auto first_elem = *data.begin();
-            return first_elem.getKey() >= target
-                ? std::optional(first_elem)
+            auto iter = std::lower_bound(data.begin(), end, target,
+                [](const Entry& entry, const KeyT& value) {
+                    return entry.getKey() < value;
+            });
+
+            return iter != end
+                ? std::optional(*iter)
                 : std::nullopt;
-        }
+            }
     };
 
     std::vector<Node*> build_leaf_nodes(std::vector<Entry>& entries) {
@@ -208,7 +171,7 @@ private:
             parent->count = count - 1;
 
             for (size_t j = 0; j < parent->count; ++j) {
-                parent->keys[j] = children[i + j]->get_max_key();
+                parent->keys[j] = children[i + j + 1]->get_min_key();
             }
 
             parents.push_back(parent);

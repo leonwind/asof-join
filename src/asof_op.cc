@@ -70,14 +70,17 @@ int main() {
         /* shuffle= */ false);
     size_t input_size = prices.size + order_book.size;
 
-    //PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(left_partitioning, input_size, "partitioning left");
+    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(left_partitioning, input_size, "partitioning left");
+
+    PartitioningLeftBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(left_partitioning_btree, input_size, "partitioning left btree");
 
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(right_partitioning, input_size, "partitioning right");
 
-    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(partition_sort, input_size, "partitioning sort");
+    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(partition_sort, input_size, "partitioning sort");
 
     return 0;
 }
