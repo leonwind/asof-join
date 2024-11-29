@@ -2,8 +2,8 @@
 #include "timer.hpp"
 #include "log.hpp"
 #include "parallel_multi_map.hpp"
+#include "btree.hpp"
 #include <fmt/format.h>
-#include <algorithm>
 #include <unordered_map>
 #include <mutex>
 #include "tbb/parallel_sort.h"
@@ -14,21 +14,7 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-inline PartitioningRightASOFJoin::Entry* PartitioningRightASOFJoin::binary_search_closest_match_greater_than(
-        std::vector<Entry> &data, uint64_t target) {
-    auto iter = std::upper_bound(data.begin(), data.end(), target,
-        [](uint64_t a, const Entry &b) {
-            return a <= b.timestamp;
-    });
-
-    if (iter == data.end()) {
-        return nullptr;
-    }
-
-    return &(*iter);
-}
-
-void PartitioningRightASOFJoin::join() {
+void PartitioningRightBTreeASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
@@ -42,15 +28,21 @@ void PartitioningRightASOFJoin::join() {
 
     e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
-            [&](auto& iter) {
-        tbb::parallel_sort(iter.second.begin(), iter.second.end());
+        [&](auto &iter) {
+           tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
+
     e.stopCounters();
     log("\n\nSorting Perf: ");
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    using Btree = Btree<Entry>;
+    std::unordered_map<std::string_view, Btree> order_trees(order_book_lookup.size());
+    for (auto& order_books : order_book_lookup) {
+        auto tree = Btree(order_books.second);
+        order_trees.insert({order_books.first, std::move(tree)});
+    }
+    log(fmt::format("Inserting into BTree in {}{}", timer.lap(), timer.unit()));
+
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
@@ -59,16 +51,13 @@ void PartitioningRightASOFJoin::join() {
                 continue;
             }
 
-            auto& partition_bin = order_book_lookup[stock_id];
+            auto& tree = order_trees.at(stock_id);
             auto& timestamp = prices.timestamps[i];
-            auto* match = binary_search_closest_match_greater_than(
-                /* data= */ partition_bin,
-                /* target= */ timestamp);
-
+            auto* match = tree.find_greater_equal_than(timestamp);
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
-                /// (Spin) Lock while comparing and exchanging the diffs
-                /// CAS is probably too expensive on two 64 Bit fields.
+                /// (Spin) Lock while comparing and exchanging the diffs.
+                /// CAS is (probably) too expensive on two 64 Bit fields.
                 match->lock.lock();
                 if (diff < match->diff) {
                     match->diff = diff;
@@ -81,44 +70,45 @@ void PartitioningRightASOFJoin::join() {
         }
     });
     e.stopCounters();
-    std::cout << "\n\nBinary Search Perf: " << std::endl;
+    std::cout << "\n\nBTree Lookup Perf: " << std::endl;
     e.printReport(std::cout, prices.size);
-    log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
+    log(fmt::format("BTree Lookups in {}{}", timer.lap(), timer.unit()));
 
     e.startCounters();
     std::mutex result_lock;
-    tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
+    tbb::parallel_for_each(order_trees.begin(), order_trees.end(),
             [&](auto& iter) {
-        std::vector<Entry>& partition_bin = iter.second;
-        const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
+        Btree& tree = iter.second;
+        const size_t num_thread_chunks = tree.num_leaves();
         std::vector<Entry*> last_match_per_range(num_thread_chunks);
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, partition_bin.size(), MORSEL_SIZE),
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, num_thread_chunks, 1),
                 [&](tbb::blocked_range<size_t>& range) {
+            size_t leave_idx = range.begin();
+            auto& leaf_data = tree[leave_idx];
             Entry* last_match = nullptr;
-            for (size_t i = range.end(), j = i - 1; i != range.begin(); --i) {
-                if (partition_bin[j].matched) {
-                    last_match = &partition_bin[j];
+            for (size_t i = leaf_data.size(); i != 0; --i) {
+                if (leaf_data[i - 1].matched) {
+                    last_match = &leaf_data[i - 1];
                     break;
                 }
             }
-
-            last_match_per_range[range.begin() / MORSEL_SIZE] = last_match;
+            last_match_per_range[leave_idx] = last_match;
         });
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, partition_bin.size(), MORSEL_SIZE),
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, num_thread_chunks, 1),
                 [&](tbb::blocked_range<size_t>& range) {
+            size_t leave_idx = range.begin();
+            auto& leaf_data = tree[leave_idx];
             Entry* last_match = nullptr;
-            size_t morsel_pos = range.begin() / MORSEL_SIZE;
-            for (size_t i = morsel_pos; i != 0; --i) {
+            for (size_t i = leave_idx; i != 0; --i) {
                 if (last_match_per_range[i - 1] != nullptr) {
                     last_match = last_match_per_range[i - 1];
                     break;
                 }
             }
 
-            for (size_t i = range.begin(); i != range.end(); ++i) {
-                auto& entry = partition_bin[i];
+            for (auto& entry : leaf_data) {
                 if (entry.matched) {
                     last_match = &entry;
                 }

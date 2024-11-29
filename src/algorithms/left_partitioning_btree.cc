@@ -47,9 +47,9 @@ void PartitioningLeftBTreeASOFJoin::join() {
 
             auto& btree = price_trees.at(stock_id);
             auto timestamp = order_book.timestamps[i];
-            auto match = btree.find_less_equal_than(timestamp);
+            auto* match = btree.find_less_equal_than(timestamp);
 
-            if (match.has_value()) {
+            if (match != nullptr) {
                 std::scoped_lock lock{result_lock};
                 result.insert(
                     /* price_timestamp= */match->timestamp,

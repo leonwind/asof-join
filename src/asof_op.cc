@@ -28,10 +28,10 @@ std::pair<Prices, OrderBook> load_data(
 }
 
 void run_join_in_new_process(ASOFJoin& asof_op) {
-    // Since TBB is keeping the internal thread pool alive and there is no way to completely killing it,
-    // we start a new process to force a new thread pool.
-    // Otherwise, PerfEvent is not able to detect the correct number of CPU utilization since
-    // the threads are created before Perf.
+    /// Since TBB is keeping the internal thread pool alive and there is no way
+    /// to completely killing it, we start a new process to force a new thread pool.
+    /// Otherwise, PerfEvent is not able to detect the correct number of CPU utilization since
+    /// the threads are created before Perf.
     pid_t pid = fork();
     if (pid == 0) {
         tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);

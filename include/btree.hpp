@@ -14,14 +14,14 @@
 template<typename Entry,
     typename=std::enable_if<std::is_base_of<ASOFJoin::JoinEntry, Entry>::value>::type>
 class Btree {
+    struct Node; struct InnerNode; struct LeafNode;
     using KeyT = uint64_t;
+    using iterator = std::vector<LeafNode*>::iterator;
 
 public:
     explicit Btree(std::vector<Entry>& data) {
         auto nodes = build_leaf_nodes(data);
-        //std::cout << "After build leaf node" << std::endl;
         while (nodes.size() > 1) {
-            //std::cout << "Build inner nodes" << std::endl;
             nodes = build_inner_nodes(nodes);
         }
         root = nodes.front();
@@ -29,7 +29,7 @@ public:
 
     ~Btree() { /*delete_tree(root);*/ }
 
-    std::optional<Entry> find_less_equal_than(KeyT target) {
+    Entry* find_less_equal_than(KeyT target) {
         Node* node = root;
         while (node && !node->is_leaf()) {
             auto* inner = static_cast<InnerNode*>(node);
@@ -37,14 +37,14 @@ public:
         }
 
         if (!node) {
-            return std::nullopt;
+            return nullptr;
         }
 
         auto* leaf = static_cast<LeafNode*>(node);
         return leaf->get_closest_entry_less_equal(target);
     }
 
-    std::optional<Entry> find_greater_equal_than(KeyT target) {
+    Entry* find_greater_equal_than(KeyT target) {
         Node* node = root;
         while (node && !node->is_leaf()) {
             auto* inner = static_cast<InnerNode*>(node);
@@ -52,7 +52,7 @@ public:
         }
 
         if (!node) {
-            return std::nullopt;
+            return nullptr;
         }
 
         auto* leaf = static_cast<LeafNode*>(node);
@@ -63,10 +63,26 @@ public:
         print_tree(root);
     }
 
+    [[nodiscard]] inline iterator leaves_begin() {
+        return leaf_nodes.begin();
+    }
+
+    [[nodiscard]] inline iterator leaves_end() {
+        return leaf_nodes.end();
+    }
+
+    [[nodiscard]] size_t num_leaves() const {
+        return leaf_nodes.size();
+    }
+
+    [[nodiscard]] inline std::vector<Entry>& operator[](size_t idx) {
+        return leaf_nodes[idx]->data;
+    }
+
 private:
-    struct Node; struct InnerNode; struct LeafNode;
     static constexpr size_t capacity = 32;
     Node* root;
+    std::vector<LeafNode*> leaf_nodes;
 
     struct Node {
         size_t level;
@@ -101,57 +117,70 @@ private:
 
         Node* get_closest_child_greater_equal(const KeyT& target) {
             auto end = keys.begin() + this->count;
-            auto iter = std::upper_bound(keys.begin(), end, target);
+            auto iter = std::lower_bound(keys.begin(), end, target);
             return children[iter - keys.begin()];
         }
     };
 
     struct LeafNode: Node {
         std::vector<Entry> data;
+        LeafNode* prev;
+        LeafNode* next;
 
-        LeafNode(): Node(/* level= */ 0, /* count= */ 0), data() {
+        LeafNode(): Node(/* level= */ 0, /* count= */ 0), data(), prev(nullptr), next(nullptr) {
             data.reserve(capacity);
         }
 
         ~LeafNode() override = default;
 
         inline KeyT get_min_key() override {
-            return data[0].getKey();
+            return data[0].get_key();
         }
 
-        std::optional<Entry> get_closest_entry_less_equal(const KeyT& target) {
+        Entry* get_closest_entry_less_equal(const KeyT& target) {
             auto end = data.begin() + this->count;
             auto iter = std::upper_bound(data.begin(), end, target,
                 [](const KeyT& value, const Entry& entry) {
-                    return value < entry.getKey();
+                    return value < entry.get_key();
             });
 
             return iter != data.begin()
-                ? std::optional(*--iter)
-                : std::nullopt;
+                ? &*--iter
+                : nullptr;
         }
 
-        std::optional<Entry> get_closest_entry_greater_equal(const KeyT& target) {
-            auto end = data.begin() + this->count;
-            auto iter = std::lower_bound(data.begin(), end, target,
+        Entry* get_closest_entry_greater_equal(const KeyT& target) {
+            auto iter = std::lower_bound(data.begin(), data.end(), target,
                 [](const Entry& entry, const KeyT& value) {
-                    return entry.getKey() < value;
+                    return entry.get_key() < value;
             });
 
-            return iter != end
-                ? std::optional(*iter)
-                : std::nullopt;
+            if (iter != data.end()) {
+                return &*iter;
+            } else if (next != nullptr) {
+                return next->get_closest_entry_greater_equal(target);
+            }
+
+            return nullptr;
             }
     };
 
     std::vector<Node*> build_leaf_nodes(std::vector<Entry>& entries) {
         std::vector<Node*> leaves;
+        LeafNode* prev_leaf = nullptr;
         for (size_t i = 0; i < entries.size(); i += capacity) {
-            auto* leaf = new LeafNode();
+            auto* curr_leaf = new LeafNode();
             size_t end = std::min(i + capacity, entries.size());
-            leaf->data.assign(entries.begin() + i, entries.begin() + end);
-            leaf->count = end - i;
-            leaves.push_back(leaf);
+            curr_leaf->data.assign(entries.begin() + i, entries.begin() + end);
+            curr_leaf->count = end - i;
+            if (prev_leaf != nullptr) {
+                prev_leaf->next = curr_leaf;
+                curr_leaf->prev = prev_leaf;
+            }
+            prev_leaf = curr_leaf;
+
+            leaves.push_back(curr_leaf);
+            leaf_nodes.push_back(curr_leaf);
         }
         return leaves;
     }
@@ -171,7 +200,7 @@ private:
             parent->count = count - 1;
 
             for (size_t j = 0; j < parent->count; ++j) {
-                parent->keys[j] = children[i + j + 1]->get_min_key();
+                parent->keys[j] = parent->children[j + 1]->get_min_key();
             }
 
             parents.push_back(parent);
