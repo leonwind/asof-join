@@ -64,6 +64,8 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
 
 int main() {
     auto [prices, order_book] = load_data(
+        ///* prices_path= */ "../data/btc_usd_data.csv",
+        ///* positions_path= */"../data/btc_orderbook_large.csv",
         /* prices_path= */ "../data/zipf_prices.csv",
         /* positions_path= */"../data/zipf_1_5_positions_2000000.csv",
         /* delimiter= */ ',',
@@ -71,16 +73,33 @@ int main() {
     size_t input_size = prices.size + order_book.size;
 
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(left_partitioning, input_size, "partitioning left");
+    for (size_t i = 0; i < 3; ++i) {
+        run_join(left_partitioning, input_size, "partitioning left");
+    }
 
-    PartitioningLeftBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(left_partitioning_btree, input_size, "partitioning left btree");
+    PartitioningLeftSplitBinarySearchASOFJoin left_bs_split(prices, order_book, LESS_EQUAL_THAN, INNER);
+    for (size_t i = 0; i < 3; ++i) {
+        run_join(left_bs_split, input_size, "left partitioning + split binary search");
+    }
+
+    //PartitioningLeftBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(left_partitioning_btree, input_size, "partitioning left btree");
 
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(right_partitioning, input_size, "partitioning right");
+    for (size_t i = 0; i < 3; ++i) {
+        run_join(right_partitioning, input_size, "partitioning right");
+    }
 
-    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(partition_sort, input_size, "partitioning sort");
+    PartitioningRightSplitBinarySearchASOFJoin right_bs_split(prices, order_book, LESS_EQUAL_THAN, INNER);
+    for (size_t i = 0; i < 3; ++i) {
+        run_join(right_bs_split, input_size, "right partitioning + split binary search");
+    }
+
+    //PartitioningRightBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(right_partitioning_btree, input_size, "partitioning right btree");
+
+    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(partition_sort, input_size, "partitioning sort");
 
     return 0;
 }

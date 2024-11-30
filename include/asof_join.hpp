@@ -218,4 +218,75 @@ struct Entry : JoinEntry {
 };
 };
 
+class PartitioningLeftSplitBinarySearchASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    void join() override;
+
+    struct Entry : JoinEntry {
+        uint64_t timestamp;
+        size_t idx;
+
+        Entry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
+
+        [[nodiscard]] inline uint64_t get_key() const override {
+            return timestamp;
+        }
+    };
+
+private:
+};
+
+class PartitioningRightSplitBinarySearchASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    void join() override;
+
+struct Entry : JoinEntry {
+    uint64_t timestamp;
+    size_t order_idx;
+    size_t price_idx;
+    uint64_t diff;
+    bool matched;
+    SpinLock lock;
+
+    Entry(uint64_t timestamp, size_t order_idx) : timestamp(timestamp), order_idx(order_idx),
+                                                  price_idx(0), diff(UINT64_MAX), matched(false), lock() {}
+
+    Entry(const Entry &other) : timestamp(other.timestamp), order_idx(other.order_idx),
+                                price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
+
+    Entry(Entry &&other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
+                                   price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
+
+    Entry &operator=(const Entry &other) {
+        if (this != &other) {
+            timestamp = other.timestamp;
+            order_idx = other.order_idx;
+            price_idx = other.price_idx;
+            diff = other.diff;
+            matched = other.matched;
+        }
+        return *this;
+    }
+
+    Entry &operator=(Entry &&other) noexcept {
+        if (this != &other) {
+            timestamp = other.timestamp;
+            order_idx = other.order_idx;
+            price_idx = other.price_idx;
+            diff = other.diff;
+            matched = other.matched;
+        }
+        return *this;
+    }
+
+    [[nodiscard]] inline uint64_t get_key() const override {
+        return timestamp;
+    }
+};
+
+private:
+};
+
 #endif //ASOF_JOIN_ASOF_JOIN_HPP

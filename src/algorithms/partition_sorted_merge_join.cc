@@ -38,7 +38,7 @@ void PartitioningSortedMergeJoin::join() {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
     e.stopCounters();
-    log("\n\nPartitioning Perf");
+    log("\n\nSorting Perf");
     e.printReport(std::cout,  order_book.size + prices.size);
     log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 

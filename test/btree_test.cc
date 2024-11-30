@@ -124,7 +124,6 @@ TEST(btree, InsertLargeLookupGreaterEqual) {
     }
 }
 
-
 TEST(btree, FindGap) {
     size_t capacity = 32;
     size_t num_entries = capacity * 2;
