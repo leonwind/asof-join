@@ -34,7 +34,7 @@ void run_join_in_new_process(ASOFJoin& asof_op) {
     /// the threads are created before Perf.
     pid_t pid = fork();
     if (pid == 0) {
-        tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
+        //tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
         asof_op.join();
         _exit(0);
     } else {
@@ -85,13 +85,11 @@ int main() {
     //PartitioningLeftBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
     //run_join(left_partitioning_btree, input_size, "partitioning left btree");
 
-    //PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //for (size_t i = 0; i < 3; ++i) {
-    //    run_join(right_partitioning, input_size, "partitioning right");
-    //}
+    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     PartitioningBothSortRightASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
     for (size_t i = 0; i < 3; ++i) {
+        run_join(right_partitioning, input_size, "partitioning right");
         run_join(partitioning_both, input_size, "right partitioning + split binary search");
     }
 

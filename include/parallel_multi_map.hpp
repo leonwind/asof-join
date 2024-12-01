@@ -25,6 +25,8 @@ public:
         combine_partitions();
     }
 
+    ~MultiMap() = default;
+
     [[nodiscard]] inline iterator begin() {
         return partitioned_map.begin();
     }

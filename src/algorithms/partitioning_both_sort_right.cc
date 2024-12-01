@@ -91,8 +91,8 @@ void JoinAlg::join() {
 
             auto& order_partition_bin = order_book_lookup[stock_id];
 
-            uint64_t last_target = UINT64_MAX;
-            size_t last_pos = UINT64_MAX;
+            //uint64_t last_target = UINT64_MAX;
+            //size_t last_pos = UINT64_MAX;
             size_t start_offset = 0;
             size_t end_offset = 0;
             tbb::parallel_for(tbb::blocked_range<size_t>(0, prices_partition_bin.size()),
@@ -100,10 +100,10 @@ void JoinAlg::join() {
                 for (size_t i = range.begin(); i < range.end(); ++i) {
                     auto& timestamp = prices_partition_bin[i].timestamp;
 
-                    if (last_target != UINT64_MAX && last_pos != 0) [[likely]] {
-                        start_offset = last_pos * (timestamp >= last_target);
-                        end_offset = (order_partition_bin.size() - (last_pos + 1)) * (timestamp <= last_target);
-                    }
+                    //if (last_target != UINT64_MAX && last_pos != 0) [[likely]] {
+                    //    start_offset = last_pos * (timestamp >= last_target);
+                    //    end_offset = (order_partition_bin.size() - (last_pos + 1)) * (timestamp <= last_target);
+                    //}
 
                     auto entry_pos = subset_binary_search_closest_match(
                         order_partition_bin,
@@ -111,8 +111,8 @@ void JoinAlg::join() {
                         start_offset,
                         end_offset);
 
-                    last_target = timestamp;
-                    last_pos = entry_pos == UINT64_MAX ? 0 : entry_pos;
+                    //last_target = timestamp;
+                    //last_pos = entry_pos == UINT64_MAX ? 0 : entry_pos;
 
                     if (entry_pos == UINT64_MAX) {
                         continue;

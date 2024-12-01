@@ -31,8 +31,7 @@ add_library(asof_join_lib
     src/algorithms/partition_sorted_merge_join.cc
     src/algorithms/left_partitioning_btree.cc
     src/algorithms/right_partitioning_btree.cc
-    src/algorithms/left_partitioning_split_binary_search.cc
-        src/algorithms/partitioning_both_sort_right.cc)
+    src/algorithms/partitioning_both_sort_right.cc)
 
 target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt)
 

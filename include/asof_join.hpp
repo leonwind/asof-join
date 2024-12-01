@@ -218,25 +218,6 @@ struct Entry : JoinEntry {
 };
 };
 
-class PartitioningLeftSplitBinarySearchASOFJoin : public ASOFJoin {
-public:
-    using ASOFJoin::ASOFJoin;
-    void join() override;
-
-    struct Entry : JoinEntry {
-        uint64_t timestamp;
-        size_t idx;
-
-        Entry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
-
-        [[nodiscard]] inline uint64_t get_key() const override {
-            return timestamp;
-        }
-    };
-
-private:
-};
-
 class PartitioningBothSortRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
