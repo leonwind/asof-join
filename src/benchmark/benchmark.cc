@@ -8,15 +8,9 @@
 
 namespace {
 uint64_t run_join_return_median_time(ASOFJoin &asof_op, size_t num_runs) {
-    Timer<std::chrono::microseconds> timer;
-    timer.start();
-
     std::vector<uint64_t> times(num_runs);
     for (size_t i = 0; i < num_runs; ++i) {
-        timer.lap();
-        asof_op.join();
-        times[i] = timer.lap();
-
+        times[i] = asof_op.join();
         asof_op.result.reset();
     }
 

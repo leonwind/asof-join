@@ -15,18 +15,18 @@
 #define MORSEL_SIZE (2<<14)
 
 
-void PartitioningLeftBTreeASOFJoin::join() {
+uint64_t PartitioningLeftBTreeASOFJoin::join() {
     Timer<milliseconds> timer;
     timer.start();
 
     MultiMap<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
-    log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     using Btree = Btree<Entry>;
     std::unordered_map<std::string_view, Btree> price_trees(prices_lookup.size());
@@ -34,7 +34,7 @@ void PartitioningLeftBTreeASOFJoin::join() {
         auto tree = Btree(stock_prices.second);
         price_trees.insert({stock_prices.first, tree});
     }
-    log(fmt::format("Inserting into BTree in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Inserting into BTree in {}{}", timer.lap(), timer.unit()));
 
     std::mutex result_lock;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, MORSEL_SIZE),
@@ -61,7 +61,8 @@ void PartitioningLeftBTreeASOFJoin::join() {
             }
         }
     });
-    log(fmt::format("BTree lookups in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("BTree lookups in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
+    return timer.stop();
 }

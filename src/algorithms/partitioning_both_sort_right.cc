@@ -54,33 +54,33 @@ namespace {
     }
 } // namespace
 
-void JoinAlg::join() {
+uint64_t JoinAlg::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
 
-    e.startCounters();
+    //e.startCounters();
     MultiMap<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
-    log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
 
     MultiMap<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
-    log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
-    e.stopCounters();
-    log("Right Partitioning Perf");
-    e.printReport(std::cout, order_book.size);
+    //log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("Right Partitioning Perf");
+    //e.printReport(std::cout, order_book.size);
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
-    e.stopCounters();
-    log("\n\nSorting Left Perf: ");
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Sorting Left in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("\n\nSorting Left Perf: ");
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Sorting Left in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
         [&](auto& iter) {
             const auto& stock_id = iter.first;
@@ -133,12 +133,12 @@ void JoinAlg::join() {
                 }
             });
     });
-    e.stopCounters();
-    std::cout << "\n\nBinary Search Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nBinary Search Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
@@ -189,10 +189,11 @@ void JoinAlg::join() {
             }
         });
     });
-    e.stopCounters();
-    std::cout << "\n\nFinding Match Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nFinding Match Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
+    return timer.stop();
 }

@@ -28,29 +28,29 @@ PartitioningLeftASOFJoin::Entry* PartitioningLeftASOFJoin::binary_search_closest
     return &(*--iter);
 }
 
-void PartitioningLeftASOFJoin::join() {
+uint64_t PartitioningLeftASOFJoin::join() {
     Timer<milliseconds> timer;
     timer.start();
-    PerfEvent e;
+    //PerfEvent e;
 
-    e.startCounters();
+    //e.startCounters();
     MultiMap<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
-    e.stopCounters();
-    log("Partitioning Perf");
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("Partitioning Perf");
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
-    e.stopCounters();
-    std::cout << "\n\nSorting Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
+    //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nSorting Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
 
-    e.startCounters();
+    //e.startCounters();
     std::mutex result_lock;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
@@ -78,10 +78,11 @@ void PartitioningLeftASOFJoin::join() {
             }
         }
     });
-    e.stopCounters();
-    std::cout << "\n\nBinary Search Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nBinary Search Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
+    return timer.stop();
 }

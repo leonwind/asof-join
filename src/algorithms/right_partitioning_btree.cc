@@ -14,26 +14,26 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-void PartitioningRightBTreeASOFJoin::join() {
+uint64_t PartitioningRightBTreeASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
 
-    e.startCounters();
+    //e.startCounters();
     MultiMap<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
-    e.stopCounters();
-    log("Partitioning Perf");
-    e.printReport(std::cout, order_book.size);
-    log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("Partitioning Perf");
+    //e.printReport(std::cout, order_book.size);
+    //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
         [&](auto &iter) {
            tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
-    e.stopCounters();
-    log("\n\nSorting Perf: ");
+    //e.stopCounters();
+    //log("\n\nSorting Perf: ");
 
     using Btree = Btree<Entry>;
     std::unordered_map<std::string_view, Btree> order_trees(order_book_lookup.size());
@@ -41,7 +41,7 @@ void PartitioningRightBTreeASOFJoin::join() {
         auto tree = Btree(order_books.second);
         order_trees.insert({order_books.first, std::move(tree)});
     }
-    log(fmt::format("Inserting into BTree in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Inserting into BTree in {}{}", timer.lap(), timer.unit()));
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
@@ -69,12 +69,12 @@ void PartitioningRightBTreeASOFJoin::join() {
             }
         }
     });
-    e.stopCounters();
-    std::cout << "\n\nBTree Lookup Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("BTree Lookups in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nBTree Lookup Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("BTree Lookups in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     std::mutex result_lock;
     tbb::parallel_for_each(order_trees.begin(), order_trees.end(),
             [&](auto& iter) {
@@ -126,10 +126,11 @@ void PartitioningRightBTreeASOFJoin::join() {
             }
         });
     });
-    e.stopCounters();
-    std::cout << "\n\nFinding Match Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nFinding Match Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
+    return timer.stop();
 }

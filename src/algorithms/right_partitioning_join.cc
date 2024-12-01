@@ -28,29 +28,29 @@ inline PartitioningRightASOFJoin::Entry* PartitioningRightASOFJoin::binary_searc
     return &(*iter);
 }
 
-void PartitioningRightASOFJoin::join() {
+uint64_t PartitioningRightASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
 
-    e.startCounters();
+    //e.startCounters();
     MultiMap<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
-    e.stopCounters();
-    log("Partitioning Perf");
-    e.printReport(std::cout, order_book.size);
-    log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("Partitioning Perf");
+    //e.printReport(std::cout, order_book.size);
+    //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-    e.stopCounters();
-    log("\n\nSorting Perf: ");
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("\n\nSorting Perf: ");
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
@@ -80,12 +80,12 @@ void PartitioningRightASOFJoin::join() {
             }
         }
     });
-    e.stopCounters();
-    std::cout << "\n\nBinary Search Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nBinary Search Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
@@ -136,10 +136,11 @@ void PartitioningRightASOFJoin::join() {
             }
         });
     });
-    e.stopCounters();
-    std::cout << "\n\nFinding Match Perf: " << std::endl;
-    e.printReport(std::cout, prices.size);
-    log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //std::cout << "\n\nFinding Match Perf: " << std::endl;
+    //e.printReport(std::cout, prices.size);
+    //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
+    return timer.stop();
 }

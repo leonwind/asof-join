@@ -12,22 +12,22 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-void PartitioningSortedMergeJoin::join() {
+uint64_t PartitioningSortedMergeJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
 
-    e.startCounters();
+    //e.startCounters();
     MultiMap<Entry> prices_index(prices.stock_ids, prices.timestamps);
-    log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
 
     MultiMap<Entry> order_book_index(order_book.stock_ids, order_book.timestamps);
-    log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
-    std::cout << "\n\nPartitioning Perf" << std::endl;
-    e.stopCounters();
-    e.printReport(std::cout, order_book.size + prices.size);
+    //log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
+    //std::cout << "\n\nPartitioning Perf" << std::endl;
+    //e.stopCounters();
+    //e.printReport(std::cout, order_book.size + prices.size);
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(prices_index.begin(), prices_index.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
@@ -37,12 +37,12 @@ void PartitioningSortedMergeJoin::join() {
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-    e.stopCounters();
-    log("\n\nSorting Perf");
-    e.printReport(std::cout,  order_book.size + prices.size);
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("\n\nSorting Perf");
+    //e.printReport(std::cout,  order_book.size + prices.size);
+    //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     std::mutex result_lock;
     tbb::parallel_for_each(order_book_index.begin(), order_book_index.end(),
             [&](auto& iter) {
@@ -85,11 +85,12 @@ void PartitioningSortedMergeJoin::join() {
             r = last_valid_r;
         }
     });
-    e.stopCounters();
-    log("Sorted Merge Join Perf");
-    e.printReport(std::cout, order_book.size + prices.size);
+    //e.stopCounters();
+    //log("Sorted Merge Join Perf");
+    //e.printReport(std::cout, order_book.size + prices.size);
 
-    log(fmt::format("Partitioned Sorted Merge join in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Partitioned Sorted Merge join in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
+    return timer.stop();
 }

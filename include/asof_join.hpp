@@ -26,7 +26,7 @@ public:
         result(), prices(prices), order_book(order_book),
         comp_type(comp_type), join_type(join_type) {}
 
-    virtual void join() = 0;
+    virtual uint64_t join() = 0;
 
     ResultRelation result;
 
@@ -50,19 +50,19 @@ protected:
 class BaselineASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 };
 
 class SortingASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 };
 
 class PartitioningLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 
     struct Entry : JoinEntry {
         uint64_t timestamp;
@@ -83,7 +83,7 @@ private:
 class PartitioningRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 
 struct Entry : JoinEntry {
     uint64_t timestamp;
@@ -137,7 +137,7 @@ private:
 class PartitioningSortedMergeJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 
     struct Entry : JoinEntry {
         uint64_t timestamp;
@@ -154,7 +154,7 @@ public:
 class PartitioningLeftBTreeASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 
     struct Entry : JoinEntry {
         uint64_t timestamp;
@@ -171,7 +171,7 @@ public:
 class PartitioningRightBTreeASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 
 struct Entry : JoinEntry {
     uint64_t timestamp;
@@ -221,7 +221,7 @@ struct Entry : JoinEntry {
 class PartitioningBothSortRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
-    void join() override;
+    uint64_t join() override;
 
 struct LeftEntry : JoinEntry {
     uint64_t timestamp;
