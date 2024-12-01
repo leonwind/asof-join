@@ -389,10 +389,10 @@ TEST(asof_join_left_partitioning_split_bs, TestMediumBTCExample) {
 }
 
 
-TEST(asof_join_right_partitioning_split_bs, TestSmallDuckDBExample) {
+TEST(asof_join_both_partitioning_sort_right, TestSmallDuckDBExample) {
     Prices prices = load_prices("../data/prices_small.csv", ',', true);
     OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
-    PartitioningRightSplitBinarySearchASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+    PartitioningBothSortRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
 
@@ -410,10 +410,10 @@ TEST(asof_join_right_partitioning_split_bs, TestSmallDuckDBExample) {
     ASSERT_EQ(total_sum, 9581);
 }
 
-TEST(asof_join_right_partitioning_split_bs, TestSmallBTCExample) {
+TEST(asof_join_both_partitioning_sort_right, TestSmallBTCExample) {
     Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
     OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
-    PartitioningRightSplitBinarySearchASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+    PartitioningBothSortRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
     auto& result_values = join.result.values;
@@ -428,10 +428,10 @@ TEST(asof_join_right_partitioning_split_bs, TestSmallBTCExample) {
     }
 }
 
-TEST(asof_join_right_partitioning_split_bs, TestMediumBTCExample) {
+TEST(asof_join_both_partitioning_sort_right, TestMediumBTCExample) {
     Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
     OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
-    PartitioningRightSplitBinarySearchASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+    PartitioningBothSortRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
 

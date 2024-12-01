@@ -156,7 +156,7 @@ public:
     using ASOFJoin::ASOFJoin;
     void join() override;
 
-    struct Entry : JoinEntry{
+    struct Entry : JoinEntry {
         uint64_t timestamp;
         size_t idx;
 
@@ -237,12 +237,23 @@ public:
 private:
 };
 
-class PartitioningRightSplitBinarySearchASOFJoin : public ASOFJoin {
+class PartitioningBothSortRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
 
-struct Entry : JoinEntry {
+struct LeftEntry : JoinEntry {
+    uint64_t timestamp;
+    size_t idx;
+
+    LeftEntry(uint64_t timestamp, size_t idx): timestamp(timestamp), idx(idx) {}
+
+    [[nodiscard]] inline uint64_t get_key() const override {
+        return timestamp;
+    }
+};
+
+struct RightEntry : JoinEntry {
     uint64_t timestamp;
     size_t order_idx;
     size_t price_idx;
@@ -250,16 +261,16 @@ struct Entry : JoinEntry {
     bool matched;
     SpinLock lock;
 
-    Entry(uint64_t timestamp, size_t order_idx) : timestamp(timestamp), order_idx(order_idx),
+    RightEntry(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
                                                   price_idx(0), diff(UINT64_MAX), matched(false), lock() {}
 
-    Entry(const Entry &other) : timestamp(other.timestamp), order_idx(other.order_idx),
+    RightEntry(const RightEntry &other): timestamp(other.timestamp), order_idx(other.order_idx),
                                 price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
 
-    Entry(Entry &&other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
+    RightEntry(RightEntry &&other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
                                    price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
 
-    Entry &operator=(const Entry &other) {
+    RightEntry &operator=(const RightEntry &other) {
         if (this != &other) {
             timestamp = other.timestamp;
             order_idx = other.order_idx;
@@ -270,7 +281,7 @@ struct Entry : JoinEntry {
         return *this;
     }
 
-    Entry &operator=(Entry &&other) noexcept {
+    RightEntry &operator=(RightEntry &&other) noexcept {
         if (this != &other) {
             timestamp = other.timestamp;
             order_idx = other.order_idx;
@@ -287,6 +298,8 @@ struct Entry : JoinEntry {
 };
 
 private:
+    static RightEntry* binary_search_closest_match_greater_than(
+            std::vector<RightEntry>& data, uint64_t target);
 };
 
 #endif //ASOF_JOIN_ASOF_JOIN_HPP
