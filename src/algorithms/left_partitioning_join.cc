@@ -34,7 +34,15 @@ uint64_t PartitioningLeftASOFJoin::join() {
     //PerfEvent e;
 
     //e.startCounters();
-    MultiMap<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
+    //MultiMap<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
+    std::unordered_map<std::string_view, std::vector<Entry>> prices_lookup;
+    for (size_t i = 0; i < prices.size; ++i) {
+        if (prices_lookup.contains(prices.stock_ids[i])) {
+            prices_lookup[prices.stock_ids[i]].emplace_back(prices.timestamps[i], i);
+        }  else {
+            prices_lookup[prices.stock_ids[i]] = {{prices.timestamps[i], i}};
+        }
+    }
     //e.stopCounters();
     //log("Partitioning Perf");
     //e.printReport(std::cout, prices.size);
@@ -62,7 +70,7 @@ uint64_t PartitioningLeftASOFJoin::join() {
 
             auto& partition_bin = prices_lookup[stock_id];
             auto timestamp = order_book.timestamps[i];
-            auto match = binary_search_closest_match_less_than(
+            auto* match = binary_search_closest_match_less_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
 

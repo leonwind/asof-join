@@ -37,9 +37,8 @@ uint64_t PartitioningRightBTreeASOFJoin::join() {
 
     using Btree = Btree<Entry>;
     std::unordered_map<std::string_view, Btree> order_trees(order_book_lookup.size());
-    for (auto& order_books : order_book_lookup) {
-        auto tree = Btree(order_books.second);
-        order_trees.insert({order_books.first, std::move(tree)});
+    for (auto& iter : order_book_lookup) {
+        order_trees.insert({iter.first, Btree(iter.second)});
     }
     //log(fmt::format("Inserting into BTree in {}{}", timer.lap(), timer.unit()));
 
@@ -51,7 +50,11 @@ uint64_t PartitioningRightBTreeASOFJoin::join() {
                 continue;
             }
 
-            auto& tree = order_trees.at(stock_id);
+            if (!order_trees.contains(stock_id)) {
+                std::cout << "Stock id " << stock_id << "in trees but not in index" << std::endl;
+            }
+
+            auto& tree = order_trees[stock_id];
             auto& timestamp = prices.timestamps[i];
             auto* match = tree.find_greater_equal_than(timestamp);
             if (match != nullptr) {

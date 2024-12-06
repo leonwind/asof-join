@@ -27,6 +27,8 @@ public:
         root = nodes.front();
     }
 
+    Btree(): root(nullptr) {}
+
     ~Btree() { /*delete_tree(root);*/ }
 
     Entry* find_less_equal_than(KeyT target) {

@@ -41,21 +41,22 @@ add_library(asof_benchmark_lib
 # Link main lib sources into benchmark lib
 target_link_libraries(asof_benchmark_lib asof_join_lib)
 
-# Tests
-add_executable(test_all
-    test/asof_join_test.cc
-    test/btree_test.cc)
-target_link_libraries(test_all
-    asof_join_lib
-    gtest
-    gtest_main)
+# Executable
+add_executable(asof_join src/asof_op.cc)
+target_link_libraries(asof_join
+    asof_join_lib)
 
 # Benchmark
 add_executable(asof_benchmark src/asof_benchmark.cpp)
 target_link_libraries(asof_benchmark
     asof_benchmark_lib)
 
-# Executable
-add_executable(asof_join src/asof_op.cc)
-target_link_libraries(asof_join
-    asof_join_lib)
+# Tests
+add_executable(test_all
+    test/asof_join_test.cc
+    test/btree_test.cc
+    test/parallel_multi_map_test.cc)
+target_link_libraries(test_all
+    asof_join_lib
+    gtest
+    gtest_main)

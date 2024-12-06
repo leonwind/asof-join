@@ -72,10 +72,12 @@ private:
             total_size += local_map.bucket_count();
         });
 
-        partitioned_map.reserve(total_size * (1 + partitioned_map.max_load_factor()));
-        tbb::parallel_for_each(local_maps.begin(), local_maps.end(), [&](auto& local_map) {
+        //partitioned_map.reserve(total_size * (1 + partitioned_map.max_load_factor()));
+        //tbb::parallel_for_each(local_maps.begin(), local_maps.end(), [&](auto& local_map) {
+        for (auto& local_map : local_maps) {
             partitioned_map.merge(local_map);
-        });
+        }
+        //});
     }
 
     struct Partitions {

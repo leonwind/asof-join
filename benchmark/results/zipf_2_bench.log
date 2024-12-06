@@ -1,0 +1,55 @@
+Run [zipf_2-102400000.csv]
+Left partitioning time: 73646
+Right partitioning time: 97850
+Both partitioning time: 94140
+Sort partitioning time: 58706
+Run [zipf_2-51200000.csv]
+Left partitioning time: 37068
+Right partitioning time: 46229
+Both partitioning time: 8390
+Sort partitioning time: 32318
+Run [zipf_2-25600000.csv]
+Left partitioning time: 20284
+Right partitioning time: 8944
+Both partitioning time: 20065
+Sort partitioning time: 7768
+Run [zipf_2-12800000.csv]
+Left partitioning time: 11574
+Right partitioning time: 14484
+Both partitioning time: 12684
+Sort partitioning time: 8258
+Run [zipf_2-3200000.csv]
+Left partitioning time: 5055
+Right partitioning time: 5189
+Both partitioning time: 5388
+Sort partitioning time: 4619
+Run [zipf_2-1600000.csv]
+Left partitioning time: 3908
+Right partitioning time: 3139
+Both partitioning time: 3931
+Sort partitioning time: 3851
+Run [zipf_2-800000.csv]
+Left partitioning time: 3401
+Right partitioning time: 2749
+Both partitioning time: 3018
+Sort partitioning time: 3354
+Run [zipf_2-400000.csv]
+Left partitioning time: 3091
+Right partitioning time: 2110
+Both partitioning time: 2616
+Sort partitioning time: 3058
+Run [zipf_2-6400000.csv]
+Left partitioning time: 7159
+Right partitioning time: 3047
+Both partitioning time: 3928
+Sort partitioning time: 3622
+Run [zipf_2-100000.csv]
+Left partitioning time: 2886
+Right partitioning time: 1230
+Both partitioning time: 2135
+Sort partitioning time: 2825
+Run [zipf_2-200000.csv]
+Left partitioning time: 2995
+Right partitioning time: 1939
+Both partitioning time: 2446
+Sort partitioning time: 2894

@@ -32,7 +32,7 @@ def _parse_data(data):
             continue
         
         exec_time = row.split(": ")[1]
-        groups[curr_distribution][curr_num_positions].append(int(exec_time) / 1000000.0)
+        groups[curr_distribution][curr_num_positions].append(int(exec_time) / 1000.0)
     
     return groups
 
@@ -42,11 +42,16 @@ def _plot_distribution(distribution_name, num_positions, dir_name):
 
     left_partitioning_times = [num_positions[key][0] for key in data_sizes]
     right_partitioning_times = [num_positions[key][1] for key in data_sizes]
-    partitioning_sort_times = [num_positions[key][2] for key in data_sizes]
+    both_partitioning_times = [num_positions[key][2] for key in data_sizes]
+    partitioning_sort_times = [num_positions[key][3] for key in data_sizes]
 
-    plt.plot(data_sizes, left_partitioning_times, label='Left partitioning')
-    plt.plot(data_sizes, right_partitioning_times, label='Right partitioning')
-    plt.plot(data_sizes, partitioning_sort_times, label='Sort partitioning')
+    plt.plot(data_sizes, left_partitioning_times, marker="x", label='Left partitioning')
+    plt.plot(data_sizes, right_partitioning_times, marker="o", label='Right partitioning')
+    plt.plot(data_sizes, both_partitioning_times, marker="+", label='Both Partitioning + Sort Right')
+    plt.plot(data_sizes, partitioning_sort_times, marker="v", label='Sort partitioning')
+
+    #plt.xscale("log")
+    #plt.yscale("log")
 
     plt.xlabel("Num positions")
     plt.ylabel("Time [s]")
@@ -56,6 +61,7 @@ def _plot_distribution(distribution_name, num_positions, dir_name):
     plt.legend()
 
     filename = f"plots/{dir_name}/{distribution_name}_plot.pdf"
+    print(filename)
     plt.savefig(filename, dpi=400)
     os.system(f"pdfcrop {filename} {filename}")
 
@@ -74,4 +80,5 @@ def plot_data(path):
 
 if __name__ == "__main__":
     #plot_data("results/zipf_uniform_benchmark.txt")
-    plot_data("results/zipf_large_benchmark.txt")
+    #plot_data("results/zipf_large_benchmark.txt")
+    plot_data("results/new_res.txt")

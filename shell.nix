@@ -16,6 +16,6 @@ pkgs.mkShell {
 
     shellHook = ''
         echo "Enable Perf Counters:"
-        ./enable_perf_counters.sh
+        sudo sysctl -w kernel.perf_event_paranoid=-1
     '';
 }

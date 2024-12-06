@@ -36,6 +36,12 @@ void run_join_in_new_process(ASOFJoin& asof_op) {
     if (pid == 0) {
         //tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
         asof_op.join();
+        size_t total_val = 0;
+        for (auto& val : asof_op.result.values) {
+            total_val += val;
+        }
+        std::cout << "Total value: " << total_val << std::endl;
+        std::cout << "Num rows: " << asof_op.result.size << std::endl;
         _exit(0);
     } else {
         wait(nullptr);
@@ -52,7 +58,14 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
     timer.start();
     e.startCounters();
 
-    run_join_in_new_process(asof_op);
+    //run_join_in_new_process(asof_op);
+    asof_op.join();
+        size_t total_val = 0;
+        for (auto& val : asof_op.result.values) {
+            total_val += val;
+        }
+        std::cout << "Total value: " << total_val << std::endl;
+        std::cout << "Num rows: " << asof_op.result.size << std::endl;
     auto duration = timer.stop<std::chrono::milliseconds>();
 
     e.stopCounters();
@@ -72,10 +85,8 @@ int main() {
         /* shuffle= */ false);
     size_t input_size = prices.size + order_book.size;
 
-    //PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //for (size_t i = 0; i < 3; ++i) {
-    //    run_join(left_partitioning, input_size, "partitioning left");
-    //}
+    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(left_partitioning, input_size, "partitioning left");
 
     //PartitioningLeftSplitBinarySearchASOFJoin left_bs_split(prices, order_book, LESS_EQUAL_THAN, INNER);
     //for (size_t i = 0; i < 3; ++i) {
@@ -86,20 +97,16 @@ int main() {
     //run_join(left_partitioning_btree, input_size, "partitioning left btree");
 
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(right_partitioning, input_size, "partitioning right");
 
     PartitioningBothSortRightASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
-    for (size_t i = 0; i < 3; ++i) {
-        run_join(right_partitioning, input_size, "partitioning right");
-        run_join(partitioning_both, input_size, "right partitioning + split binary search");
-    }
+    run_join(partitioning_both, input_size, "right partitioning + split binary search");
 
-    //PartitioningRightBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(right_partitioning_btree, input_size, "partitioning right btree");
+    PartitioningRightBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(right_partitioning_btree, input_size, "partitioning right btree");
 
-    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //for (size_t i = 0; i < 3; ++i) {
-    //    run_join(partition_sort, input_size, "partitioning sort");
-    //}
+    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(partition_sort, input_size, "partitioning sort");
 
     return 0;
 }
