@@ -75,7 +75,6 @@ TEST(multimap, MoreKeysThanPartitions) {
         auto key = generate_key(i);
         auto& data = multi_map[key];
         ASSERT_EQ(data.size(), num_entries_per_key);
-
         std::sort(data.begin(), data.end());
         for (size_t j = 0; j < num_entries_per_key; ++j) {
             std::string error_msg = fmt::format("Failed at key {}, j={}", key, j);
