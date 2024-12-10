@@ -1,14 +1,21 @@
 #include <gtest/gtest.h>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 #include "tuple_buffer.hpp"
 #include "fmt/format.h"
 
 namespace {
+    constexpr size_t BUFFER_SIZE = 4096;
+
     struct Tuple {
         uint64_t tid;
         std::string payload;
+
+        Tuple(uint64_t tid, std::string payload): tid(tid), payload(std::move(payload)) {}
+
+        Tuple(): tid(-1), payload() {}
 
         [[nodiscard]] std::string str() const {
             return fmt::format("tid={}, payload={}", tid, payload);
@@ -17,7 +24,11 @@ namespace {
 } // namespace
 
 std::vector<Tuple> create_tuples(size_t num_tuples) {
-    return {};
+    std::vector<Tuple> tuples(num_tuples);
+    for (size_t i = 0; i < num_tuples; ++i) {
+        tuples[i] = Tuple{i, fmt::format("payload-{}", i)};
+    }
+    return tuples;
 }
 
 TEST(tuple_buffer, SingleTupleEntry) {
@@ -27,6 +38,136 @@ TEST(tuple_buffer, SingleTupleEntry) {
     tuple_buffer.store_tuple(tuple);
     auto fetched_tuple = tuple_buffer[0];
 
+    ASSERT_EQ(tuple_buffer.size(), 1);
     ASSERT_EQ(fetched_tuple.tid, tuple.tid);
     ASSERT_EQ(fetched_tuple.payload, tuple.payload);
+}
+
+TEST(tuple_buffer, Store1FullBuffer) {
+    size_t num_tuples = BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    ASSERT_EQ(tuple_buffer.size(), num_tuples);
+    for (size_t i = 0; i < num_tuples; ++i) {
+        auto fetched_tuple = tuple_buffer[i];
+        ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+    }
+}
+
+TEST(tuple_buffer, Store2FullBuffers) {
+    size_t num_tuples = 2 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    ASSERT_EQ(tuple_buffer.size(), num_tuples);
+    for (size_t i = 0; i < num_tuples; ++i) {
+        auto fetched_tuple = tuple_buffer[i];
+        ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+    }
+}
+
+TEST(tuple_buffer, Store100FullBuffers) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    ASSERT_EQ(tuple_buffer.size(), num_tuples);
+    for (size_t i = 0; i < num_tuples; ++i) {
+        auto fetched_tuple = tuple_buffer[i];
+        ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+    }
+}
+
+TEST(tuple_buffer, IteratorOver100BuffersPreIncrement) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    ASSERT_EQ(tuple_buffer.size(), num_tuples);
+    size_t i = 0;
+    for (auto iter = tuple_buffer.begin(); iter != tuple_buffer.end(); ++iter) {
+        auto& fetched_tuple = *iter;
+        ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
+    }
+    ASSERT_EQ(i, num_tuples);
+}
+
+TEST(tuple_buffer, IteratorOver100BuffersPostIncremenent) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    ASSERT_EQ(tuple_buffer.size(), num_tuples);
+    size_t i = 0;
+    for (auto iter = tuple_buffer.begin(); iter != tuple_buffer.end(); iter++) {
+        auto& fetched_tuple = *iter;
+        ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
+    }
+    ASSERT_EQ(i, num_tuples);
+}
+
+TEST(tuple_buffer, IteratorOver100BuffersPointerAccess) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    ASSERT_EQ(tuple_buffer.size(), num_tuples);
+    size_t i = 0;
+    for (auto iter = tuple_buffer.begin(); iter != tuple_buffer.end(); ++iter) {
+        ASSERT_EQ(iter->tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(iter->payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
+    }
+    ASSERT_EQ(i, num_tuples);
+}
+
+TEST(tuple_buffer, RangeIterationOver100Buffers) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    ASSERT_EQ(tuple_buffer.size(), num_tuples);
+    size_t i = 0;
+    for (auto& fetched_tuple : tuple_buffer) {
+        ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
+    }
+    ASSERT_EQ(i, num_tuples);
 }
