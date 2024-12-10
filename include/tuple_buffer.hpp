@@ -18,10 +18,10 @@ class Buffer {
 
 public:
     static std::unique_ptr<Buffer> create() {
-        Buffer buffer;
-        buffer.chunk = mmap(nullptr, BUFFER_SIZE, PROT_READ | PROT_WRITE,
-                     MAP_SHARED, -1, 0);
-        return std::make_unique<Buffer>(buffer);
+        auto buffer = std::unique_ptr<Buffer>(new Buffer());
+        buffer->chunk = mmap(nullptr, BUFFER_SIZE, PROT_READ | PROT_WRITE,
+                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        return buffer;
     }
 
     ~Buffer() { munmap(chunk, BUFFER_SIZE); }
@@ -32,6 +32,10 @@ public:
         return ptr;
     }
 
+    [[nodiscard]] inline bool has_space(size_t tuple_size) const {
+        return tuple_size + bytes_used < BUFFER_SIZE;
+    }
+
     [[nodiscard]] const char* begin() const {
         return reinterpret_cast<char*>(chunk);
     }
@@ -40,9 +44,15 @@ public:
         return reinterpret_cast<char*>(chunk) + BUFFER_SIZE;
     }
 
-    [[nodiscard]] inline bool free(size_t tuple_size) const {
-        return tuple_size + bytes_used < BUFFER_SIZE;
+    [[nodiscard]] char* data() {
+        return reinterpret_cast<char*>(chunk);
     }
+
+    [[nodiscard]] const char* data() const {
+        return reinterpret_cast<const char*>(chunk);
+    }
+
+    [[nodiscard]] inline size_t get_bytes_usd() const { return bytes_used; }
 };
 
 template <typename T>
@@ -51,20 +61,32 @@ class TupleBuffer {
     const size_t tuple_size;
     std::unique_ptr<Buffer> curr;
     std::vector<std::unique_ptr<Buffer>> old_buffers;
+    size_t num_tuples;
 
 public:
-    TupleBuffer(): tuple_size(sizeof(T)), curr(Buffer::create()) {}
+    TupleBuffer(): tuple_size(sizeof(T)), curr(Buffer::create()), old_buffers(), num_tuples(0) {}
 
-    char* store_tuple() {
-        if (!curr->free(tuple_size)) [[unlikely]] {
+    char* get_tuple_slot() {
+        ++num_tuples;
+        if (!curr->has_space(tuple_size)) [[unlikely]] {
             old_buffers.push_back(std::move(curr));
             curr = Buffer::create();
         }
         return curr->alloc_tuple(tuple_size);
     }
 
-    [[nodiscard]] inline T operator[](size_t i) {
-        return reinterpret_cast<T>(curr.get() + tuple_size * i);
+    inline void store_tuple(T tuple) {
+        ++num_tuples;
+        auto* memory = (T*) get_tuple_slot();
+        *memory = tuple;
+    }
+
+    [[nodiscard]] inline size_t size() const {
+        return num_tuples;
+    }
+
+    [[nodiscard]] inline T operator[](size_t i) const {
+        return *reinterpret_cast<T*>(curr->data() + tuple_size * i);
     }
 };
 
