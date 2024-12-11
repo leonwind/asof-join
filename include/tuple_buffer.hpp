@@ -9,8 +9,10 @@
 #include <unistd.h>
 #include <bits/stdc++.h>
 
+#include "tbb/parallel_for.h"
+
 namespace {
-    const uint64_t PAGE_SIZE_4KB = 4096;
+    const uint64_t PAGE_SIZE_64KB = 65536;
 
     inline constexpr uint64_t next_pow2_64(uint64_t v) {
         v--;
@@ -68,7 +70,7 @@ class TupleBuffer {
     /// Fixed sized tuples
     static constexpr uint64_t TUPLE_SIZE = sizeof(T);
     /// Minimum 4KB and then round up to next power of 2.
-    static constexpr uint64_t BUFFER_CAPACITY = next_pow2_64(PAGE_SIZE_4KB / TUPLE_SIZE);
+    static constexpr uint64_t BUFFER_CAPACITY = next_pow2_64(PAGE_SIZE_64KB / TUPLE_SIZE);
     static constexpr uint64_t BUFFER_CAPACITY_MASK = BUFFER_CAPACITY - 1;
     static constexpr uint64_t BUFFER_SIZE = TUPLE_SIZE * BUFFER_CAPACITY;
 
@@ -104,6 +106,26 @@ public:
         size_t buffer_idx = i / BUFFER_CAPACITY;
         size_t tuple_idx = i & BUFFER_CAPACITY_MASK;
         return get_tuple(buffer_idx, tuple_idx);
+    }
+
+    std::vector<T> copy_tuples() {
+        std::vector<T> all_tuples(num_tuples);
+        tbb::blocked_range<size_t> range(0, old_buffers.size());
+        tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& range) {
+            for (size_t i = range.begin(); i < range.end(); ++i) {
+                auto* buff = old_buffers[i].get();
+                std::copy_n(
+                    /* src= */ reinterpret_cast<T*>(buff->data()),
+                    /* n= */ BUFFER_CAPACITY,
+                    /* dest= */ all_tuples.data() + i * BUFFER_CAPACITY);
+            }
+        });
+
+        std::copy_n(
+            /* src= */ reinterpret_cast<T*>(curr->data()),
+            /* n= */ curr->get_bytes_used() / TUPLE_SIZE,
+            /* dest= */ all_tuples.data() + old_buffers.size() * BUFFER_CAPACITY);
+        return std::move(all_tuples);
     }
 
     Iterator begin() const {
@@ -147,7 +169,7 @@ public:
     /// Pre-increment
     Iterator& operator++() {
         ++tuple_idx_;
-        advance_to_next_tuple();
+        advance();
         return *this;
     }
 
@@ -174,7 +196,7 @@ private:
     size_t buffer_idx_;
     size_t tuple_idx_;
 
-    void advance_to_next_tuple() {
+    void advance() {
         if (buffer_idx_ < buffer_->old_buffers.size()) {
             if (tuple_idx_ >= buffer_->BUFFER_CAPACITY) {
                 ++buffer_idx_;

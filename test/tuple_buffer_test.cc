@@ -10,7 +10,8 @@
 
 
 namespace {
-    constexpr size_t BUFFER_SIZE = 4096;
+    /// 64KB page size
+    constexpr size_t BUFFER_SIZE = 65536;
 
     struct Tuple {
         uint64_t tid;
@@ -175,9 +176,26 @@ TEST(tuple_buffer, RangeIterationOver100Buffers) {
     ASSERT_EQ(i, num_tuples);
 }
 
+TEST(tuple_buffer, MaterializeIntoVector) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+    std::vector<Tuple> materialized_tuples = tuple_buffer.copy_tuples();
+
+    ASSERT_EQ(materialized_tuples.size(), num_tuples);
+    for (size_t i = 0; i < materialized_tuples.size(); ++i) {
+        ASSERT_EQ(materialized_tuples[i].tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(materialized_tuples[i].payload, tuples[i].payload) << "Failed at index " << i;
+    }
+}
+
 TEST(tuple_buffer, Benchmark) {
-    return;
-    size_t num_tuples = 100000 * BUFFER_SIZE / sizeof(Tuple);
+    //return;
+    size_t num_tuples = 10000 * BUFFER_SIZE / sizeof(Tuple);
 
     std::vector<Tuple> tuple_vec;
     TupleBuffer<Tuple> tuple_buffer;
@@ -192,21 +210,18 @@ TEST(tuple_buffer, Benchmark) {
         vec_sum += tuple.tid;
     }
     auto vec_duration = timer.lap();
-    Timer<std::chrono::milliseconds> steps;
 
-    steps.start();
     for (size_t i = 0; i < num_tuples; ++i) {
         tuple_buffer.store_tuple(Tuple{i, fmt::format("payload-{}", i)});
     }
-    auto insert_duration = steps.lap();
+    auto materialized = tuple_buffer.copy_tuples();
     size_t tb_sum = 0;
-    for (auto &tuple: tuple_buffer) {
+    for (auto &tuple: materialized) {
         tb_sum += tuple.tid;
     }
-    auto scan_duration = steps.lap();
+
     auto tb_duration = timer.lap();
 
     std::cout << "Sums: " << vec_sum << ", " << tb_sum << std::endl;
     std::cout << fmt::format("vec duration: {}, tb duration: {}", vec_duration, tb_duration) << std::endl;
-    std::cout << fmt::format("Insert: {}, Scan: {}", insert_duration, scan_duration) << std::endl;
 }
