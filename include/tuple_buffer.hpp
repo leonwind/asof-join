@@ -9,31 +9,47 @@
 #include <unistd.h>
 #include <bits/stdc++.h>
 
-class Buffer {
-   /// Buffer size is 4KiB to reduce TLB misses.
-   static constexpr size_t BUFFER_SIZE = 4096;
+namespace {
+    const uint64_t PAGE_SIZE_4KB = 4096;
 
-   void *chunk = nullptr;
+    inline constexpr uint64_t next_pow2_64(uint64_t v) {
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v |= v >> 32;
+        v++;
+        return v;
+    }
+} // namespace;
+
+class Buffer {
+   size_t buffer_size = 0;
    size_t bytes_used = 0;
+   void *chunk = nullptr;
 
 public:
-    static std::unique_ptr<Buffer> create() {
+    static std::unique_ptr<Buffer> create(size_t buffer_size) {
         auto buffer = std::make_unique<Buffer>();
-        buffer->chunk = mmap(nullptr, BUFFER_SIZE, PROT_READ | PROT_WRITE,
+        buffer->chunk = mmap(nullptr, buffer_size, PROT_READ | PROT_WRITE,
                      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        buffer->buffer_size = buffer_size;
+        buffer->bytes_used = 0;
         return buffer;
     }
 
-    ~Buffer() { munmap(chunk, BUFFER_SIZE); }
+    ~Buffer() { munmap(chunk, buffer_size); }
 
-    char* alloc_tuple(size_t size) {
+    char* alloc_tuple(size_t tuple_size) {
         char* ptr = reinterpret_cast<char*>(chunk) + bytes_used;
-        bytes_used += size;
+        bytes_used += tuple_size;
         return ptr;
     }
 
     [[nodiscard]] inline bool has_space(size_t tuple_size) const {
-        return tuple_size + bytes_used < BUFFER_SIZE;
+        return tuple_size + bytes_used <= buffer_size;
     }
 
     [[nodiscard]] char* data() {
@@ -45,35 +61,34 @@ public:
     }
 
     [[nodiscard]] inline size_t get_bytes_used() const { return bytes_used; }
-
-    [[nodiscard]] static inline size_t capacity(size_t tuple_size) { return BUFFER_SIZE / tuple_size; }
 };
 
 template<typename T>
 class TupleBuffer {
     /// Fixed sized tuples
-    const size_t tuple_size;
+    static constexpr uint64_t TUPLE_SIZE = sizeof(T);
+    /// Minimum 4KB and then round up to next power of 2.
+    static constexpr uint64_t BUFFER_CAPACITY = next_pow2_64(PAGE_SIZE_4KB / TUPLE_SIZE);
+    static constexpr uint64_t BUFFER_CAPACITY_MASK = BUFFER_CAPACITY - 1;
+    static constexpr uint64_t BUFFER_SIZE = TUPLE_SIZE * BUFFER_CAPACITY;
+
     std::unique_ptr<Buffer> curr;
     std::vector<std::unique_ptr<Buffer>> old_buffers;
     size_t num_tuples;
-    size_t buffer_capacity;
 
 public:
-    /// Forward declaration
     class Iterator;
 
-    TupleBuffer(): tuple_size(sizeof(T)), curr(Buffer::create()), old_buffers(),
-        num_tuples(0), buffer_capacity(Buffer::capacity(sizeof(T))) {}
-
+    TupleBuffer(): curr(Buffer::create(BUFFER_SIZE)), old_buffers(), num_tuples(0) {}
     ~TupleBuffer() = default;
 
     char* next_slot() {
         ++num_tuples;
-        if (!curr->has_space(tuple_size)) [[unlikely]] {
+        if (!curr->has_space(TUPLE_SIZE)) [[unlikely]] {
             old_buffers.push_back(std::move(curr));
-            curr = Buffer::create();
+            curr = Buffer::create(BUFFER_SIZE);
         }
-        return curr->alloc_tuple(tuple_size);
+        return curr->alloc_tuple(TUPLE_SIZE);
     }
 
     inline void store_tuple(T tuple) {
@@ -86,9 +101,8 @@ public:
     }
 
     [[nodiscard]] inline T& operator[](size_t i) const {
-        /// TODO: Make buffer_capacity power of 2 to use bitwise AND instead of modulo operator.
-        size_t buffer_idx = i / buffer_capacity;
-        size_t tuple_idx = i % buffer_capacity;
+        size_t buffer_idx = i / BUFFER_CAPACITY;
+        size_t tuple_idx = i & BUFFER_CAPACITY_MASK;
         return get_tuple(buffer_idx, tuple_idx);
     }
 
@@ -99,16 +113,16 @@ public:
     Iterator end() const {
         return Iterator(this,
             /* buffer_idx= */ old_buffers.size(),
-            /* tuple_idx= */ curr->get_bytes_used() / tuple_size);
+            /* tuple_idx= */ curr->get_bytes_used() / TUPLE_SIZE);
     }
 
 private:
     T& get_tuple(size_t buffer_idx, size_t tuple_idx) const {
         auto *data = buffer_idx == old_buffers.size()
-                ? curr->data()
-                : old_buffers[buffer_idx]->data();
+            ? curr->data()
+            : old_buffers[buffer_idx]->data();
 
-        return *reinterpret_cast<T*>(data + tuple_size * tuple_idx);
+        return *reinterpret_cast<T*>(data + tuple_idx * TUPLE_SIZE);
     }
 };
 
@@ -144,13 +158,13 @@ public:
         return tmp;
     }
 
-    bool operator==(const Iterator& other) {
+    bool operator==(const Iterator& other) const {
         return buffer_ == other.buffer_ &&
                buffer_idx_ == other.buffer_idx_ &&
                tuple_idx_ == other.tuple_idx_;
     }
 
-    bool operator!=(const Iterator& other) {
+    bool operator!=(const Iterator& other) const {
         /// Simplifying this expression makes it recursive.
         return !(*this == other);
     }
@@ -161,10 +175,21 @@ private:
     size_t tuple_idx_;
 
     void advance_to_next_tuple() {
-        if (tuple_idx_ >= buffer_->buffer_capacity) {
-            ++buffer_idx_;
-            tuple_idx_ = 0;
+        if (buffer_idx_ < buffer_->old_buffers.size()) {
+            if (tuple_idx_ >= buffer_->BUFFER_CAPACITY) {
+                ++buffer_idx_;
+                tuple_idx_ = 0;
+            }
+        } else if (buffer_idx_ == buffer_->old_buffers.size()) {
+            if (tuple_idx_ >= (buffer_->curr->get_bytes_used() / TUPLE_SIZE)) {
+                buffer_idx_ = buffer_->old_buffers.size();
+                tuple_idx_ = buffer_->curr->get_bytes_used() / TUPLE_SIZE;
+            }
         }
+        //if (tuple_idx_ >= buffer_->BUFFER_CAPACITY) {
+        //    ++buffer_idx_;
+        //    tuple_idx_ = 0;
+        //}
     }
 };
 
