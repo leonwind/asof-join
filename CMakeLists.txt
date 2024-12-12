@@ -24,7 +24,7 @@ include_directories(include)
 
 add_library(asof_join_lib
     src/relation.cc
-    src/algorithms/nested_loop_join.cc
+	src/algorithms/nested_loop_join.cc
     src/algorithms/sorted_merge_join.cc
     src/algorithms/left_partitioning_join.cc
     src/algorithms/right_partitioning_join.cc

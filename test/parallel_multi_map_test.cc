@@ -49,7 +49,7 @@ TEST(multimap, SmallInsertLookup) {
 
     for (size_t i = 0; i < num_keys; ++i) {
         auto key = generate_key(i);
-        auto& data = multi_map[key];
+        auto data = multi_map[key].copy_tuples();
         ASSERT_EQ(data.size(), num_entries_per_key);
 
         std::sort(data.begin(), data.end());
@@ -70,17 +70,15 @@ TEST(multimap, MoreKeysThanPartitions) {
         num_entries_per_key);
 
     MultiMap<TestEntry> multi_map(keys, values);
-
     for (size_t i = 0; i < num_keys; ++i) {
         auto key = generate_key(i);
-        auto& data = multi_map[key];
+        auto data = multi_map[key].copy_tuples();
         ASSERT_EQ(data.size(), num_entries_per_key);
         std::sort(data.begin(), data.end());
         for (size_t j = 0; j < num_entries_per_key; ++j) {
-            std::string error_msg = fmt::format("Failed at key {}, j={}", key, j);
             size_t correct_value = /* offset= */ i + j * num_keys;
-            ASSERT_EQ(data[j].timestamp, correct_value) << error_msg;
-            ASSERT_EQ(data[j].idx, correct_value) << error_msg;
+            ASSERT_EQ(data[j].timestamp, correct_value) << fmt::format("Failed at key {}, j={}", key, j);
+            ASSERT_EQ(data[j].idx, correct_value) << fmt::format("Failed at key {}, j={}", key, j);
         }
     }
 }

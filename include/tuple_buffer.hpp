@@ -28,9 +28,9 @@ namespace {
 } // namespace;
 
 class Buffer {
-   size_t buffer_size = 0;
-   size_t bytes_used = 0;
-   void *chunk = nullptr;
+    void *chunk = nullptr;
+    size_t buffer_size = 0;
+    size_t bytes_used = 0;
 
 public:
     static std::unique_ptr<Buffer> create(size_t buffer_size) {
@@ -42,6 +42,18 @@ public:
         return buffer;
     }
 
+    Buffer() = default;
+    Buffer(const Buffer& other): buffer_size(other.buffer_size), bytes_used(other.bytes_used) {
+        chunk = mmap(nullptr, buffer_size, PROT_READ | PROT_WRITE,
+                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        std::memcpy(
+            /* dest= */ chunk,
+            /* src= */ other.chunk,
+            /* n= */ bytes_used);
+    }
+    Buffer(Buffer&& other) noexcept: chunk(other.chunk),
+          buffer_size(other.buffer_size), bytes_used(other.bytes_used) { other.bytes_used = 0; }
+    Buffer& operator=(const Buffer& other) = delete;
     ~Buffer() { munmap(chunk, buffer_size); }
 
     char* alloc_tuple(size_t tuple_size) {
@@ -82,6 +94,18 @@ public:
     class Iterator;
 
     TupleBuffer(): curr(Buffer::create(BUFFER_SIZE)), old_buffers(), num_tuples(0) {}
+    TupleBuffer(const TupleBuffer& other): curr(std::make_unique<Buffer>(*other.curr)),
+            num_tuples(other.num_tuples) {
+        old_buffers.reserve(other.old_buffers.size());
+        for (auto& buff : other.old_buffers) {
+            old_buffers.push_back(std::make_unique<Buffer>(*buff));
+        }
+    }
+    TupleBuffer& operator=(const TupleBuffer& other) = delete;
+    TupleBuffer(TupleBuffer&& other) noexcept: curr(std::move(other.curr)),
+          old_buffers(std::move(other.old_buffers)),
+          num_tuples(other.num_tuples) { other.num_tuples = 0; }
+
     ~TupleBuffer() = default;
 
     char* next_slot() {
@@ -109,7 +133,8 @@ public:
     }
 
     std::vector<T> copy_tuples() {
-        std::vector<T> all_tuples(num_tuples);
+        std::vector<T> all_tuples;
+        all_tuples.reserve(num_tuples);
         tbb::blocked_range<size_t> range(0, old_buffers.size());
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& range) {
             for (size_t i = range.begin(); i < range.end(); ++i) {
