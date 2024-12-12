@@ -35,26 +35,35 @@ class Buffer {
 public:
     static std::unique_ptr<Buffer> create(size_t buffer_size) {
         auto buffer = std::make_unique<Buffer>();
-        buffer->chunk = mmap(nullptr, buffer_size, PROT_READ | PROT_WRITE,
-                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        buffer->chunk = allocate_memory(buffer_size);
         buffer->buffer_size = buffer_size;
         buffer->bytes_used = 0;
         return buffer;
     }
 
     Buffer() = default;
-    Buffer(const Buffer& other): buffer_size(other.buffer_size), bytes_used(other.bytes_used) {
-        chunk = mmap(nullptr, buffer_size, PROT_READ | PROT_WRITE,
-                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-        std::memcpy(
-            /* dest= */ chunk,
-            /* src= */ other.chunk,
-            /* n= */ bytes_used);
-    }
-    Buffer(Buffer&& other) noexcept: chunk(other.chunk),
-          buffer_size(other.buffer_size), bytes_used(other.bytes_used) { other.bytes_used = 0; }
+    /// Delete copy constructor and assignment
+    /// since we don't have information about T's copy constructor.
+    Buffer(const Buffer& other) = delete;
     Buffer& operator=(const Buffer& other) = delete;
-    ~Buffer() { munmap(chunk, buffer_size); }
+
+    Buffer(Buffer&& other) noexcept: chunk(other.chunk),
+            buffer_size(other.buffer_size),
+            bytes_used(other.bytes_used) {
+        other.chunk = nullptr;
+        other.buffer_size = 0;
+        other.bytes_used = 0;
+    }
+
+    ~Buffer() {
+        if (chunk) {
+            munmap(chunk, buffer_size);
+        }
+    }
+
+    void set_bytes_used(size_t allocated) {
+        bytes_used = allocated;
+    }
 
     char* alloc_tuple(size_t tuple_size) {
         char* ptr = reinterpret_cast<char*>(chunk) + bytes_used;
@@ -75,6 +84,17 @@ public:
     }
 
     [[nodiscard]] inline size_t get_bytes_used() const { return bytes_used; }
+
+private:
+    [[nodiscard]] inline static void* allocate_memory(size_t memory_size) {
+        return mmap(
+            /* addr= */ nullptr,
+            /* len= */ memory_size,
+            /* prot= */ PROT_READ | PROT_WRITE,
+            /* flags= */ MAP_SHARED | MAP_ANONYMOUS,
+            /* fd= */ -1,
+            /* offset= */ 0);
+    }
 };
 
 template<typename T>
@@ -94,14 +114,25 @@ public:
     class Iterator;
 
     TupleBuffer(): curr(Buffer::create(BUFFER_SIZE)), old_buffers(), num_tuples(0) {}
-    TupleBuffer(const TupleBuffer& other): curr(std::make_unique<Buffer>(*other.curr)),
-            num_tuples(other.num_tuples) {
+
+    /// Copy constructor must exist for [[tbb::enumerable_thread_specific]]
+    TupleBuffer(const TupleBuffer& other): num_tuples(other.num_tuples) {
         old_buffers.reserve(other.old_buffers.size());
+
         for (auto& buff : other.old_buffers) {
-            old_buffers.push_back(std::make_unique<Buffer>(*buff));
+            auto new_buffer = Buffer::create(buff->get_bytes_used());
+            copy_buffer_data(*buff, *new_buffer);
+            old_buffers.push_back(std::move(new_buffer));
         }
+
+        auto used = other.curr->get_bytes_used();
+        curr = Buffer::create(used);
+        copy_buffer_data(*other.curr, *curr);
     }
+
+    /// Delete copy-assignment
     TupleBuffer& operator=(const TupleBuffer& other) = delete;
+
     TupleBuffer(TupleBuffer&& other) noexcept: curr(std::move(other.curr)),
           old_buffers(std::move(other.old_buffers)),
           num_tuples(other.num_tuples) { other.num_tuples = 0; }
@@ -133,21 +164,23 @@ public:
     }
 
     std::vector<T> copy_tuples() {
-        std::vector<T> all_tuples;
-        all_tuples.reserve(num_tuples);
+        std::vector<T> all_tuples(num_tuples);
+
+        /// Copy all old buffer pages in parallel
         tbb::blocked_range<size_t> range(0, old_buffers.size());
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& range) {
             for (size_t i = range.begin(); i < range.end(); ++i) {
-                auto* buff = old_buffers[i].get();
+                const auto* buff = old_buffers[i].get();
                 std::copy_n(
-                    /* src= */ reinterpret_cast<T*>(buff->data()),
+                    /* src= */ reinterpret_cast<const T*>(buff->data()),
                     /* n= */ BUFFER_CAPACITY,
                     /* dest= */ all_tuples.data() + i * BUFFER_CAPACITY);
             }
         });
 
+        /// Copy curr buffer page.
         std::copy_n(
-            /* src= */ reinterpret_cast<T*>(curr->data()),
+            /* src= */ reinterpret_cast<const T*>(curr->data()),
             /* n= */ curr->get_bytes_used() / TUPLE_SIZE,
             /* dest= */ all_tuples.data() + old_buffers.size() * BUFFER_CAPACITY);
         return std::move(all_tuples);
@@ -170,6 +203,22 @@ private:
             : old_buffers[buffer_idx]->data();
 
         return *reinterpret_cast<T*>(data + tuple_idx * TUPLE_SIZE);
+    }
+
+    void copy_buffer_data(const Buffer& src, Buffer& dest) {
+        size_t count = src.get_bytes_used() / sizeof(T);
+
+        const T* src_ptr = reinterpret_cast<const T*>(src.data());
+        T* dest_ptr = reinterpret_cast<T*>(dest.data());
+
+        // Construct each object in-place by using T's copy constructor.
+        for (size_t i = 0; i < count; ++i) {
+            new (&dest_ptr[i]) T(src_ptr[i]);
+        }
+
+        // Update the bytes_used for the destination buffer
+        //dest.alloc_tuple(count * sizeof(T));
+        dest.set_bytes_used(src.get_bytes_used());
     }
 };
 
@@ -233,10 +282,6 @@ private:
                 tuple_idx_ = buffer_->curr->get_bytes_used() / TUPLE_SIZE;
             }
         }
-        //if (tuple_idx_ >= buffer_->BUFFER_CAPACITY) {
-        //    ++buffer_idx_;
-        //    tuple_idx_ = 0;
-        //}
     }
 };
 

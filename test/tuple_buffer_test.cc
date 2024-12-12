@@ -193,8 +193,40 @@ TEST(tuple_buffer, MaterializeIntoVector) {
     }
 }
 
+TEST(tuple_buffer, MoveConstructor) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    TupleBuffer<Tuple> moved_tuple_constructor(std::move(tuple_buffer));
+
+    for (size_t i = 0; i < num_tuples; ++i) {
+        ASSERT_EQ(moved_tuple_constructor[i].tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(moved_tuple_constructor[i].payload, tuples[i].payload) << "Failed at index " << i;
+    }
+}
+
+TEST(tuple_buffer, CopyConstructor) {
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    auto tuples = create_tuples(num_tuples);
+    TupleBuffer<Tuple> tuple_buffer;
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    TupleBuffer<Tuple> copied_tuple_buffer(tuple_buffer);
+
+    for (size_t i = 0; i < num_tuples; ++i) {
+        ASSERT_EQ(copied_tuple_buffer[i].tid, tuple_buffer[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(copied_tuple_buffer[i].payload, tuple_buffer[i].payload) << "Failed at index " << i;
+    }
+}
+
 TEST(tuple_buffer, Benchmark) {
-    //return;
+    return;
     size_t num_tuples = 10000 * BUFFER_SIZE / sizeof(Tuple);
 
     std::vector<Tuple> tuple_vec;
@@ -225,3 +257,4 @@ TEST(tuple_buffer, Benchmark) {
     std::cout << "Sums: " << vec_sum << ", " << tb_sum << std::endl;
     std::cout << fmt::format("vec duration: {}, tb duration: {}", vec_duration, tb_duration) << std::endl;
 }
+
