@@ -11,6 +11,8 @@ namespace {
         uint64_t timestamp;
         size_t idx;
 
+        TestEntry(): timestamp(-1), idx(-1) {};
+
         TestEntry(uint64_t timestamp, size_t idx): timestamp(timestamp), idx(idx) {}
 
         [[nodiscard]] inline uint64_t get_key() const override {
@@ -40,28 +42,16 @@ namespace {
 
 
 TEST(multimap, SingleInsert) {
-    size_t num_keys = 1;
-    size_t num_entries_per_key = 1;
-    auto [keys, values] = generate_data(
-        num_keys,
-        num_entries_per_key);
+    std::vector<std::string> keys{"key0"};
+    std::vector<uint64_t> values{0};
 
-    MultiMap<TestEntry> multi_map(keys, values);
+    MultiMapTB<TestEntry> multi_map(keys, values, /* num_partitions= */ 1);
 
-    for (size_t i = 0; i < num_keys; ++i) {
-        auto key = generate_key(i);
-        auto data = multi_map[key]; //.copy_tuples();
-        ASSERT_EQ(data.size(), num_entries_per_key);
-
-        for (size_t j = 0; j < num_entries_per_key; ++j) {
-            std::string error_msg = fmt::format("Failed at key {}, j={}", key, j);
-            size_t correct_value = i + j * num_keys;
-            ASSERT_EQ(data[j].timestamp, correct_value) << error_msg;
-            ASSERT_EQ(data[j].idx, correct_value) << error_msg;
-        }
-    }
+    auto& data = multi_map["key0"];
+    ASSERT_EQ(data.size(), 1);
+    ASSERT_EQ(data[0].timestamp, 0);
+    ASSERT_EQ(data[0].idx, 0);
 }
-
 
 TEST(multimap, SmallInsertLookup) {
     size_t num_keys = 5;
@@ -70,11 +60,11 @@ TEST(multimap, SmallInsertLookup) {
         num_keys,
         num_entries_per_key);
 
-    MultiMap<TestEntry> multi_map(keys, values);
+    MultiMapTB<TestEntry> multi_map(keys, values);
 
     for (size_t i = 0; i < num_keys; ++i) {
         auto key = generate_key(i);
-        auto data = multi_map[key]; //.copy_tuples();
+        auto data = multi_map[key].copy_tuples();
         ASSERT_EQ(data.size(), num_entries_per_key);
 
         std::sort(data.begin(), data.end());
@@ -94,10 +84,10 @@ TEST(multimap, MoreKeysThanPartitions) {
         num_keys,
         num_entries_per_key);
 
-    MultiMap<TestEntry> multi_map(keys, values);
+    MultiMapTB<TestEntry> multi_map(keys, values);
     for (size_t i = 0; i < num_keys; ++i) {
         auto key = generate_key(i);
-        auto data = multi_map[key]; //.copy_tuples();
+        auto data = multi_map[key].copy_tuples();
         ASSERT_EQ(data.size(), num_entries_per_key);
         std::sort(data.begin(), data.end());
         for (size_t j = 0; j < num_entries_per_key; ++j) {

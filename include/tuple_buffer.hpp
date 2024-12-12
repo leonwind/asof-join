@@ -33,14 +33,6 @@ class Buffer {
     size_t bytes_used = 0;
 
 public:
-    static std::unique_ptr<Buffer> create(size_t buffer_size) {
-        auto buffer = std::make_unique<Buffer>();
-        buffer->chunk = allocate_memory(buffer_size);
-        buffer->buffer_size = buffer_size;
-        buffer->bytes_used = 0;
-        return buffer;
-    }
-
     Buffer() = default;
     /// Delete copy constructor and assignment
     /// since we don't have information about T's copy constructor.
@@ -61,8 +53,27 @@ public:
         }
     }
 
-    void set_bytes_used(size_t allocated) {
-        bytes_used = allocated;
+    static std::unique_ptr<Buffer> create(size_t buffer_size) {
+        auto buffer = std::make_unique<Buffer>();
+        buffer->chunk = allocate_memory(buffer_size);
+        buffer->buffer_size = buffer_size;
+        buffer->bytes_used = 0;
+        return buffer;
+    }
+
+    template<typename T>
+    static void copy_buffer_data(const Buffer& src, Buffer& dest) {
+        size_t count = src.get_bytes_used() / sizeof(T);
+
+        const T* src_ptr = reinterpret_cast<const T*>(src.data());
+        T* dest_ptr = reinterpret_cast<T*>(dest.data());
+
+        /// Construct each object in-place by using T's copy constructor.
+        for (size_t i = 0; i < count; ++i) {
+            new (&dest_ptr[i]) T(src_ptr[i]);
+        }
+
+        dest.bytes_used = src.bytes_used;
     }
 
     char* alloc_tuple(size_t tuple_size) {
@@ -87,13 +98,19 @@ public:
 
 private:
     [[nodiscard]] inline static void* allocate_memory(size_t memory_size) {
-        return mmap(
+        void* ptr = mmap(
             /* addr= */ nullptr,
             /* len= */ memory_size,
             /* prot= */ PROT_READ | PROT_WRITE,
-            /* flags= */ MAP_SHARED | MAP_ANONYMOUS,
+            /* flags= */ MAP_PRIVATE | MAP_ANONYMOUS,
             /* fd= */ -1,
             /* offset= */ 0);
+        if (ptr == MAP_FAILED) {
+            perror("MMAP failed");
+            std::exit(1);
+        }
+
+        return ptr;
     }
 };
 
@@ -120,14 +137,13 @@ public:
         old_buffers.reserve(other.old_buffers.size());
 
         for (auto& buff : other.old_buffers) {
-            auto new_buffer = Buffer::create(buff->get_bytes_used());
-            copy_buffer_data(*buff, *new_buffer);
+            auto new_buffer = Buffer::create(BUFFER_SIZE);
+            Buffer::copy_buffer_data<T>(*buff, *new_buffer);
             old_buffers.push_back(std::move(new_buffer));
         }
 
-        auto used = other.curr->get_bytes_used();
-        curr = Buffer::create(used);
-        copy_buffer_data(*other.curr, *curr);
+        curr = Buffer::create(BUFFER_SIZE);
+        Buffer::copy_buffer_data<T>(*other.curr, *curr);
     }
 
     /// Delete copy-assignment
@@ -205,21 +221,7 @@ private:
         return *reinterpret_cast<T*>(data + tuple_idx * TUPLE_SIZE);
     }
 
-    void copy_buffer_data(const Buffer& src, Buffer& dest) {
-        size_t count = src.get_bytes_used() / sizeof(T);
 
-        const T* src_ptr = reinterpret_cast<const T*>(src.data());
-        T* dest_ptr = reinterpret_cast<T*>(dest.data());
-
-        // Construct each object in-place by using T's copy constructor.
-        for (size_t i = 0; i < count; ++i) {
-            new (&dest_ptr[i]) T(src_ptr[i]);
-        }
-
-        // Update the bytes_used for the destination buffer
-        //dest.alloc_tuple(count * sizeof(T));
-        dest.set_bytes_used(src.get_bytes_used());
-    }
 };
 
 template<typename T>

@@ -24,6 +24,10 @@ namespace {
         [[nodiscard]] std::string str() const {
             return fmt::format("tid={}, payload={}", tid, payload);
         }
+
+        bool operator==(const Tuple& other) const {
+            return tid == other.tid && payload == other.payload;
+        }
     };
 } // namespace
 
@@ -49,7 +53,7 @@ TEST(tuple_buffer, SingleTupleEntry) {
 
 TEST(tuple_buffer, Store1FullBuffer) {
     size_t num_tuples = BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -66,7 +70,7 @@ TEST(tuple_buffer, Store1FullBuffer) {
 
 TEST(tuple_buffer, Store2FullBuffers) {
     size_t num_tuples = 2 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -83,7 +87,7 @@ TEST(tuple_buffer, Store2FullBuffers) {
 
 TEST(tuple_buffer, Store100FullBuffers) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -100,7 +104,7 @@ TEST(tuple_buffer, Store100FullBuffers) {
 
 TEST(tuple_buffer, IteratorOver100BuffersPreIncrement) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -120,7 +124,7 @@ TEST(tuple_buffer, IteratorOver100BuffersPreIncrement) {
 
 TEST(tuple_buffer, IteratorOver100BuffersPostIncremenent) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -140,7 +144,7 @@ TEST(tuple_buffer, IteratorOver100BuffersPostIncremenent) {
 
 TEST(tuple_buffer, IteratorOver100BuffersPointerAccess) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -159,7 +163,7 @@ TEST(tuple_buffer, IteratorOver100BuffersPointerAccess) {
 
 TEST(tuple_buffer, RangeIterationOver100Buffers) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -178,7 +182,7 @@ TEST(tuple_buffer, RangeIterationOver100Buffers) {
 
 TEST(tuple_buffer, MaterializeIntoVector) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
 
     for (auto& tuple : tuples) {
@@ -195,7 +199,7 @@ TEST(tuple_buffer, MaterializeIntoVector) {
 
 TEST(tuple_buffer, MoveConstructor) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
     for (auto& tuple : tuples) {
         tuple_buffer.store_tuple(tuple);
@@ -211,7 +215,7 @@ TEST(tuple_buffer, MoveConstructor) {
 
 TEST(tuple_buffer, CopyConstructor) {
     size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples = create_tuples(num_tuples);
+    auto tuples= create_tuples(num_tuples);
     TupleBuffer<Tuple> tuple_buffer;
     for (auto& tuple : tuples) {
         tuple_buffer.store_tuple(tuple);
@@ -222,6 +226,36 @@ TEST(tuple_buffer, CopyConstructor) {
     for (size_t i = 0; i < num_tuples; ++i) {
         ASSERT_EQ(copied_tuple_buffer[i].tid, tuple_buffer[i].tid) << "Failed at index " << i;
         ASSERT_EQ(copied_tuple_buffer[i].payload, tuple_buffer[i].payload) << "Failed at index " << i;
+    }
+}
+
+TEST(tuple_buffer, CopyNonTriviallyCopyableType) {
+    using NonCpyTuple = std::pair<size_t, Tuple>;
+    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(NonCpyTuple);
+
+    /// Use long string as payload to prevent short string copyable optimizations.
+    size_t str_length = 1000;
+    std::string long_string;
+    for (size_t i = 0; i < str_length; ++i) {
+        long_string += "0";
+    }
+
+    std::vector<NonCpyTuple> tuples;
+    for (size_t i = 0; i < num_tuples; ++i) {
+        tuples.emplace_back(i, Tuple{i, fmt::format("{}-{}", long_string, i)});
+    }
+
+    TupleBuffer<NonCpyTuple> tuple_buffer;
+
+    for (auto& tuple : tuples) {
+        tuple_buffer.store_tuple(tuple);
+    }
+
+    TupleBuffer<NonCpyTuple> copied_tuple_buffer(tuple_buffer);
+
+    for (size_t i = 0; i < num_tuples; ++i) {
+        ASSERT_EQ(copied_tuple_buffer[i].first, tuple_buffer[i].first) << "Failed at index " << i;
+        ASSERT_EQ(copied_tuple_buffer[i].second, tuple_buffer[i].second) << "Failed at index " << i;
     }
 }
 
