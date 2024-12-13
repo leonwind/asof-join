@@ -7,7 +7,7 @@
 #include "tbb/parallel_sort.h"
 
 
-uint64_t SortingASOFJoin::join() {
+void SortingASOFJoin::join() {
     Timer timer;
     timer.start();
 
@@ -80,5 +80,4 @@ uint64_t SortingASOFJoin::join() {
     log(fmt::format("Sorted merge join in {}", timer.lap()));
 
     result.finalize();
-    return -1;
 }

@@ -10,7 +10,10 @@ namespace {
 uint64_t run_join_return_median_time(ASOFJoin &asof_op, size_t num_runs) {
     std::vector<uint64_t> times(num_runs);
     for (size_t i = 0; i < num_runs; ++i) {
-        times[i] = asof_op.join();
+        Timer timer;
+        timer.start();
+        asof_op.join();
+        times[i] = timer.stop();
         asof_op.result.reset();
     }
 

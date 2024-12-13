@@ -14,10 +14,9 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-uint64_t PartitioningRightBTreeASOFJoin::join() {
+void PartitioningRightBTreeASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
-    timer.start();
 
     //e.startCounters();
     MultiMap<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
@@ -133,5 +132,4 @@ uint64_t PartitioningRightBTreeASOFJoin::join() {
     //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
-    return timer.stop();
 }

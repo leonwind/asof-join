@@ -28,10 +28,9 @@ inline PartitioningRightASOFJoin::Entry* PartitioningRightASOFJoin::binary_searc
     return &(*iter);
 }
 
-uint64_t PartitioningRightASOFJoin::join() {
+void PartitioningRightASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
-    timer.start();
 
     //e.startCounters();
     MultiMapTB<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
@@ -179,5 +178,4 @@ uint64_t PartitioningRightASOFJoin::join() {
     //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
-    return timer.stop();
 }

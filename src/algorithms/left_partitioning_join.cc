@@ -28,9 +28,8 @@ PartitioningLeftASOFJoin::Entry* PartitioningLeftASOFJoin::binary_search_closest
     return &(*--iter);
 }
 
-uint64_t PartitioningLeftASOFJoin::join() {
+void PartitioningLeftASOFJoin::join() {
     Timer<milliseconds> timer;
-    timer.start();
     //PerfEvent e;
 
     //e.startCounters();
@@ -90,5 +89,4 @@ uint64_t PartitioningLeftASOFJoin::join() {
     //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
-    return timer.stop();
 }

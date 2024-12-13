@@ -54,10 +54,9 @@ namespace {
     }
 } // namespace
 
-uint64_t JoinAlg::join() {
+void JoinAlg::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
-    timer.start();
 
     //e.startCounters();
     MultiMap<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
@@ -193,5 +192,4 @@ uint64_t JoinAlg::join() {
     //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
-    return timer.stop();
 }

@@ -15,7 +15,7 @@
 #define MORSEL_SIZE (2<<14)
 
 
-uint64_t PartitioningLeftBTreeASOFJoin::join() {
+void PartitioningLeftBTreeASOFJoin::join() {
     Timer<milliseconds> timer;
     timer.start();
 
@@ -62,5 +62,4 @@ uint64_t PartitioningLeftBTreeASOFJoin::join() {
     //log(fmt::format("BTree lookups in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
-    return timer.stop();
 }

@@ -12,10 +12,9 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-uint64_t PartitioningSortedMergeJoin::join() {
+void PartitioningSortedMergeJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
-    timer.start();
 
     //e.startCounters();
     MultiMap<Entry> prices_index(prices.stock_ids, prices.timestamps);
@@ -90,5 +89,4 @@ uint64_t PartitioningSortedMergeJoin::join() {
     //log(fmt::format("Partitioned Sorted Merge join in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
-    return timer.stop();
 }

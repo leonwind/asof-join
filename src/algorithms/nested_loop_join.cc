@@ -2,7 +2,7 @@
 #include "timer.hpp"
 #include <unordered_map>
 
-uint64_t BaselineASOFJoin::join() {
+void BaselineASOFJoin::join() {
     for (size_t i = 0; i < order_book.size; ++i) {
         bool found_join_partner = false;
         size_t match_idx = 0;
@@ -35,5 +35,4 @@ uint64_t BaselineASOFJoin::join() {
     }
 
     result.finalize();
-    return -1;
 }
