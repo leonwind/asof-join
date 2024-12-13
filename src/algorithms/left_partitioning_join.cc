@@ -14,10 +14,10 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-PartitioningLeftASOFJoin::Entry* PartitioningLeftASOFJoin::binary_search_closest_match_less_than(
-        std::vector<Entry>& data, uint64_t target) {
+PartitioningLeftASOFJoin::LeftEntry* PartitioningLeftASOFJoin::binary_search_closest_match_less_than(
+        std::vector<LeftEntry>& data, uint64_t target) {
     auto iter = std::lower_bound(data.begin(), data.end(), target,
-        [](const Entry& a, uint64_t b) {
+        [](const LeftEntry& a, uint64_t b) {
             return a.timestamp <= b;
     });
 
@@ -33,8 +33,8 @@ void PartitioningLeftASOFJoin::join() {
     //PerfEvent e;
 
     //e.startCounters();
-    MultiMapTB<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
-    //std::unordered_map<std::string_view, std::vector<Entry>> prices_lookup;
+    MultiMapTB<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
+    //std::unordered_map<std::string_view, std::vector<LeftEntry>> prices_lookup;
     //for (size_t i = 0; i < prices.size; ++i) {
     //    if (prices_lookup.contains(prices.stock_ids[i])) {
     //        prices_lookup[prices.stock_ids[i]].emplace_back(prices.timestamps[i], i);

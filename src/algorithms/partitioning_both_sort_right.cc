@@ -59,10 +59,10 @@ void JoinAlg::join() {
     Timer<milliseconds> timer;
 
     //e.startCounters();
-    MultiMap<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    MultiMapTB<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
     //log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    MultiMap<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
+    MultiMapTB<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
     //log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
     //e.stopCounters();
     //log("Right Partitioning Perf");
@@ -110,9 +110,6 @@ void JoinAlg::join() {
                         start_offset,
                         end_offset);
 
-                    //last_target = timestamp;
-                    //last_pos = entry_pos == UINT64_MAX ? 0 : entry_pos;
-
                     if (entry_pos == UINT64_MAX) {
                         continue;
                     }
@@ -144,48 +141,66 @@ void JoinAlg::join() {
         const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
         std::vector<RightEntry*> last_match_per_range(num_thread_chunks);
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, partition_bin.size(), MORSEL_SIZE),
-                [&](tbb::blocked_range<size_t>& range) {
-            RightEntry* last_match = nullptr;
-            for (size_t i = range.end(), j = i - 1; i != range.begin(); --i) {
-                if (partition_bin[j].matched) {
-                    last_match = &partition_bin[j];
-                    break;
-                }
-            }
+        /// We have to parallel iterate over the number of thread chunks since TBB is not forced to align
+        /// each chunk to [[MORSEL_SIZE]] which would make [[range.begin() / MORSEL_SIZE]] a non-correct
+        /// chunk position. This would yield wrong results.
+        tbb::blocked_range<size_t> chunks_range(0, num_thread_chunks);
 
-            last_match_per_range[range.begin() / MORSEL_SIZE] = last_match;
+        tbb::parallel_for(chunks_range,
+                [&](tbb::blocked_range<size_t>& chunks_range) {
+            for (size_t chunks_idx = chunks_range.begin(); chunks_idx != chunks_range.end(); ++chunks_idx) {
+                size_t start = chunks_idx * MORSEL_SIZE;
+                size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
+                                      partition_bin.size());
+                RightEntry *last_match = nullptr;
+
+                for (size_t i = end; i != start; --i) {
+                    if (partition_bin[i - 1].matched) {
+                        last_match = &partition_bin[i - 1];
+                        break;
+                    }
+                }
+                size_t morsel_pos = start / MORSEL_SIZE;
+                last_match_per_range[morsel_pos] = last_match;
+            }
         });
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, partition_bin.size(), MORSEL_SIZE),
-                [&](tbb::blocked_range<size_t>& range) {
-            RightEntry* last_match = nullptr;
-            size_t morsel_pos = range.begin() / MORSEL_SIZE;
-            for (size_t i = morsel_pos; i != 0; --i) {
-                if (last_match_per_range[i - 1] != nullptr) {
-                    last_match = last_match_per_range[i - 1];
-                    break;
-                }
-            }
+        tbb::parallel_for(chunks_range,
+                [&](tbb::blocked_range<size_t>& chunks_range) {
+            for (size_t chunks_idx = chunks_range.begin(); chunks_idx != chunks_range.end(); ++chunks_idx) {
+                size_t start = chunks_idx * MORSEL_SIZE;
+                size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
+                                      partition_bin.size());
+                RightEntry *last_match = nullptr;
 
-            for (size_t i = range.begin(); i != range.end(); ++i) {
-                auto& entry = partition_bin[i];
-                if (entry.matched) {
-                    last_match = &entry;
+                size_t morsel_pos = start / MORSEL_SIZE;
+                for (size_t i = morsel_pos; i != 0; --i) {
+                    if (last_match_per_range[i - 1] != nullptr) {
+                        last_match = last_match_per_range[i - 1];
+                        break;
+                    }
                 }
 
-                if (last_match && last_match->matched) {
-                    result.insert(
-                        /* price_timestamp= */ prices.timestamps[last_match->price_idx],
-                        /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
-                        /* price= */ prices.prices[last_match->price_idx],
-                        /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
-                        /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
-                        /* amount= */ order_book.amounts[entry.order_idx]);
+                for (size_t i = start; i != end; ++i) {
+                    auto &entry = partition_bin[i];
+                    if (entry.matched) {
+                        last_match = &entry;
+                    }
+
+                    if (last_match && last_match->matched) {
+                        result.insert(
+                                /* price_timestamp= */ prices.timestamps[last_match->price_idx],
+                                /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
+                                /* price= */ prices.prices[last_match->price_idx],
+                                /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
+                                /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
+                                /* amount= */ order_book.amounts[entry.order_idx]);
+                    }
                 }
             }
         });
     });
+
     //e.stopCounters();
     //std::cout << "\n\nFinding Match Perf: " << std::endl;
     //e.printReport(std::cout, prices.size);

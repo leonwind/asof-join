@@ -90,11 +90,11 @@ int main() {
     //    run_join(left_bs_split, input_size, "left partitioning + split binary search");
     //}
 
-    //PartitioningBothSortRightASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(partitioning_both, input_size, "right partitioning + split binary search");
+    PartitioningBothSortRightASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(partitioning_both, input_size, "both partitioning sort right");
 
-    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(partition_sort, input_size, "partitioning sort");
+    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(partition_sort, input_size, "partitioning sort");
 
     return 0;
 }

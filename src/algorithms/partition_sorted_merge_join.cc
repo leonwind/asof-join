@@ -17,10 +17,10 @@ void PartitioningSortedMergeJoin::join() {
     Timer<milliseconds> timer;
 
     //e.startCounters();
-    MultiMap<Entry> prices_index(prices.stock_ids, prices.timestamps);
+    MultiMapTB<LeftEntry> prices_index(prices.stock_ids, prices.timestamps);
     //log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    MultiMap<Entry> order_book_index(order_book.stock_ids, order_book.timestamps);
+    MultiMapTB<LeftEntry> order_book_index(order_book.stock_ids, order_book.timestamps);
     //log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
     //std::cout << "\n\nPartitioning Perf" << std::endl;
     //e.stopCounters();
@@ -44,12 +44,12 @@ void PartitioningSortedMergeJoin::join() {
     //e.startCounters();
     tbb::parallel_for_each(order_book_index.begin(), order_book_index.end(),
             [&](auto& iter) {
-        const std::vector<Entry>& orders_bin = order_book_index[iter.first];
+        const std::vector<LeftEntry>& orders_bin = order_book_index[iter.first];
 
         if (!prices_index.contains(iter.first)) {
             return;
         }
-        const std::vector<Entry>& prices_bin = prices_index[iter.first];
+        const std::vector<LeftEntry>& prices_bin = prices_index[iter.first];
 
         size_t l = 0;
         size_t r = 0;

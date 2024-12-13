@@ -19,7 +19,7 @@ void PartitioningRightBTreeASOFJoin::join() {
     Timer<milliseconds> timer;
 
     //e.startCounters();
-    MultiMap<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    MultiMap<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
     //e.stopCounters();
     //log("Partitioning Perf");
     //e.printReport(std::cout, order_book.size);
@@ -34,7 +34,7 @@ void PartitioningRightBTreeASOFJoin::join() {
     //e.stopCounters();
     //log("\n\nSorting Perf: ");
 
-    using Btree = Btree<Entry>;
+    using Btree = Btree<RightEntry>;
     std::unordered_map<std::string_view, Btree> order_trees(order_book_lookup.size());
     for (auto& iter : order_book_lookup) {
         order_trees.insert({iter.first, Btree(iter.second)});
@@ -81,13 +81,13 @@ void PartitioningRightBTreeASOFJoin::join() {
             [&](auto& iter) {
         Btree& tree = iter.second;
         const size_t num_thread_chunks = tree.num_leaves();
-        std::vector<Entry*> last_match_per_range(num_thread_chunks);
+        std::vector<RightEntry*> last_match_per_range(num_thread_chunks);
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, num_thread_chunks, 1),
                 [&](tbb::blocked_range<size_t>& range) {
             size_t leave_idx = range.begin();
             auto& leaf_data = tree[leave_idx];
-            Entry* last_match = nullptr;
+            RightEntry* last_match = nullptr;
             for (size_t i = leaf_data.size(); i != 0; --i) {
                 if (leaf_data[i - 1].matched) {
                     last_match = &leaf_data[i - 1];
@@ -101,7 +101,7 @@ void PartitioningRightBTreeASOFJoin::join() {
                 [&](tbb::blocked_range<size_t>& range) {
             size_t leave_idx = range.begin();
             auto& leaf_data = tree[leave_idx];
-            Entry* last_match = nullptr;
+            RightEntry* last_match = nullptr;
             for (size_t i = leave_idx; i != 0; --i) {
                 if (last_match_per_range[i - 1] != nullptr) {
                     last_match = last_match_per_range[i - 1];

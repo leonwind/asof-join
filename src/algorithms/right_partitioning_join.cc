@@ -14,10 +14,10 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-inline PartitioningRightASOFJoin::Entry* PartitioningRightASOFJoin::binary_search_closest_match_greater_than(
-        std::vector<Entry> &data, uint64_t target) {
+inline PartitioningRightASOFJoin::RightEntry* PartitioningRightASOFJoin::binary_search_closest_match_greater_than(
+        std::vector<RightEntry> &data, uint64_t target) {
     auto iter = std::lower_bound(data.begin(), data.end(), target,
-        [](const Entry &b, uint64_t a) {
+        [](const RightEntry &b, uint64_t a) {
             return b.timestamp < a;
     });
 
@@ -33,7 +33,7 @@ void PartitioningRightASOFJoin::join() {
     Timer<milliseconds> timer;
 
     //e.startCounters();
-    MultiMapTB<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    MultiMapTB<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
     //e.stopCounters();
     //log("Partitioning Perf");
     //e.printReport(std::cout, order_book.size);
@@ -85,33 +85,12 @@ void PartitioningRightASOFJoin::join() {
     //e.printReport(std::cout, prices.size);
     //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
-    //for (auto& iter : order_book_lookup) {
-    //    auto& partition_bin = iter.second;
-    //    Entry* last_match = nullptr;
-
-    //    for (auto& entry : partition_bin) {
-    //        if (entry.matched) {
-    //            last_match = &entry;
-    //        }
-
-    //        if (last_match && last_match->matched) {
-    //           result.insert(
-    //               /* price_timestamp= */ prices.timestamps[last_match->price_idx],
-    //               /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
-    //               /* price= */ prices.prices[last_match->price_idx],
-    //               /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
-    //               /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
-    //               /* amount= */ order_book.amounts[entry.order_idx]);
-    //        }
-    //    }
-    //}
-
     //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
-        std::vector<Entry>& partition_bin = iter.second;
+        std::vector<RightEntry>& partition_bin = iter.second;
         const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
-        std::vector<Entry*> last_match_per_range(num_thread_chunks);
+        std::vector<RightEntry*> last_match_per_range(num_thread_chunks);
 
         /// We have to parallel iterate over the number of thread chunks since TBB is not forced to align
         /// each chunk to [[MORSEL_SIZE]] which would make [[range.begin() / MORSEL_SIZE]] a non-correct
@@ -124,7 +103,7 @@ void PartitioningRightASOFJoin::join() {
                 size_t start = chunks_idx * MORSEL_SIZE;
                 size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
                                       partition_bin.size());
-                Entry *last_match = nullptr;
+                RightEntry *last_match = nullptr;
 
                 for (size_t i = end; i != start; --i) {
                     if (partition_bin[i - 1].matched) {
@@ -143,7 +122,7 @@ void PartitioningRightASOFJoin::join() {
                 size_t start = chunks_idx * MORSEL_SIZE;
                 size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
                                       partition_bin.size());
-                Entry *last_match = nullptr;
+                RightEntry *last_match = nullptr;
 
                 size_t morsel_pos = start / MORSEL_SIZE;
                 for (size_t i = morsel_pos; i != 0; --i) {

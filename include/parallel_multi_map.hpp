@@ -167,7 +167,7 @@ private:
         for (auto& local_map : local_maps) {
             for (auto& [key, value]: local_map) {
                 //MapKey& key = iter.first;
-                //TupleBuffer<Entry>& value = iter.second;
+                //TupleBuffer<LeftEntry>& value = iter.second;
                 partitioned_map.insert({key, std::move(value.copy_tuples())});
             }
             //partitioned_map.merge(local_map);
