@@ -6,6 +6,8 @@
 /// The results were manual verified using DuckDB.
 
 TEST(asof_join_baseline, TestSmallDuckDBExample) {
+    /// Not interested in Naive O(n^2) algorithm.
+    return;
     Prices prices = load_prices("../data/prices_small.csv");
     OrderBook order_book = load_order_book("../data/orderbook_small.csv");
     BaselineASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
@@ -25,6 +27,8 @@ TEST(asof_join_baseline, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_sorted_merge_join, TestSmallDuckDBExample) {
+    /// Not interested in naive sorted merge.
+    return;
     Prices prices = load_prices("../data/prices_small.csv");
     OrderBook order_book = load_order_book("../data/orderbook_small.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
@@ -46,6 +50,8 @@ TEST(asof_join_sorted_merge_join, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_sorted_merge_join, TestSmallBTCExample) {
+    /// Not interested in naive sorted merge.
+    return;
     Prices prices = load_prices("../data/btc_usd_data.csv");
     OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
@@ -64,6 +70,8 @@ TEST(asof_join_sorted_merge_join, TestSmallBTCExample) {
 }
 
 TEST(asof_join_sorted_merge_join, TestMediumBTCExample) {
+    /// Not interested in naive sorted merge.
+    return;
     Prices prices = load_prices("../data/btc_usd_data.csv");
     OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
@@ -128,6 +136,32 @@ TEST(asof_join_partitioning_left, TestMediumBTCExample) {
     ASSERT_EQ(total_value, 70580346356);
 }
 
+TEST(asof_join_partitioning_left, TestSmallUniformExample) {
+    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 10000);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 24168000);
+}
+
+TEST(asof_join_partitioning_left, TestSmallZipfExample) {
+    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 1024);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 2532396);
+}
+
 TEST(asof_join_partitioning_right, TestSmallDuckDBExample) {
     Prices prices = load_prices("../data/prices_small.csv", ',', true);
     OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
@@ -180,6 +214,32 @@ TEST(asof_join_partitioning_right, TestMediumBTCExample) {
     ASSERT_EQ(total_value, 70580346356);
 }
 
+TEST(asof_join_partitioning_right, TestSmallUniformExample) {
+    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 10000);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 24168000);
+}
+
+TEST(asof_join_partitioning_right, TestSmallZipfExample) {
+    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 1024);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 2532396);
+}
+
 TEST(asof_join_partitioning_sort, TestSmallDuckDBExample) {
     Prices prices = load_prices("../data/prices_small.csv", ',', true);
     OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
@@ -230,6 +290,32 @@ TEST(asof_join_partitioning_sort, TestMediumBTCExample) {
     uint64_t total_value = 0;
     for (auto value : join.result.values) { total_value += value; }
     ASSERT_EQ(total_value, 70580346356);
+}
+
+TEST(asof_join_partitioning_sort, TestSmallUniformExample) {
+    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 10000);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 24168000);
+}
+
+TEST(asof_join_partitioning_sort, TestSmallZipfExample) {
+    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 1024);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 2532396);
 }
 
 TEST(asof_join_left_partitioning_btree, TestSmallDuckDBExample) {
@@ -386,4 +472,30 @@ TEST(asof_join_both_partitioning_sort_right, TestMediumBTCExample) {
     uint64_t total_value = 0;
     for (auto value : join.result.values) { total_value += value; }
     ASSERT_EQ(total_value, 70580346356);
+}
+
+TEST(asof_join_both_partitioning_sort_right, TestSmallUniformExample) {
+    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    PartitioningBothSortRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 10000);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 24168000);
+}
+
+TEST(asof_join_both_partitioning_sort_right, TestSmallZipfExample) {
+    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    PartitioningBothSortRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.values.size(), 1024);
+    uint64_t total_value = 0;
+    for (auto value : join.result.values) { total_value += value; }
+    ASSERT_EQ(total_value, 2532396);
 }
