@@ -36,10 +36,7 @@ void run_join_in_new_process(ASOFJoin& asof_op) {
     if (pid == 0) {
         //tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
         asof_op.join();
-        size_t total_val = 0;
-        for (auto& val : asof_op.result.values) {
-            total_val += val;
-        }
+        uint64_t total_val = asof_op.result.value_sum;
         std::cout << "Total value: " << total_val << std::endl;
         std::cout << "Num rows: " << asof_op.result.size << std::endl;
         _exit(0);
@@ -60,10 +57,7 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
 
     //run_join_in_new_process(asof_op);
     asof_op.join();
-        size_t total_val = 0;
-        for (auto& val : asof_op.result.values) {
-            total_val += val;
-        }
+        uint64_t total_val = asof_op.result.value_sum;
         std::cout << "Total value: " << total_val << std::endl;
         std::cout << "Num rows: " << asof_op.result.size << std::endl;
     auto duration = timer.stop<std::chrono::milliseconds>();

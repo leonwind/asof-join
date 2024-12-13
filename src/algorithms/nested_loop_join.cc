@@ -23,13 +23,14 @@ uint64_t BaselineASOFJoin::join() {
         }
 
         if (found_join_partner) {
-            result.prices_timestamps.push_back(prices.timestamps[match_idx]);
-            result.prices_stock_ids.push_back(prices.stock_ids[match_idx]);
-            result.prices.push_back(prices.prices[match_idx]);
-            result.order_book_timestamps.push_back(order_book.timestamps[i]);
-            result.order_book_stock_ids.push_back(order_book.stock_ids[i]);
-            result.amounts.push_back(order_book.amounts[i]);
-            result.values.push_back(prices.prices[match_idx] * order_book.amounts[i]);
+            result.insert(
+                prices.timestamps[match_idx],
+                prices.stock_ids[match_idx],
+                prices.prices[match_idx],
+                order_book.timestamps[i],
+                order_book.stock_ids[i],
+                order_book.amounts[i]
+            );
         }
     }
 

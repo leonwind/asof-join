@@ -63,16 +63,14 @@ uint64_t SortingASOFJoin::join() {
         if (found_match) {
             price_idx = prices_indices[last_match];
 
-            result.prices_timestamps.push_back(prices.timestamps[price_idx]);
-            result.prices_stock_ids.push_back(prices.stock_ids[price_idx]);
-            result.prices.push_back(prices.prices[price_idx]);
-
-            result.order_book_timestamps.push_back(order_book.timestamps[order_book_idx]);
-            result.order_book_stock_ids.push_back(order_book.stock_ids[order_book_idx]);
-            result.amounts.push_back(order_book.amounts[order_book_idx]);
-
-            result.values.push_back(
-                prices.prices[price_idx] * order_book.amounts[order_book_idx]);
+            result.insert(
+                prices.timestamps[price_idx],
+                prices.stock_ids[price_idx],
+                prices.prices[price_idx],
+                order_book.timestamps[order_book_idx],
+                order_book.stock_ids[order_book_idx],
+                order_book.amounts[order_book_idx]
+            );
         }
 
         ++j;

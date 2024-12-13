@@ -43,7 +43,6 @@ uint64_t PartitioningSortedMergeJoin::join() {
     //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     //e.startCounters();
-    std::mutex result_lock;
     tbb::parallel_for_each(order_book_index.begin(), order_book_index.end(),
             [&](auto& iter) {
         const std::vector<Entry>& orders_bin = order_book_index[iter.first];
@@ -71,7 +70,6 @@ uint64_t PartitioningSortedMergeJoin::join() {
                 size_t order_idx = orders_bin[l].idx;
                 size_t price_idx = prices_bin[last_valid_r].idx;
 
-                std::scoped_lock lock{result_lock};
                 result.insert(
                     /* price_timestamp= */ prices.timestamps[price_idx],
                     /* price_stock_id= */ prices.stock_ids[price_idx],

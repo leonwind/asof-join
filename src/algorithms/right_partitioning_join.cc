@@ -86,7 +86,6 @@ uint64_t PartitioningRightASOFJoin::join() {
     //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
     //e.startCounters();
-    std::mutex result_lock;
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         std::vector<Entry>& partition_bin = iter.second;
@@ -124,7 +123,6 @@ uint64_t PartitioningRightASOFJoin::join() {
                 }
 
                 if (last_match && last_match->matched) {
-                    std::scoped_lock lock{result_lock};
                     result.insert(
                         /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                         /* price_stock_id= */ prices.stock_ids[last_match->price_idx],

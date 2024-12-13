@@ -22,8 +22,9 @@ enum JoinType {
 
 class ASOFJoin {
 public:
-    ASOFJoin(Prices& prices, OrderBook& order_book, Comparison comp_type, JoinType join_type):
-        result(), prices(prices), order_book(order_book),
+    ASOFJoin(Prices& prices, OrderBook& order_book,
+             Comparison comp_type, JoinType join_type, bool simulate_pipelining = false):
+        result(simulate_pipelining), prices(prices), order_book(order_book),
         comp_type(comp_type), join_type(join_type) {}
 
     virtual uint64_t join() = 0;

@@ -78,7 +78,6 @@ uint64_t PartitioningRightBTreeASOFJoin::join() {
     //log(fmt::format("BTree Lookups in {}{}", timer.lap(), timer.unit()));
 
     //e.startCounters();
-    std::mutex result_lock;
     tbb::parallel_for_each(order_trees.begin(), order_trees.end(),
             [&](auto& iter) {
         Btree& tree = iter.second;
@@ -117,7 +116,6 @@ uint64_t PartitioningRightBTreeASOFJoin::join() {
                 }
 
                 if (last_match && last_match->matched) {
-                    std::scoped_lock lock{result_lock};
                     result.insert(
                         /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                         /* price_stock_id= */ prices.stock_ids[last_match->price_idx],

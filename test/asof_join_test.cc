@@ -6,58 +6,34 @@
 /// The results were manual verified using DuckDB.
 
 TEST(asof_join_baseline, TestSmallDuckDBExample) {
-    /// Not interested in Naive O(n^2) algorithm.
-    return;
     Prices prices = load_prices("../data/prices_small.csv");
     OrderBook order_book = load_order_book("../data/orderbook_small.csv");
     BaselineASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(appl_sum + goog_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_sorted_merge_join, TestSmallDuckDBExample) {
-    /// Not interested in naive sorted merge.
-    return;
     Prices prices = load_prices("../data/prices_small.csv");
     OrderBook order_book = load_order_book("../data/orderbook_small.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    uint64_t total_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-        total_sum += join.result.values[i];
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(total_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_sorted_merge_join, TestSmallBTCExample) {
-    /// Not interested in naive sorted merge.
-    return;
     Prices prices = load_prices("../data/btc_usd_data.csv");
     OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
-    auto& result_values = join.result.values;
+    auto result_values = join.result.collect_values();
     std::sort(result_values.begin(), result_values.end());
 
     std::vector<uint64_t> correct_values = {
@@ -70,18 +46,14 @@ TEST(asof_join_sorted_merge_join, TestSmallBTCExample) {
 }
 
 TEST(asof_join_sorted_merge_join, TestMediumBTCExample) {
-    /// Not interested in naive sorted merge.
-    return;
     Prices prices = load_prices("../data/btc_usd_data.csv");
     OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 70580346356);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
 }
 
 TEST(asof_join_partitioning_left, TestSmallDuckDBExample) {
@@ -91,18 +63,8 @@ TEST(asof_join_partitioning_left, TestSmallDuckDBExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    uint64_t total_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-        total_sum += join.result.values[i];
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(total_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_partitioning_left, TestSmallBTCExample) {
@@ -111,7 +73,7 @@ TEST(asof_join_partitioning_left, TestSmallBTCExample) {
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
-    auto& result_values = join.result.values;
+    auto result_values = join.result.collect_values();
     std::sort(result_values.begin(), result_values.end());
 
     std::vector<uint64_t> correct_values = {
@@ -130,10 +92,8 @@ TEST(asof_join_partitioning_left, TestMediumBTCExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 70580346356);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
 }
 
 TEST(asof_join_partitioning_left, TestSmallUniformExample) {
@@ -143,10 +103,8 @@ TEST(asof_join_partitioning_left, TestSmallUniformExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 24168000);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 24168000);
 }
 
 TEST(asof_join_partitioning_left, TestSmallZipfExample) {
@@ -156,10 +114,8 @@ TEST(asof_join_partitioning_left, TestSmallZipfExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 1024);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 2532396);
+    ASSERT_EQ(join.result.size, 1024);
+    ASSERT_EQ(join.result.value_sum, 2532396);
 }
 
 TEST(asof_join_partitioning_right, TestSmallDuckDBExample) {
@@ -169,18 +125,8 @@ TEST(asof_join_partitioning_right, TestSmallDuckDBExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    uint64_t total_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-        total_sum += join.result.values[i];
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(total_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_partitioning_right, TestSmallBTCExample) {
@@ -188,8 +134,8 @@ TEST(asof_join_partitioning_right, TestSmallBTCExample) {
     OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
     PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
-   join.join();
-    auto& result_values = join.result.values;
+    join.join();
+    auto result_values = join.result.collect_values();
     std::sort(result_values.begin(), result_values.end());
 
     std::vector<uint64_t> correct_values = {
@@ -208,10 +154,8 @@ TEST(asof_join_partitioning_right, TestMediumBTCExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 70580346356);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
 }
 
 TEST(asof_join_partitioning_right, TestSmallUniformExample) {
@@ -221,10 +165,8 @@ TEST(asof_join_partitioning_right, TestSmallUniformExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 24168000);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 24168000);
 }
 
 TEST(asof_join_partitioning_right, TestSmallZipfExample) {
@@ -234,10 +176,8 @@ TEST(asof_join_partitioning_right, TestSmallZipfExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 1024);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 2532396);
+    ASSERT_EQ(join.result.size, 1024);
+    ASSERT_EQ(join.result.value_sum, 2532396);
 }
 
 TEST(asof_join_partitioning_sort, TestSmallDuckDBExample) {
@@ -247,18 +187,8 @@ TEST(asof_join_partitioning_sort, TestSmallDuckDBExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    uint64_t total_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-        total_sum += join.result.values[i];
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(total_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_partitioning_sort, TestSmallBTCExample) {
@@ -267,7 +197,7 @@ TEST(asof_join_partitioning_sort, TestSmallBTCExample) {
     PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
-    auto& result_values = join.result.values;
+    auto result_values = join.result.collect_values();
     std::sort(result_values.begin(), result_values.end());
 
     std::vector<uint64_t> correct_values = {
@@ -286,10 +216,8 @@ TEST(asof_join_partitioning_sort, TestMediumBTCExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 70580346356);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
 }
 
 TEST(asof_join_partitioning_sort, TestSmallUniformExample) {
@@ -299,10 +227,8 @@ TEST(asof_join_partitioning_sort, TestSmallUniformExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 24168000);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 24168000);
 }
 
 TEST(asof_join_partitioning_sort, TestSmallZipfExample) {
@@ -312,10 +238,8 @@ TEST(asof_join_partitioning_sort, TestSmallZipfExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 1024);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 2532396);
+    ASSERT_EQ(join.result.size, 1024);
+    ASSERT_EQ(join.result.value_sum, 2532396);
 }
 
 TEST(asof_join_left_partitioning_btree, TestSmallDuckDBExample) {
@@ -325,18 +249,8 @@ TEST(asof_join_left_partitioning_btree, TestSmallDuckDBExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    uint64_t total_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-        total_sum += join.result.values[i];
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(total_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_left_partitioning_btree, TestSmallBTCExample) {
@@ -345,7 +259,7 @@ TEST(asof_join_left_partitioning_btree, TestSmallBTCExample) {
     PartitioningLeftBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
-    auto& result_values = join.result.values;
+    auto result_values = join.result.collect_values();
     std::sort(result_values.begin(), result_values.end());
 
     std::vector<uint64_t> correct_values = {
@@ -364,10 +278,8 @@ TEST(asof_join_left_partitioning_btree, TestMediumBTCExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 70580346356);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
 }
 
 TEST(asof_join_right_partitioning_btree, TestSmallDuckDBExample) {
@@ -377,18 +289,8 @@ TEST(asof_join_right_partitioning_btree, TestSmallDuckDBExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    uint64_t total_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-        total_sum += join.result.values[i];
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(total_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_right_partitioning_btree, TestSmallBTCExample) {
@@ -397,7 +299,7 @@ TEST(asof_join_right_partitioning_btree, TestSmallBTCExample) {
     PartitioningRightBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
-    auto& result_values = join.result.values;
+    auto result_values = join.result.collect_values();
     std::sort(result_values.begin(), result_values.end());
 
     std::vector<uint64_t> correct_values = {
@@ -416,10 +318,8 @@ TEST(asof_join_right_partitioning_btree, TestMediumBTCExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 70580346356);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
 }
 
 TEST(asof_join_both_partitioning_sort_right, TestSmallDuckDBExample) {
@@ -429,18 +329,8 @@ TEST(asof_join_both_partitioning_sort_right, TestSmallDuckDBExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 4);
-    uint64_t appl_sum = 0;
-    uint64_t goog_sum = 0;
-    uint64_t total_sum = 0;
-    for (size_t i = 0; i < join.result.size; ++i) {
-        if (join.result.prices_stock_ids[i] == "APPL") { appl_sum += join.result.values[i]; }
-        if (join.result.prices_stock_ids[i] == "GOOG") { goog_sum += join.result.values[i]; }
-        total_sum += join.result.values[i];
-    }
-    ASSERT_EQ(appl_sum, 5120);
-    ASSERT_EQ(goog_sum, 4461);
-    ASSERT_EQ(total_sum, 9581);
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
 }
 
 TEST(asof_join_both_partitioning_sort_right, TestSmallBTCExample) {
@@ -449,7 +339,7 @@ TEST(asof_join_both_partitioning_sort_right, TestSmallBTCExample) {
     PartitioningBothSortRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
-    auto& result_values = join.result.values;
+    auto result_values = join.result.collect_values();
     std::sort(result_values.begin(), result_values.end());
 
     std::vector<uint64_t> correct_values = {
@@ -468,10 +358,8 @@ TEST(asof_join_both_partitioning_sort_right, TestMediumBTCExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 70580346356);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
 }
 
 TEST(asof_join_both_partitioning_sort_right, TestSmallUniformExample) {
@@ -481,10 +369,8 @@ TEST(asof_join_both_partitioning_sort_right, TestSmallUniformExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 10000);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 24168000);
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 24168000);
 }
 
 TEST(asof_join_both_partitioning_sort_right, TestSmallZipfExample) {
@@ -494,8 +380,6 @@ TEST(asof_join_both_partitioning_sort_right, TestSmallZipfExample) {
 
     join.join();
 
-    ASSERT_EQ(join.result.values.size(), 1024);
-    uint64_t total_value = 0;
-    for (auto value : join.result.values) { total_value += value; }
-    ASSERT_EQ(total_value, 2532396);
+    ASSERT_EQ(join.result.size, 1024);
+    ASSERT_EQ(join.result.value_sum, 2532396);
 }

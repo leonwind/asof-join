@@ -55,14 +55,9 @@ void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num
             run_join_return_median_time(partition_sort, num_runs);
     std::cout << fmt::format("Sort partitioning time: {}", partition_sort_time) << std::endl;
 
-    uint64_t left_result{0};
-    for (auto value : left_partitioning.result.values) { left_result += value; }
-
-    uint64_t right_result{0};
-    for (auto value : right_partitioning.result.values) { right_result += value; }
-
-    uint64_t sorted_partitioned_result{0};
-    for (auto value : partition_sort.result.values) { sorted_partitioned_result += value; }
+    uint64_t left_result = left_partitioning.result.value_sum;
+    uint64_t right_result = right_partitioning.result.value_sum;
+    uint64_t sorted_partitioned_result = partition_sort.result.value_sum;
 
     if (!(left_result == right_result && right_result == sorted_partitioned_result)) {
         std::cout << fmt::format("RESULTS NOT EQUAL {}, {}, {}", left_result, right_result, sorted_partitioned_result);

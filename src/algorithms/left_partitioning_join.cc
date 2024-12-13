@@ -59,7 +59,6 @@ uint64_t PartitioningLeftASOFJoin::join() {
     //e.printReport(std::cout, prices.size);
 
     //e.startCounters();
-    std::mutex result_lock;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
@@ -75,7 +74,6 @@ uint64_t PartitioningLeftASOFJoin::join() {
                 /* target= */ timestamp);
 
             if (match != nullptr) {
-                std::scoped_lock lock{result_lock};
                 result.insert(
                     /* price_timestamp= */match->timestamp,
                     /* price_stock_id= */ stock_id,
