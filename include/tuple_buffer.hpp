@@ -109,7 +109,6 @@ private:
             perror("MMAP failed");
             std::exit(1);
         }
-
         return ptr;
     }
 };
@@ -220,8 +219,6 @@ private:
 
         return *reinterpret_cast<T*>(data + tuple_idx * TUPLE_SIZE);
     }
-
-
 };
 
 template<typename T>

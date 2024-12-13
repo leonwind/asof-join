@@ -104,7 +104,7 @@ public:
     using Key = std::string;
     using Value = uint64_t;
     using MapKey = std::string_view;
-    using iterator = std::unordered_map<MapKey, TupleBuffer<Entry>>::iterator;
+    using iterator = std::unordered_map<MapKey, std::vector<Entry>>::iterator;
 
     MultiMapTB(const std::vector<Key>& equality_keys, const std::vector<Value>& sort_by_keys,
              size_t num_partitions = 1024): equality_keys(equality_keys),
@@ -130,7 +130,7 @@ public:
         return partitioned_map.size();
     }
 
-    [[nodiscard]] inline TupleBuffer<Entry>& operator[](MapKey key) {
+    [[nodiscard]] inline std::vector<Entry>& operator[](MapKey key) {
         return partitioned_map[key];
     }
 
@@ -165,7 +165,12 @@ private:
 
         partitioned_map.reserve(total_size);
         for (auto& local_map : local_maps) {
-            partitioned_map.merge(local_map);
+            for (auto& [key, value]: local_map) {
+                //MapKey& key = iter.first;
+                //TupleBuffer<Entry>& value = iter.second;
+                partitioned_map.insert({key, std::move(value.copy_tuples())});
+            }
+            //partitioned_map.merge(local_map);
         }
     }
 
@@ -184,7 +189,7 @@ private:
     tbb::enumerable_thread_specific<Partitions> thread_data;
     tbb::enumerable_thread_specific<std::unordered_map<MapKey, TupleBuffer<Entry>>> local_maps;
 
-    std::unordered_map<MapKey, TupleBuffer<Entry>> partitioned_map;
+    std::unordered_map<MapKey, std::vector<Entry>> partitioned_map;
 };
 
 #endif // ASOF_JOIN_PARALLEL_MULTI_MAP_HPP

@@ -68,7 +68,7 @@ public:
     struct Entry : JoinEntry {
         uint64_t timestamp;
         size_t idx;
-
+        Entry(): timestamp(-1), idx(-1) {}
         Entry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
 
         [[nodiscard]] inline uint64_t get_key() const override {
@@ -94,7 +94,10 @@ struct Entry : JoinEntry {
     bool matched;
     SpinLock lock;
 
-    Entry(uint64_t timestamp, size_t order_idx) : timestamp(timestamp), order_idx(order_idx),
+    Entry(): timestamp(-1), order_idx(-1),
+            price_idx(-1), diff(-1), matched(false), lock() {}
+
+    Entry(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
                                                   price_idx(0), diff(UINT64_MAX), matched(false), lock() {}
 
     Entry(const Entry &other) : timestamp(other.timestamp), order_idx(other.order_idx),

@@ -64,7 +64,7 @@ TEST(multimap, SmallInsertLookup) {
 
     for (size_t i = 0; i < num_keys; ++i) {
         auto key = generate_key(i);
-        auto data = multi_map[key].copy_tuples();
+        auto data = multi_map[key];//.copy_tuples();
         ASSERT_EQ(data.size(), num_entries_per_key);
 
         std::sort(data.begin(), data.end());
@@ -87,7 +87,7 @@ TEST(multimap, MoreKeysThanPartitions) {
     MultiMapTB<TestEntry> multi_map(keys, values);
     for (size_t i = 0; i < num_keys; ++i) {
         auto key = generate_key(i);
-        auto data = multi_map[key].copy_tuples();
+        auto data = multi_map[key]; //.copy_tuples();
         ASSERT_EQ(data.size(), num_entries_per_key);
         std::sort(data.begin(), data.end());
         for (size_t j = 0; j < num_entries_per_key; ++j) {

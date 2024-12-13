@@ -34,7 +34,7 @@ uint64_t PartitioningRightASOFJoin::join() {
     timer.start();
 
     //e.startCounters();
-    MultiMap<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    MultiMapTB<Entry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
     //e.stopCounters();
     //log("Partitioning Perf");
     //e.printReport(std::cout, order_book.size);

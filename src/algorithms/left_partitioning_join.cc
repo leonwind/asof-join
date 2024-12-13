@@ -34,7 +34,7 @@ uint64_t PartitioningLeftASOFJoin::join() {
     //PerfEvent e;
 
     //e.startCounters();
-    MultiMap<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
+    MultiMapTB<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
     //std::unordered_map<std::string_view, std::vector<Entry>> prices_lookup;
     //for (size_t i = 0; i < prices.size; ++i) {
     //    if (prices_lookup.contains(prices.stock_ids[i])) {

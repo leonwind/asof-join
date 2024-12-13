@@ -82,25 +82,19 @@ int main() {
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(left_partitioning, input_size, "partitioning left");
 
+    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(right_partitioning, input_size, "partitioning right");
+
     //PartitioningLeftSplitBinarySearchASOFJoin left_bs_split(prices, order_book, LESS_EQUAL_THAN, INNER);
     //for (size_t i = 0; i < 3; ++i) {
     //    run_join(left_bs_split, input_size, "left partitioning + split binary search");
     //}
 
-    //PartitioningLeftBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //run_join(left_partitioning_btree, input_size, "partitioning left btree");
+    //PartitioningBothSortRightASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(partitioning_both, input_size, "right partitioning + split binary search");
 
-    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(right_partitioning, input_size, "partitioning right");
-
-    PartitioningBothSortRightASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(partitioning_both, input_size, "right partitioning + split binary search");
-
-    PartitioningRightBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(right_partitioning_btree, input_size, "partitioning right btree");
-
-    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(partition_sort, input_size, "partitioning sort");
+    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //run_join(partition_sort, input_size, "partitioning sort");
 
     return 0;
 }
