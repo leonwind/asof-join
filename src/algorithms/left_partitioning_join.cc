@@ -34,15 +34,15 @@ uint64_t PartitioningLeftASOFJoin::join() {
     //PerfEvent e;
 
     //e.startCounters();
-    //MultiMap<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
-    std::unordered_map<std::string_view, std::vector<Entry>> prices_lookup;
-    for (size_t i = 0; i < prices.size; ++i) {
-        if (prices_lookup.contains(prices.stock_ids[i])) {
-            prices_lookup[prices.stock_ids[i]].emplace_back(prices.timestamps[i], i);
-        }  else {
-            prices_lookup[prices.stock_ids[i]] = {{prices.timestamps[i], i}};
-        }
-    }
+    MultiMap<Entry> prices_lookup(prices.stock_ids, prices.timestamps);
+    //std::unordered_map<std::string_view, std::vector<Entry>> prices_lookup;
+    //for (size_t i = 0; i < prices.size; ++i) {
+    //    if (prices_lookup.contains(prices.stock_ids[i])) {
+    //        prices_lookup[prices.stock_ids[i]].emplace_back(prices.timestamps[i], i);
+    //    }  else {
+    //        prices_lookup[prices.stock_ids[i]] = {{prices.timestamps[i], i}};
+    //    }
+    //}
     //e.stopCounters();
     //log("Partitioning Perf");
     //e.printReport(std::cout, prices.size);
