@@ -50,12 +50,12 @@ def _plot_distribution(distribution_name, num_positions, dir_name):
     plt.plot(data_sizes, both_partitioning_times, marker="+", label='Both Partitioning + Sort Right')
     plt.plot(data_sizes, partitioning_sort_times, marker="v", label='Sort partitioning')
 
-    #plt.xscale("log")
-    #plt.yscale("log")
+    plt.xscale("log")
+    plt.yscale("log")
 
     plt.xlabel("Num positions")
     plt.ylabel("Time [s]")
-    plt.ticklabel_format(style="plain")
+    #plt.ticklabel_format(style="plain")
 
     plt.title(distribution_name)
     plt.legend()
@@ -81,4 +81,5 @@ def plot_data(path):
 if __name__ == "__main__":
     #plot_data("results/zipf_uniform_benchmark.txt")
     #plot_data("results/zipf_large_benchmark.txt")
-    plot_data("results/new_res.txt")
+    #plot_data("results/new_res.txt")
+    plot_data("results/last_results/benchmark.txt")
