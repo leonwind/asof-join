@@ -9,6 +9,7 @@ pkgs.mkShell {
         gtest
         fmt
         tbb
+        jemalloc
 
         valgrind
     ];

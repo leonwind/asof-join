@@ -1,6 +1,7 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
 #include "log.hpp"
+#include "util.hpp"
 #include "parallel_multi_map.hpp"
 #include <fmt/format.h>
 #include <algorithm>
@@ -18,9 +19,9 @@ using JoinAlg = PartitioningBothSortRightASOFJoin;
 
 inline JoinAlg::RightEntry* JoinAlg::binary_search_closest_match_greater_than(
         std::vector<RightEntry> &data, uint64_t target) {
-    auto iter = std::upper_bound(data.begin(), data.end(), target,
-        [](uint64_t a, const RightEntry& b) {
-            return a <= b.timestamp;
+    auto iter = std::lower_bound(data.begin(), data.end(), target,
+        [](const RightEntry &b, uint64_t a) {
+            return b.timestamp < a;
     });
 
     if (iter == data.end()) {
@@ -57,15 +58,16 @@ namespace {
 void JoinAlg::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
+    timer.start();
 
     //e.startCounters();
     MultiMapTB<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
-    //log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
+    log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    MultiMapTB<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
+    //MultiMapTB<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
     //log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
     //e.stopCounters();
-    //log("Right Partitioning Perf");
+    //log("Partitioning Perf");
     //e.printReport(std::cout, order_book.size);
 
     //e.startCounters();
@@ -75,64 +77,66 @@ void JoinAlg::join() {
     });
 
     //e.stopCounters();
-    //log("\n\nSorting Left Perf: ");
+    log("\n\nSorting Perf: ");
     //e.printReport(std::cout, prices.size);
-    //log(fmt::format("Sorting Left in {}{}", timer.lap(), timer.unit()));
+    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
-    //e.startCounters();
-    tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
-        [&](auto& iter) {
-            const auto& stock_id = iter.first;
-            std::vector<LeftEntry>& prices_partition_bin = iter.second;
-            if (!order_book_lookup.contains(stock_id)) {
-                return;
-            }
+    e.startCounters();
 
-            auto& order_partition_bin = order_book_lookup[stock_id];
+    const uint32_t num_partitions = 128;
+    const uint32_t mask = num_partitions - 1;
+    std::hash<std::string> hash;
 
-            //uint64_t last_target = UINT64_MAX;
-            //size_t last_pos = UINT64_MAX;
-            size_t start_offset = 0;
-            size_t end_offset = 0;
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, prices_partition_bin.size()),
-                    [&](auto& range) {
-                for (size_t i = range.begin(); i < range.end(); ++i) {
-                    auto& timestamp = prices_partition_bin[i].timestamp;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
+            [&](tbb::blocked_range<size_t>& range) {
+        /// Partition the current batch to keep the caches hot since we can run multiple
+        /// binary searches on the same data after each other.
+        std::vector<TupleBuffer<LeftEntry>> partitions(num_partitions);
+        for (size_t i = range.begin(); i < range.end(); ++i) {
+            size_t pos = hash(prices.stock_ids[i]) & mask;
+            partitions[pos].emplace_back(
+                /* timestamp= */ prices.timestamps[i],
+                /* idx= */ i);
+        }
 
-                    //if (last_target != UINT64_MAX && last_pos != 0) [[likely]] {
-                    //    start_offset = last_pos * (timestamp >= last_target);
-                    //    end_offset = (order_partition_bin.size() - (last_pos + 1)) * (timestamp <= last_target);
-                    //}
+        tbb::parallel_for_each(partitions.begin(), partitions.end(),
+            [&](auto& partition) {
+            //auto partition = tb_partition.copy_tuples();
+            //tbb::parallel_sort(partition.begin(), partition.end());
 
-                    auto entry_pos = subset_binary_search_closest_match(
-                        order_partition_bin,
-                        timestamp,
-                        start_offset,
-                        end_offset);
-
-                    if (entry_pos == UINT64_MAX) {
-                        continue;
-                    }
-
-                    auto& match = order_partition_bin[entry_pos];
-                    uint64_t diff = match.timestamp - timestamp;
-                    /// (Spin) Lock while comparing and exchanging the diffs
-                    /// CAS is probably too expensive on two 64 Bit fields.
-                    match.lock.lock();
-                    if (diff < match.diff) {
-                        match.diff = diff;
-                        match.price_idx = prices_partition_bin[i].idx;
-                    }
-                    match.lock.unlock();
-
-                    match.matched = true;
+            for (auto& entry : partition) {
+                const auto& stock_id = prices.stock_ids[entry.idx];
+                if (!order_book_lookup.contains(stock_id)) {
+                    continue;
                 }
-            });
+
+                auto& partition_bin = order_book_lookup[stock_id];
+                auto timestamp = entry.timestamp;
+                auto* match = binary_search_closest_match_greater_than(
+                    /* data= */ partition_bin,
+                    /* target= */ timestamp);
+
+                if (match != nullptr) {
+                    uint64_t diff = match->timestamp - timestamp;
+
+                    /// (Spin) Lock while comparing and exchanging the diffs.
+                    /// CAS is probably too expensive on two 64 Bit fields.
+                    match->lock.lock();
+                    if (diff < match->diff) {
+                        match->diff = diff;
+                        match->price_idx = entry.idx;
+                    }
+                    match->lock.unlock();
+
+                    match->matched = true;
+                }
+            }
+        });
     });
-    //e.stopCounters();
-    //std::cout << "\n\nBinary Search Perf: " << std::endl;
-    //e.printReport(std::cout, prices.size);
-    //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
+    e.stopCounters();
+    log("\n\nBinary Search + Partitioning Perf: ");
+    log(e.getReport(prices.size));
+    log(fmt::format("Binary Search + Partitioning in {}{}", timer.lap(), timer.unit()));
 
     //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
@@ -201,10 +205,10 @@ void JoinAlg::join() {
         });
     });
 
-    //e.stopCounters();
-    //std::cout << "\n\nFinding Match Perf: " << std::endl;
-    //e.printReport(std::cout, prices.size);
-    //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
+    e.stopCounters();
+    log("\n\nFinding Match Perf: ");
+    log(e.getReport(prices.size));
+    log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
 }

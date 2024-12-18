@@ -30,34 +30,27 @@ PartitioningLeftASOFJoin::LeftEntry* PartitioningLeftASOFJoin::binary_search_clo
 
 void PartitioningLeftASOFJoin::join() {
     Timer<milliseconds> timer;
-    //PerfEvent e;
+    timer.start();
+    PerfEvent e;
 
-    //e.startCounters();
+    e.startCounters();
     MultiMapTB<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
-    //std::unordered_map<std::string_view, std::vector<LeftEntry>> prices_lookup;
-    //for (size_t i = 0; i < prices.size; ++i) {
-    //    if (prices_lookup.contains(prices.stock_ids[i])) {
-    //        prices_lookup[prices.stock_ids[i]].emplace_back(prices.timestamps[i], i);
-    //    }  else {
-    //        prices_lookup[prices.stock_ids[i]] = {{prices.timestamps[i], i}};
-    //    }
-    //}
-    //e.stopCounters();
-    //log("Partitioning Perf");
-    //e.printReport(std::cout, prices.size);
-    //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
+    e.stopCounters();
+    log("Partitioning Perf");
+    log(e.getReport(prices.size));
+    log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    //e.startCounters();
+    e.startCounters();
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-    //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
-    //e.stopCounters();
-    //std::cout << "\n\nSorting Perf: " << std::endl;
-    //e.printReport(std::cout, prices.size);
+    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
+    e.stopCounters();
+    log("\n\nSorting Perf: ");
+    log(e.getReport(prices.size));
 
-    //e.startCounters();
+    e.startCounters();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
@@ -83,10 +76,10 @@ void PartitioningLeftASOFJoin::join() {
             }
         }
     });
-    //e.stopCounters();
-    //std::cout << "\n\nBinary Search Perf: " << std::endl;
-    //e.printReport(std::cout, prices.size);
-    //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
+    e.stopCounters();
+    log("\n\nBinary Search Perf: ");
+    log(e.getReport(prices.size));
+    log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
     result.finalize();
 }

@@ -180,6 +180,14 @@ struct PerfEvent {
       out << data.str() << std::endl;
    }
 
+   std::string getReport(uint64_t normalizationConstant) {
+      std::stringstream header;
+      std::stringstream data;
+      printReport(header,data,normalizationConstant);
+      header << "\n" << data.str();
+      return header.str();
+   }
+
    void printReport(std::ostream& headerOut, std::ostream& dataOut, uint64_t normalizationConstant) {
       if (!events.size())
          return;

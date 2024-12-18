@@ -260,7 +260,6 @@ TEST(tuple_buffer, CopyNonTriviallyCopyableType) {
 }
 
 TEST(tuple_buffer, Benchmark) {
-    return;
     size_t num_tuples = 10000 * BUFFER_SIZE / sizeof(Tuple);
 
     std::vector<Tuple> tuple_vec;
@@ -278,11 +277,12 @@ TEST(tuple_buffer, Benchmark) {
     auto vec_duration = timer.lap();
 
     for (size_t i = 0; i < num_tuples; ++i) {
-        tuple_buffer.store_tuple(Tuple{i, fmt::format("payload-{}", i)});
+        //tuple_buffer.store_tuple(Tuple{i, fmt::format("payload-{}", i)});
+        tuple_buffer.emplace_back(i, fmt::format("payload-{}", i));
     }
     auto materialized = tuple_buffer.copy_tuples();
     size_t tb_sum = 0;
-    for (auto &tuple: materialized) {
+    for (auto &tuple: tuple_buffer) {
         tb_sum += tuple.tid;
     }
 

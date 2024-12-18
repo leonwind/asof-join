@@ -1,6 +1,7 @@
 #ifndef ASOF_JOIN_TUPLE_BUFFER_HPP
 #define ASOF_JOIN_TUPLE_BUFFER_HPP
 
+#include "util.hpp"
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -10,21 +11,10 @@
 #include <bits/stdc++.h>
 
 #include "tbb/parallel_for.h"
+#include "tbb/parallel_for_each.h"
 
 namespace {
     const uint64_t PAGE_SIZE_64KB = 65536;
-
-    inline constexpr uint64_t next_pow2_64(uint64_t v) {
-        v--;
-        v |= v >> 1;
-        v |= v >> 2;
-        v |= v >> 4;
-        v |= v >> 8;
-        v |= v >> 16;
-        v |= v >> 32;
-        v++;
-        return v;
-    }
 } // namespace;
 
 class Buffer {
@@ -152,11 +142,21 @@ public:
           old_buffers(std::move(other.old_buffers)),
           num_tuples(other.num_tuples) { other.num_tuples = 0; }
 
-    ~TupleBuffer() = default;
+    ~TupleBuffer() {
+        curr = nullptr;
+        tbb::parallel_for_each(old_buffers.begin(), old_buffers.end(),
+           [&](auto& buff) { buff = nullptr; });
+    }
+
+    void clear() {
+        curr = Buffer::create(BUFFER_SIZE);
+        old_buffers.clear();
+        num_tuples = 0;
+    }
 
     char* next_slot() {
         ++num_tuples;
-        if (!curr->has_space(TUPLE_SIZE)) [[unlikely]] {
+        if (!curr->has_space(TUPLE_SIZE)) {
             old_buffers.push_back(std::move(curr));
             curr = Buffer::create(BUFFER_SIZE);
         }
@@ -166,6 +166,12 @@ public:
     inline void store_tuple(T tuple) {
         auto* memory = reinterpret_cast<T*>(next_slot());
         new(memory) T(std::move(tuple));
+    }
+
+    template <typename... Args>
+    inline void emplace_back(Args&&... args) {
+        auto* memory = reinterpret_cast<T*>(next_slot());
+        new(memory) T(std::forward<Args>(args)...);
     }
 
     [[nodiscard]] inline size_t size() const {
