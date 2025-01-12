@@ -41,8 +41,8 @@ public:
         }
     };
 
-    struct LeftEntry;
     struct RightEntry;
+    struct LeftEntry;
 
 protected:
     Prices& prices;
@@ -63,33 +63,27 @@ public:
     void join() override;
 };
 
-class PartitioningLeftASOFJoin : public ASOFJoin {
-public:
-    using ASOFJoin::ASOFJoin;
-    void join() override;
-
-private:
-    static LeftEntry* binary_search_closest_match_less_than(
-            std::vector<LeftEntry>& data, uint64_t target);
-};
-
 class PartitioningRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
 
 private:
-    static RightEntry* binary_search_closest_match_greater_than(
-            std::vector<RightEntry>&data, uint64_t target);
+    static RightEntry* binary_search_closest_match_less_than(
+            std::vector<RightEntry>& data, uint64_t target);
 };
 
-class PartitioningSortedMergeJoin : public ASOFJoin {
+class PartitioningLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+private:
+    static LeftEntry* binary_search_closest_match_greater_than(
+            std::vector<LeftEntry>&data, uint64_t target);
 };
 
-class PartitioningLeftBTreeASOFJoin : public ASOFJoin {
+class PartitioningSortedMergeJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
@@ -101,28 +95,34 @@ public:
     void join() override;
 };
 
-class PartitioningBothSortRightASOFJoin : public ASOFJoin {
+class PartitioningLeftBTreeASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    void join() override;
+};
+
+class PartitioningBothSortLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
 
 private:
-    static RightEntry* binary_search_closest_match_greater_than(
-            std::vector<RightEntry>& data, uint64_t target);
+    static LeftEntry* binary_search_closest_match_greater_than(
+            std::vector<LeftEntry>& data, uint64_t target);
 };
 
-struct ASOFJoin::LeftEntry: JoinEntry {
+struct ASOFJoin::RightEntry : JoinEntry {
     uint64_t timestamp;
     size_t idx;
-    LeftEntry(): timestamp(-1), idx(-1) {}
-    LeftEntry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
+    RightEntry(): timestamp(-1), idx(-1) {}
+    RightEntry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
 
     [[nodiscard]] inline uint64_t get_key() const override {
         return timestamp;
     }
 };
 
-struct ASOFJoin::RightEntry : JoinEntry {
+struct ASOFJoin::LeftEntry : JoinEntry {
     uint64_t timestamp;
     size_t order_idx;
     size_t price_idx;
@@ -130,19 +130,19 @@ struct ASOFJoin::RightEntry : JoinEntry {
     bool matched;
     SpinLock lock;
 
-    RightEntry(): timestamp(-1), order_idx(-1),
-            price_idx(-1), diff(-1), matched(false), lock() {}
+    LeftEntry(): timestamp(-1), order_idx(-1),
+                 price_idx(-1), diff(-1), matched(false), lock() {}
 
-    RightEntry(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
-                                                  price_idx(0), diff(UINT64_MAX), matched(false), lock() {}
+    LeftEntry(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
+                                                     price_idx(0), diff(UINT64_MAX), matched(false), lock() {}
 
-    RightEntry(const RightEntry &other) : timestamp(other.timestamp), order_idx(other.order_idx),
-                                price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
+    LeftEntry(const LeftEntry &other) : timestamp(other.timestamp), order_idx(other.order_idx),
+                                        price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
 
-    RightEntry(RightEntry &&other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
-                                   price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
+    LeftEntry(LeftEntry &&other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
+                                           price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
 
-    RightEntry &operator=(const RightEntry &other) {
+    LeftEntry &operator=(const LeftEntry &other) {
         if (this != &other) {
             timestamp = other.timestamp;
             order_idx = other.order_idx;
@@ -153,7 +153,7 @@ struct ASOFJoin::RightEntry : JoinEntry {
         return *this;
     }
 
-    RightEntry &operator=(RightEntry &&other) noexcept {
+    LeftEntry &operator=(LeftEntry &&other) noexcept {
         if (this != &other) {
             timestamp = other.timestamp;
             order_idx = other.order_idx;
