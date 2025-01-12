@@ -15,12 +15,12 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-using JoinAlg = PartitioningBothSortRightASOFJoin;
+using JoinAlg = PartitioningBothSortLeftASOFJoin;
 
-inline JoinAlg::RightEntry* JoinAlg::binary_search_closest_match_greater_than(
-        std::vector<RightEntry> &data, uint64_t target) {
+inline JoinAlg::LeftEntry* JoinAlg::binary_search_closest_match_greater_than(
+        std::vector<LeftEntry> &data, uint64_t target) {
     auto iter = std::lower_bound(data.begin(), data.end(), target,
-        [](const RightEntry &b, uint64_t a) {
+        [](const LeftEntry &b, uint64_t a) {
             return b.timestamp < a;
     });
 
@@ -33,7 +33,7 @@ inline JoinAlg::RightEntry* JoinAlg::binary_search_closest_match_greater_than(
 
 namespace {
     size_t subset_binary_search_closest_match(
-            std::vector<JoinAlg::RightEntry>& data,
+            std::vector<JoinAlg::LeftEntry>& data,
             uint64_t target,
             size_t start_offset = 0,
             size_t end_offset = 0) {
@@ -45,7 +45,7 @@ namespace {
             start_iter,
             end_iter,
             target,
-            [](uint64_t a, const JoinAlg::RightEntry &b) {
+            [](uint64_t a, const JoinAlg::LeftEntry &b) {
                 return a <= b.timestamp;
         });
 
@@ -61,10 +61,10 @@ void JoinAlg::join() {
     timer.start();
 
     //e.startCounters();
-    MultiMapTB<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    MultiMapTB<LeftEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
     log(fmt::format("Right Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    //MultiMapTB<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
+    //MultiMapTB<RightEntry> prices_lookup(prices.stock_ids, prices.timestamps);
     //log(fmt::format("Left Partitioning in {}{}", timer.lap(), timer.unit()));
     //e.stopCounters();
     //log("Partitioning Perf");
@@ -91,7 +91,7 @@ void JoinAlg::join() {
             [&](tbb::blocked_range<size_t>& range) {
         /// Partition the current batch to keep the caches hot since we can run multiple
         /// binary searches on the same data after each other.
-        std::vector<TupleBuffer<LeftEntry>> partitions(num_partitions);
+        std::vector<TupleBuffer<RightEntry>> partitions(num_partitions);
         for (size_t i = range.begin(); i < range.end(); ++i) {
             size_t pos = hash(prices.stock_ids[i]) & mask;
             partitions[pos].emplace_back(
@@ -141,9 +141,9 @@ void JoinAlg::join() {
     //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
-        std::vector<RightEntry>& partition_bin = iter.second;
+        std::vector<LeftEntry>& partition_bin = iter.second;
         const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
-        std::vector<RightEntry*> last_match_per_range(num_thread_chunks);
+        std::vector<LeftEntry*> last_match_per_range(num_thread_chunks);
 
         /// We have to parallel iterate over the number of thread chunks since TBB is not forced to align
         /// each chunk to [[MORSEL_SIZE]] which would make [[range.begin() / MORSEL_SIZE]] a non-correct
@@ -156,7 +156,7 @@ void JoinAlg::join() {
                 size_t start = chunks_idx * MORSEL_SIZE;
                 size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
                                       partition_bin.size());
-                RightEntry *last_match = nullptr;
+                LeftEntry *last_match = nullptr;
 
                 for (size_t i = end; i != start; --i) {
                     if (partition_bin[i - 1].matched) {
@@ -175,7 +175,7 @@ void JoinAlg::join() {
                 size_t start = chunks_idx * MORSEL_SIZE;
                 size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
                                       partition_bin.size());
-                RightEntry *last_match = nullptr;
+                LeftEntry *last_match = nullptr;
 
                 size_t morsel_pos = start / MORSEL_SIZE;
                 for (size_t i = morsel_pos; i != 0; --i) {

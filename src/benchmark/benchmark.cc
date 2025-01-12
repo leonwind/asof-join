@@ -41,27 +41,27 @@ void benchmarks::run_all() {
 }
 
 void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num_runs) {
-    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    PartitioningRightASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto left_partitioning_time=
         run_join_return_best_time(left_partitioning, num_runs);
     std::cout << fmt::format("Left partitioning time: {}", left_partitioning_time) << std::endl;
 
-    //PartitioningLeftBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //PartitioningRightBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
     //auto left_btree_time =
     //    run_join_return_median_time(left_partitioning_btree, num_runs);
     //std::cout << fmt::format("Left BTree time: {}", left_btree_time) << std::endl;
 
-    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    PartitioningLeftASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto right_partitioning_time=
         run_join_return_best_time(right_partitioning, num_runs);
     std::cout << fmt::format("Right partitioning time: {}", right_partitioning_time) << std::endl;
 
-    //PartitioningRightBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //PartitioningLeftBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
     //auto right_btree_time =
     //    run_join_return_median_time(right_partitioning_btree, num_runs);
     //std::cout << fmt::format("Right BTree time: {}", right_btree_time) << std::endl;
 
-    PartitioningBothSortRightASOFJoin both_partitioning_sort_right(
+    PartitioningBothSortLeftASOFJoin both_partitioning_sort_right(
         prices, order_book, LESS_EQUAL_THAN, INNER);
     auto both_partitioning_time=
         run_join_return_best_time(both_partitioning_sort_right, num_runs);

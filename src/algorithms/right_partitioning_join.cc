@@ -14,10 +14,10 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-inline PartitioningRightASOFJoin::RightEntry* PartitioningRightASOFJoin::binary_search_closest_match_greater_than(
-        std::vector<RightEntry> &data, uint64_t target) {
+inline PartitioningLeftASOFJoin::LeftEntry* PartitioningLeftASOFJoin::binary_search_closest_match_greater_than(
+        std::vector<LeftEntry> &data, uint64_t target) {
     auto iter = std::lower_bound(data.begin(), data.end(), target,
-        [](const RightEntry &b, uint64_t a) {
+        [](const LeftEntry &b, uint64_t a) {
             return b.timestamp < a;
     });
 
@@ -28,13 +28,13 @@ inline PartitioningRightASOFJoin::RightEntry* PartitioningRightASOFJoin::binary_
     return &(*iter);
 }
 
-void PartitioningRightASOFJoin::join() {
+void PartitioningLeftASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
 
     //e.startCounters();
-    MultiMapTB<RightEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    MultiMapTB<LeftEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
     //e.stopCounters();
     log("Partitioning Perf");
     //e.printReport(std::cout, order_book.size);
@@ -89,9 +89,9 @@ void PartitioningRightASOFJoin::join() {
     //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
-        std::vector<RightEntry>& partition_bin = iter.second;
+        std::vector<LeftEntry>& partition_bin = iter.second;
         const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
-        std::vector<RightEntry*> last_match_per_range(num_thread_chunks);
+        std::vector<LeftEntry*> last_match_per_range(num_thread_chunks);
 
         /// We have to parallel iterate over the number of thread chunks since TBB is not forced to align
         /// each chunk to [[MORSEL_SIZE]] which would make [[range.begin() / MORSEL_SIZE]] a non-correct
@@ -104,7 +104,7 @@ void PartitioningRightASOFJoin::join() {
                 size_t start = chunks_idx * MORSEL_SIZE;
                 size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
                                       partition_bin.size());
-                RightEntry *last_match = nullptr;
+                LeftEntry *last_match = nullptr;
 
                 for (size_t i = end; i != start; --i) {
                     if (partition_bin[i - 1].matched) {
@@ -123,7 +123,7 @@ void PartitioningRightASOFJoin::join() {
                 size_t start = chunks_idx * MORSEL_SIZE;
                 size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
                                       partition_bin.size());
-                RightEntry *last_match = nullptr;
+                LeftEntry *last_match = nullptr;
 
                 size_t morsel_pos = start / MORSEL_SIZE;
                 for (size_t i = morsel_pos; i != 0; --i) {

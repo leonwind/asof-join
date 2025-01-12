@@ -15,11 +15,11 @@
 #define MORSEL_SIZE (2<<14)
 
 
-void PartitioningLeftBTreeASOFJoin::join() {
+void PartitioningRightBTreeASOFJoin::join() {
     Timer<milliseconds> timer;
     timer.start();
 
-    MultiMap<LeftEntry> prices_lookup(prices.stock_ids, prices.timestamps);
+    MultiMap<RightEntry> prices_lookup(prices.stock_ids, prices.timestamps);
     //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
@@ -28,7 +28,7 @@ void PartitioningLeftBTreeASOFJoin::join() {
     });
     //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
-    using Btree = Btree<LeftEntry>;
+    using Btree = Btree<RightEntry>;
     std::unordered_map<std::string_view, Btree> price_trees(prices_lookup.size());
     for (auto& stock_prices : prices_lookup) {
         auto tree = Btree(stock_prices.second);
