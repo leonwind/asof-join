@@ -13,9 +13,16 @@ def _read_data(path):
     return data
 
 
+def micro_to_seconds(micro):
+    return micro / 1000000
+
+def milli_to_seconds(milli):
+    return milli / 1000
+
+
 def _parse_data(data):
     groups = {}
-    group_pattern = pattern = r'\[(\w+)-(\d+)\.csv\]'
+    group_pattern = r'\[(\w+)-(\d+)\.csv\]'
 
     curr_distribution = None
     curr_num_positions = None
@@ -37,32 +44,36 @@ def _parse_data(data):
     return groups
 
 
-def _plot_distribution(distribution_name, num_positions, dir_name):
+def _plot_distribution(distribution_name, num_positions, dir_name, log_scale=True):
     data_sizes = sorted(num_positions.keys())
 
-    left_partitioning_times = [num_positions[key][0] for key in data_sizes]
-    right_partitioning_times = [num_positions[key][1] for key in data_sizes]
-    both_partitioning_times = [num_positions[key][2] for key in data_sizes]
-    partitioning_sort_times = [num_positions[key][3] for key in data_sizes]
+    right_partitioning_times = [milli_to_seconds(num_positions[key][0]) for key in data_sizes]
+    left_partitioning_times = [milli_to_seconds(num_positions[key][1]) for key in data_sizes]
+    both_partitioning_times = [milli_to_seconds(num_positions[key][2]) for key in data_sizes]
+    partitioning_sort_times = [milli_to_seconds(num_positions[key][3]) for key in data_sizes]
 
-    plt.plot(data_sizes, left_partitioning_times, marker="x", label='Left partitioning')
-    plt.plot(data_sizes, right_partitioning_times, marker="o", label='Right partitioning')
-    plt.plot(data_sizes, both_partitioning_times, marker="+", label='Both Partitioning + Sort Right')
-    plt.plot(data_sizes, partitioning_sort_times, marker="v", label='Sort partitioning')
+    plt.plot(data_sizes, right_partitioning_times, marker="x", label="Right partitioning")
+    plt.plot(data_sizes, left_partitioning_times, marker="o", label="Left partitioning")
+    plt.plot(data_sizes, both_partitioning_times, marker="+", label="Both Partitioning + Sort Left")
+    plt.plot(data_sizes, partitioning_sort_times, marker="v", label="Sort partitioning")
 
-    plt.xscale("log")
-    plt.yscale("log")
+    if log_scale:
+        plt.xscale("log")
+        plt.yscale("log")
 
-    plt.xlabel("Num positions")
-    plt.ylabel("Time [s]")
+    log_label_prefix = "[log]" if log_scale else ""
+    plt.xlabel(f"Num positions {log_label_prefix}")
+    plt.ylabel(f"Time [s] {log_label_prefix}")
     #plt.ticklabel_format(style="plain")
 
     plt.title(distribution_name)
-    plt.legend()
+    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 
-    filename = f"plots/{dir_name}/{distribution_name}_plot.pdf"
-    print(filename)
-    plt.savefig(filename, dpi=400)
+    is_log_plot_path = "log_" if log_scale else ""
+    filename = f"plots/{dir_name}/{is_log_plot_path}{distribution_name}_plot.pdf"
+    print(f"Plotting {filename}")
+
+    plt.savefig(filename, dpi=400, bbox_inches="tight")
     os.system(f"pdfcrop {filename} {filename}")
 
     #plt.show()
@@ -75,11 +86,13 @@ def plot_data(path):
     dir_name = path.split("/")[1].split(".")[0]
 
     for distribution, num_positions in groups.items():
-        _plot_distribution(distribution, num_positions, dir_name)
+        _plot_distribution(distribution, num_positions, dir_name, log_scale=True)
+        _plot_distribution(distribution, num_positions, dir_name, log_scale=False)
     
 
 if __name__ == "__main__":
     #plot_data("results/zipf_uniform_benchmark.txt")
     #plot_data("results/zipf_large_benchmark.txt")
     #plot_data("results/new_res.txt")
-    plot_data("results/last_results/benchmark.txt")
+    #plot_data("results/last_results/benchmark.txt")
+    plot_data("results/2024-12-18/benchmark.txt")
