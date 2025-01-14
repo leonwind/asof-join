@@ -82,14 +82,14 @@ int main() {
     PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(partition_sort, input_size, "partitioning sort");
 
-    PartitioningRightASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(left_partitioning, input_size, "partitioning right");
+    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(left_partitioning, input_size, "partitioning left");
 
-    PartitioningLeftASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(right_partitioning, input_size, "partitioning left");
+    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    run_join(right_partitioning, input_size, "partitioning right");
 
     PartitioningBothSortLeftASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(partitioning_both, input_size, "both partitioning sort left");
+    run_join(partitioning_both, input_size, "partitioning both + sort left");
 
     return 0;
 }

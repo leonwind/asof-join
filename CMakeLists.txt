@@ -56,7 +56,8 @@ add_executable(test_all
     test/asof_join_test.cc
     test/btree_test.cc
     test/parallel_multi_map_test.cc
-    test/tuple_buffer_test.cc)
+    test/tuple_buffer_test.cc
+	test/searches_test.cc)
 target_link_libraries(test_all
     asof_join_lib
     gtest

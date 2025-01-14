@@ -67,20 +67,12 @@ class PartitioningRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
-
-private:
-    static RightEntry* binary_search_closest_match_less_than(
-            std::vector<RightEntry>& data, uint64_t target);
 };
 
 class PartitioningLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
-
-private:
-    static LeftEntry* binary_search_closest_match_greater_than(
-            std::vector<LeftEntry>&data, uint64_t target);
 };
 
 class PartitioningSortedMergeJoin : public ASOFJoin {
@@ -105,10 +97,6 @@ class PartitioningBothSortLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
-
-private:
-    static LeftEntry* binary_search_closest_match_greater_than(
-            std::vector<LeftEntry>& data, uint64_t target);
 };
 
 struct ASOFJoin::RightEntry : JoinEntry {

@@ -2,6 +2,7 @@
 #include "timer.hpp"
 #include "log.hpp"
 #include "parallel_multi_map.hpp"
+#include "searches.hpp"
 #include <fmt/core.h>
 #include <algorithm>
 #include <unordered_map>
@@ -13,20 +14,6 @@
 
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
-
-PartitioningRightASOFJoin::RightEntry* PartitioningRightASOFJoin::binary_search_closest_match_less_than(
-        std::vector<RightEntry>& data, uint64_t target) {
-    auto iter = std::lower_bound(data.begin(), data.end(), target,
-        [](const RightEntry& a, uint64_t b) {
-            return a.timestamp <= b;
-    });
-
-    if (iter == data.begin()) {
-        return nullptr;
-    }
-
-    return &(*--iter);
-}
 
 void PartitioningRightASOFJoin::join() {
     Timer<milliseconds> timer;
@@ -61,7 +48,7 @@ void PartitioningRightASOFJoin::join() {
 
             auto& partition_bin = prices_lookup[stock_id];
             auto timestamp = order_book.timestamps[i];
-            auto* match = binary_search_closest_match_less_than(
+            auto* match = Search::Interpolation::less_equal_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
 

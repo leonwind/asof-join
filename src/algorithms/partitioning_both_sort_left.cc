@@ -1,5 +1,6 @@
 #include "asof_join.hpp"
 #include "timer.hpp"
+#include "searches.hpp"
 #include "log.hpp"
 #include "util.hpp"
 #include "parallel_multi_map.hpp"
@@ -16,44 +17,6 @@
 #define MORSEL_SIZE (2<<14)
 
 using JoinAlg = PartitioningBothSortLeftASOFJoin;
-
-inline JoinAlg::LeftEntry* JoinAlg::binary_search_closest_match_greater_than(
-        std::vector<LeftEntry> &data, uint64_t target) {
-    auto iter = std::lower_bound(data.begin(), data.end(), target,
-        [](const LeftEntry &b, uint64_t a) {
-            return b.timestamp < a;
-    });
-
-    if (iter == data.end()) {
-        return nullptr;
-    }
-
-    return &(*iter);
-}
-
-namespace {
-    size_t subset_binary_search_closest_match(
-            std::vector<JoinAlg::LeftEntry>& data,
-            uint64_t target,
-            size_t start_offset = 0,
-            size_t end_offset = 0) {
-        auto start_iter = data.begin() + start_offset;
-        auto end_iter = data.end() - end_offset;
-        //std::cout << (end_iter - data.begin()) - (start_iter - data.begin()) << ", " << data.size() << std::endl;
-        //std::cout << start_iter - data.begin() << ", " << end_iter - data.begin() << std::endl;
-        auto iter = std::upper_bound(
-            start_iter,
-            end_iter,
-            target,
-            [](uint64_t a, const JoinAlg::LeftEntry &b) {
-                return a <= b.timestamp;
-        });
-
-        return iter != end_iter
-            ? iter - data.begin()
-            : UINT64_MAX;
-    }
-} // namespace
 
 void JoinAlg::join() {
     PerfEvent e;
@@ -112,7 +75,7 @@ void JoinAlg::join() {
 
                 auto& partition_bin = order_book_lookup[stock_id];
                 auto timestamp = entry.timestamp;
-                auto* match = binary_search_closest_match_greater_than(
+                auto* match = Search::Binary::greater_equal_than(
                     /* data= */ partition_bin,
                     /* target= */ timestamp);
 
