@@ -3,11 +3,23 @@
 #include "asof_join.hpp"
 #include "relation.hpp"
 #include "timer.hpp"
-#include "benchmark/benchmark.hpp"
+#include "benchmark.hpp"
 
+void benchmarks::run_all() {
+    run_diff_zipf_skews_benchmarks();
+}
 
-namespace {
-uint64_t run_join_return_best_time(ASOFJoin &asof_op, size_t num_runs) {
+std::string_view benchmarks::util::extract_num_positions(std::string_view path) {
+    std::string_view prefix = "positions_";
+    std::string_view suffix = ".csv";
+
+    size_t begin = path.find(prefix) + prefix.size();
+    size_t end = path.find(suffix);
+
+    return path.substr(begin, end);
+}
+
+uint64_t benchmarks::util::run_join_return_best_time(ASOFJoin &asof_op, size_t num_runs) {
     std::vector<uint64_t> times(num_runs);
     for (size_t i = 0; i < num_runs; ++i) {
         Timer timer;
@@ -21,7 +33,7 @@ uint64_t run_join_return_best_time(ASOFJoin &asof_op, size_t num_runs) {
     return times[0];
 }
 
-uint64_t run_join_return_median_time(ASOFJoin &asof_op, size_t num_runs) {
+uint64_t benchmarks::util::run_join_return_median_time(ASOFJoin &asof_op, size_t num_runs) {
     std::vector<uint64_t> times(num_runs);
     for (size_t i = 0; i < num_runs; ++i) {
         Timer timer;
@@ -34,49 +46,44 @@ uint64_t run_join_return_median_time(ASOFJoin &asof_op, size_t num_runs) {
     std::sort(times.begin(), times.end());
     return times[num_runs / 2];
 }
-} // namespace
-
-void benchmarks::run_all() {
-    run_diff_zipf_skews_benchmarks();
-}
 
 void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num_runs) {
-    PartitioningRightASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto left_partitioning_time=
-        run_join_return_best_time(left_partitioning, num_runs);
-    std::cout << fmt::format("Left partitioning time: {}", left_partitioning_time) << std::endl;
-
-    //PartitioningRightBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //auto left_btree_time =
-    //    run_join_return_median_time(left_partitioning_btree, num_runs);
-    //std::cout << fmt::format("Left BTree time: {}", left_btree_time) << std::endl;
-
-    PartitioningLeftASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto right_partitioning_time=
-        run_join_return_best_time(right_partitioning, num_runs);
+        util::run_join_return_best_time(right_partitioning, num_runs);
     std::cout << fmt::format("Right partitioning time: {}", right_partitioning_time) << std::endl;
 
-    //PartitioningLeftBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //PartitioningRightBTreeASOFJoin right_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
     //auto right_btree_time =
     //    run_join_return_median_time(right_partitioning_btree, num_runs);
-    //std::cout << fmt::format("Right BTree time: {}", right_btree_time) << std::endl;
+    //std::cout << fmt::format("Left BTree time: {}", right_btree_time) << std::endl;
 
-    PartitioningBothSortLeftASOFJoin both_partitioning_sort_right(
+    PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    auto left_partitioning_time=
+        util::run_join_return_best_time(left_partitioning, num_runs);
+    std::cout << fmt::format("Left partitioning time: {}", left_partitioning_time) << std::endl;
+
+    //PartitioningLeftBTreeASOFJoin left_partitioning_btree(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //auto left_btree_time =
+    //    run_join_return_median_time(left_partitioning_btree, num_runs);
+    //std::cout << fmt::format("Right BTree time: {}", left_btree_time) << std::endl;
+
+    PartitioningBothSortLeftASOFJoin both_partitioning_sort_left(
         prices, order_book, LESS_EQUAL_THAN, INNER);
     auto both_partitioning_time=
-        run_join_return_best_time(both_partitioning_sort_right, num_runs);
+        util::run_join_return_best_time(both_partitioning_sort_left, num_runs);
     std::cout << fmt::format("Both partitioning time: {}", both_partitioning_time) << std::endl;
 
     PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto partition_sort_time=
-        run_join_return_best_time(partition_sort, num_runs);
+        util::run_join_return_best_time(partition_sort, num_runs);
     std::cout << fmt::format("Sort partitioning time: {}", partition_sort_time) << std::endl;
 
-    uint64_t left_result = left_partitioning.result.value_sum;
     uint64_t right_result = right_partitioning.result.value_sum;
+    uint64_t left_result = left_partitioning.result.value_sum;
     uint64_t sorted_partitioned_result = partition_sort.result.value_sum;
 
-    if (!(left_result == right_result && right_result == sorted_partitioned_result)) {
-        std::cout << fmt::format("RESULTS NOT EQUAL {}, {}, {}", left_result, right_result, sorted_partitioned_result);
+    if (!(right_result == left_result && left_result == sorted_partitioned_result)) {
+        std::cout << fmt::format("RESULTS NOT EQUAL {}, {}, {}", right_result, left_result, sorted_partitioned_result);
     }
 }

@@ -4,21 +4,10 @@
 #include <vector>
 #include <fmt/format.h>
 #include "relation.hpp"
-#include "benchmark/benchmark.hpp"
+#include "benchmark.hpp"
 
 namespace fs = std::filesystem;
 
-namespace {
-    std::string_view extract_num_positions(std::string_view path) {
-        std::string_view prefix = "positions_";
-        std::string_view suffix = ".csv";
-
-        size_t begin = path.find(prefix) + prefix.size();
-        size_t end = path.find(suffix);
-
-        return path.substr(begin, end);
-    }
-}
 
 void benchmarks::run_diff_zipf_skews_benchmarks() {
     size_t num_runs = 3;
@@ -37,7 +26,7 @@ void benchmarks::run_diff_zipf_skews_benchmarks() {
 
         for (auto& positions_entry : fs::directory_iterator(positions_dir)) {
             const auto& positions_path = positions_entry.path().string();
-            auto num_positions = extract_num_positions(positions_path);
+            auto num_positions = util::extract_num_positions(positions_path);
             std::cout << fmt::format("Run [{}-{}]", distribution_name, num_positions) << std::endl;
 
             OrderBook order_book = load_order_book(positions_path);

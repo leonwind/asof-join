@@ -54,7 +54,7 @@ namespace Search::Binary {
 
         return result;
     }
-} // namespace Binary
+} // namespace Searches::Binary
 
 
 namespace Search::Exponential {
@@ -115,7 +115,7 @@ namespace Search::Exponential {
 
         return result;
     }
-} // namespace Exponential
+} // namespace Searches::Exponential
 
 
 namespace Search::Interpolation {
@@ -214,6 +214,6 @@ namespace Search::Interpolation {
 
         return result;
     }
-} // namespace Interpolation
+} // namespace Searches::Interpolation
 
 #endif // ASOF_JOIN_SEARCHES_HPP

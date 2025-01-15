@@ -37,7 +37,8 @@ target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt)
 
 add_library(asof_benchmark_lib
     src/benchmark/benchmark.cc
-    src/benchmark/diff_zipf_skews.cc)
+    src/benchmark/diff_zipf_skews.cc
+	src/benchmark/small_order_book_contention.cc)
 # Link main lib sources into benchmark lib
 target_link_libraries(asof_benchmark_lib asof_join_lib)
 
@@ -47,7 +48,7 @@ target_link_libraries(asof_join
     asof_join_lib)
 
 # Benchmarks
-add_executable(asof_benchmark src/asof_benchmark.cpp)
+add_executable(asof_benchmark src/asof_benchmark.cc)
 target_link_libraries(asof_benchmark
     asof_benchmark_lib)
 

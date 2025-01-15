@@ -143,5 +143,12 @@ void PartitioningLeftASOFJoin::join() {
     log("\n\nFinding Match Perf: ");
     log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
+    // Print lock contention duration.
+    //for (auto& [_, entries] : order_book_lookup) {
+    //    for (auto& entry : entries) {
+    //        std::cout << "Contended for " << entry.lock.get_contended_duration_ns() << std::endl;
+    //    }
+    //}
+
     result.finalize();
 }
