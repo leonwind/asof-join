@@ -14,10 +14,10 @@ def _read_data(path):
 
 
 def micro_to_seconds(micro):
-    return micro / 1000000
+    return micro / 1_000_000.0
 
 def milli_to_seconds(milli):
-    return milli / 1000
+    return milli / 1_000.0
 
 
 def _parse_data(data):
@@ -39,7 +39,7 @@ def _parse_data(data):
             continue
         
         exec_time = row.split(": ")[1]
-        groups[curr_distribution][curr_num_positions].append(int(exec_time) / 1000.0)
+        groups[curr_distribution][curr_num_positions].append(int(exec_time))
     
     return groups
 
@@ -47,10 +47,10 @@ def _parse_data(data):
 def _plot_distribution(distribution_name, num_positions, dir_name, log_scale=True):
     data_sizes = sorted(num_positions.keys())
 
-    right_partitioning_times = [milli_to_seconds(num_positions[key][0]) for key in data_sizes]
-    left_partitioning_times = [milli_to_seconds(num_positions[key][1]) for key in data_sizes]
-    both_partitioning_times = [milli_to_seconds(num_positions[key][2]) for key in data_sizes]
-    partitioning_sort_times = [milli_to_seconds(num_positions[key][3]) for key in data_sizes]
+    right_partitioning_times = [micro_to_seconds(num_positions[key][0]) for key in data_sizes]
+    left_partitioning_times = [micro_to_seconds(num_positions[key][1]) for key in data_sizes]
+    both_partitioning_times = [micro_to_seconds(num_positions[key][2]) for key in data_sizes]
+    partitioning_sort_times = [micro_to_seconds(num_positions[key][3]) for key in data_sizes]
 
     plt.plot(data_sizes, right_partitioning_times, marker="x", label="Right partitioning")
     plt.plot(data_sizes, left_partitioning_times, marker="o", label="Left partitioning")
