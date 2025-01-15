@@ -5,6 +5,8 @@
 #include <perfevent.hpp>
 #include <iostream>
 #include "spin_lock.hpp"
+#include <atomic>
+
 
 enum Comparison {
     LESS_THAN,
@@ -118,17 +120,30 @@ struct ASOFJoin::LeftEntry : JoinEntry {
     bool matched;
     SpinLock lock;
 
+    struct DiffPrice {
+        uint64_t diff;
+        uint64_t price_idx;
+    };
+    std::atomic<DiffPrice> diff_price;
+
     LeftEntry(): timestamp(-1), order_idx(-1),
-                 price_idx(-1), diff(-1), matched(false), lock() {}
+                 price_idx(-1), diff(-1), matched(false), lock(), diff_price(DiffPrice(-1, -1)) {}
 
     LeftEntry(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
-                                                     price_idx(0), diff(UINT64_MAX), matched(false), lock() {}
+                                                     price_idx(0), diff(UINT64_MAX), matched(false), lock(),
+                                                     diff_price(DiffPrice(UINT64_MAX, 0)) {}
 
     LeftEntry(const LeftEntry &other) : timestamp(other.timestamp), order_idx(other.order_idx),
-                                        price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
+                                        price_idx(other.price_idx), diff(other.diff), matched(other.matched),
+                                        lock() {
+        diff_price.store(other.diff_price);
+    }
 
     LeftEntry(LeftEntry &&other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
-                                           price_idx(other.price_idx), diff(other.diff), matched(other.matched), lock() {}
+                                           price_idx(other.price_idx), diff(other.diff), matched(other.matched),
+                                           lock() {
+        diff_price.store(other.diff_price);
+    }
 
     LeftEntry &operator=(const LeftEntry &other) {
         if (this != &other) {
@@ -150,6 +165,32 @@ struct ASOFJoin::LeftEntry : JoinEntry {
             matched = other.matched;
         }
         return *this;
+    }
+
+    void inline lock_compare_swap_diffs(uint64_t new_diff, uint64_t new_price_idx) {
+        /// Use (spin) lock while comparing and exchanging the diff and price idx.
+        lock.lock();
+        if (new_diff < diff) {
+            diff = new_diff;
+            price_idx = new_price_idx;
+        }
+        lock.unlock();
+        matched = true;
+    }
+
+    void inline atomic_compare_swap_diffs(uint64_t new_diff, uint64_t new_price_idx) {
+        /// Use atomic CAS statement to compare and exchange the diff and price idx.
+        matched = true;
+        DiffPrice desired{new_diff, new_price_idx};
+
+        DiffPrice old_val = diff_price.load(std::memory_order_relaxed);
+        while (new_diff < old_val.diff) {
+            if (diff_price.compare_exchange_weak(
+                /* expected= */ old_val,
+                /* desired= */ desired,
+                /* success= */ std::memory_order_acquire,
+                /* failure= */ std::memory_order_relaxed)) { break; }
+        }
     }
 
     [[nodiscard]] inline uint64_t get_key() const override {

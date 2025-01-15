@@ -7,7 +7,7 @@
 
 inline void log(std::string_view message) {
     #ifndef BENCHMARK_MODE
-        //std::cout << message << std::endl;
+        std::cout << message << std::endl;
     #endif
 }
 

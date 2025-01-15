@@ -25,5 +25,6 @@ void benchmarks::run_small_order_book_contention_benchmark() {
         PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
         auto time = util::run_join_return_best_time(join, num_runs);
         std::cout << fmt::format("Left partitioning time: {}", time) << std::endl;
+        std::cout << "Total value: " << join.result.value_sum << std::endl;
     }
 }

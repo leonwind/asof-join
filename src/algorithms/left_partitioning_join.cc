@@ -54,17 +54,8 @@ void PartitioningLeftASOFJoin::join() {
 
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
-
-                /// (Spin) Lock while comparing and exchanging the diffs
-                /// CAS is probably too expensive on two 64 Bit fields.
-                match->lock.lock();
-                if (diff < match->diff) {
-                    match->diff = diff;
-                    match->price_idx = i;
-                }
-                match->lock.unlock();
-
-                match->matched = true;
+                //match->lock_compare_swap_diffs(diff, i);
+                match->atomic_compare_swap_diffs(diff, i);
             }
         }
     });
@@ -130,7 +121,7 @@ void PartitioningLeftASOFJoin::join() {
                         result.insert(
                                 /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                                 /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
-                                /* price= */ prices.prices[last_match->price_idx],
+                                /* price= */ prices.prices[last_match->diff_price.load().price_idx],
                                 /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
                                 /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
                                 /* amount= */ order_book.amounts[entry.order_idx]);
@@ -144,11 +135,14 @@ void PartitioningLeftASOFJoin::join() {
     log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     // Print lock contention duration.
-    for (auto& [_, entries] : order_book_lookup) {
-        for (auto& entry : entries) {
-            std::cout << "Contended for " << entry.lock.get_contended_duration_ns() << std::endl;
-        }
-    }
+    //size_t total_duration = 0;
+    //for (auto& [_, entries] : order_book_lookup) {
+    //    for (auto& entry : entries) {
+    //        //std::cout << "Contended for " << entry.lock.get_contended_duration_ns() << std::endl;
+    //        total_duration += entry.lock.get_contended_duration_ns();
+    //    }
+    //}
+    //std::cout << "Total contention duration: " << total_duration << std::endl;
 
     result.finalize();
 }

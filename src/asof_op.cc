@@ -57,9 +57,9 @@ void run_join(ASOFJoin& asof_op, size_t input_size, std::string_view strategy_na
 
     //run_join_in_new_process(asof_op);
     asof_op.join();
-        uint64_t total_val = asof_op.result.value_sum;
-        std::cout << "Total value: " << total_val << std::endl;
-        std::cout << "Num rows: " << asof_op.result.size << std::endl;
+    uint64_t total_val = asof_op.result.value_sum;
+    std::cout << "Total value: " << total_val << std::endl;
+    std::cout << "Num rows: " << asof_op.result.size << std::endl;
     auto duration = timer.stop<std::chrono::milliseconds>();
 
     e.stopCounters();

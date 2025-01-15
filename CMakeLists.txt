@@ -33,7 +33,7 @@ add_library(asof_join_lib
     src/algorithms/right_partitioning_btree.cc
     src/algorithms/partitioning_both_sort_left.cc)
 
-target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt)
+target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt atomic)
 
 add_library(asof_benchmark_lib
     src/benchmark/benchmark.cc
