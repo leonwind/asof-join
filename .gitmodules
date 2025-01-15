@@ -1,3 +1,4 @@
 [submodule "lib/oneTBB"]
 	path = lib/oneTBB
 	url = git@github.com:oneapi-src/oneTBB.git
+	ignore = dirty
