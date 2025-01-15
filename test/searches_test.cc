@@ -53,13 +53,15 @@ namespace {
         for (size_t i = 0; i < n + offset + 10; ++i) {
             auto *res = search_less_equal_than(data, i);
             if (i < offset) {
-                ASSERT_TRUE(res == nullptr) << error_msg(i);
+                ASSERT_TRUE(res == nullptr) << error_msg(i) << "No value should be found";
             } else if (i < n + offset){
-                ASSERT_TRUE(res != nullptr) << error_msg(i);
-                ASSERT_EQ(res->get_key(), i) << error_msg(i);
+                ASSERT_TRUE(res != nullptr) << error_msg(i) << "Actual value should be found";
+                ASSERT_EQ(res->get_key(), i) << error_msg(i) << "Actual value should be found";
             } else {
                 ASSERT_TRUE(res != nullptr) << error_msg(i);
-                ASSERT_EQ(res->get_key(), data[n - 1].get_key()) << error_msg(i);
+                ASSERT_EQ(res->get_key(), data[n - 1].get_key())
+                    << error_msg(i)
+                    << "Max value should be found";
             }
         }
     }

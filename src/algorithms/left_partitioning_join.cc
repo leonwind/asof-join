@@ -48,7 +48,7 @@ void PartitioningLeftASOFJoin::join() {
 
             auto& partition_bin = order_book_lookup[stock_id];
             auto timestamp = prices.timestamps[i];
-            auto* match= Search::Binary::greater_equal_than(
+            auto* match= Search::Interpolation::greater_equal_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
 

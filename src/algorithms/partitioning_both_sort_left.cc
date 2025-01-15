@@ -16,9 +16,7 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-using JoinAlg = PartitioningBothSortLeftASOFJoin;
-
-void JoinAlg::join() {
+void PartitioningBothSortLeftASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();
@@ -75,7 +73,7 @@ void JoinAlg::join() {
 
                 auto& partition_bin = order_book_lookup[stock_id];
                 auto timestamp = entry.timestamp;
-                auto* match = Search::Binary::greater_equal_than(
+                auto* match = Search::Interpolation::greater_equal_than(
                     /* data= */ partition_bin,
                     /* target= */ timestamp);
 

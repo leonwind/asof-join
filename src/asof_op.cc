@@ -80,7 +80,7 @@ int main() {
     size_t input_size = prices.size + order_book.size;
 
     PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    run_join(partition_sort, input_size, "partitioning sort");
+    //run_join(partition_sort, input_size, "partitioning sort");
 
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     run_join(left_partitioning, input_size, "partitioning left");
