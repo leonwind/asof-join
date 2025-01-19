@@ -3,6 +3,7 @@
 #include "log.hpp"
 #include "parallel_multi_map.hpp"
 #include "searches.hpp"
+#include <algorithm>
 #include <fmt/format.h>
 #include <unordered_map>
 #include <mutex>
@@ -37,6 +38,8 @@ void PartitioningLeftFilterMinASOFJoin::join() {
     log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     e.startCounters();
+    std::atomic<uint64_t> global_min = 0;
+
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
@@ -45,8 +48,13 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                 continue;
             }
 
-            auto& partition_bin = order_book_lookup[stock_id];
             auto timestamp = prices.timestamps[i];
+            if (timestamp < global_min) {
+                std::cout << "Timestamp: " << timestamp << ", global min: " << global_min << std::endl;
+                continue;
+            }
+
+            auto& partition_bin = order_book_lookup[stock_id];
             auto* match= Search::Interpolation::greater_equal_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
@@ -55,6 +63,30 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                 uint64_t diff = match->timestamp - timestamp;
                 //match->lock_compare_swap_diffs(diff, i);
                 match->atomic_compare_swap_diffs(diff, i);
+            }
+
+            uint64_t local_min = UINT64_MAX;
+            bool all_partitions_have_match = true;
+            for (const auto& [_, partition] : order_book_lookup) {
+                bool partition_head_has_match = partition.empty() || partition[0].timestamp != UINT64_MAX;
+                all_partitions_have_match = all_partitions_have_match && partition_head_has_match;
+
+                local_min = std::min(local_min, partition.empty() ? UINT64_MAX : partition[0].timestamp);
+            }
+
+            if (!all_partitions_have_match) {
+                std::cout << "All partitions matched" << std::endl;
+                uint64_t old_global_min = global_min.load(std::memory_order_relaxed);
+                while (local_min > global_min) {
+                    if (global_min.compare_exchange_weak(
+                            /* expected= */ old_global_min,
+                            /* desired= */ local_min,
+                            /* success= */ std::memory_order_acquire,
+                            /* failure= */ std::memory_order_relaxed)) {
+                        std::cout << "Set global min to " << global_min << std::endl;
+                        break;
+                    }
+                }
             }
         }
     });
