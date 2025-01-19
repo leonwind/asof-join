@@ -6,8 +6,8 @@
 /// The results were manual verified using DuckDB.
 
 TEST(asof_join_baseline, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv");
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv");
+    Prices prices = load_prices("../test/data/prices_small.csv");
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv");
     BaselineASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -17,8 +17,8 @@ TEST(asof_join_baseline, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_sorted_merge_join, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv");
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv");
+    Prices prices = load_prices("../test/data/prices_small.csv");
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -28,8 +28,8 @@ TEST(asof_join_sorted_merge_join, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_sorted_merge_join, TestSmallBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv");
-    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv");
+    Prices prices = load_prices("../test/data/btc_usd_data.csv");
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_small.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -46,8 +46,8 @@ TEST(asof_join_sorted_merge_join, TestSmallBTCExample) {
 }
 
 TEST(asof_join_sorted_merge_join, TestMediumBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv");
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv");
+    Prices prices = load_prices("../test/data/btc_usd_data.csv");
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv");
     SortingASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -57,8 +57,8 @@ TEST(asof_join_sorted_merge_join, TestMediumBTCExample) {
 }
 
 TEST(asof_join_partitioning_right, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/prices_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv", ',', true);
     PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -68,8 +68,8 @@ TEST(asof_join_partitioning_right, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_partitioning_right, TestSmallBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_small.csv", ',', true);
     PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -86,8 +86,8 @@ TEST(asof_join_partitioning_right, TestSmallBTCExample) {
 }
 
 TEST(asof_join_partitioning_right, TestMediumBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv", ',', true);
     PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -97,8 +97,8 @@ TEST(asof_join_partitioning_right, TestMediumBTCExample) {
 }
 
 TEST(asof_join_partitioning_right, TestSmallUniformExample) {
-    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/uniform_small_positions.csv", ',', true);
     PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -108,8 +108,8 @@ TEST(asof_join_partitioning_right, TestSmallUniformExample) {
 }
 
 TEST(asof_join_partitioning_right, TestSmallZipfExample) {
-    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/zipf_small_positions.csv", ',', true);
     PartitioningRightASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -119,8 +119,8 @@ TEST(asof_join_partitioning_right, TestSmallZipfExample) {
 }
 
 TEST(asof_join_partitioning_left, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/prices_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv", ',', true);
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -130,8 +130,8 @@ TEST(asof_join_partitioning_left, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_partitioning_left, TestSmallBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_small.csv", ',', true);
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -148,8 +148,8 @@ TEST(asof_join_partitioning_left, TestSmallBTCExample) {
 }
 
 TEST(asof_join_partitioning_left, TestMediumBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv", ',', true);
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -159,8 +159,8 @@ TEST(asof_join_partitioning_left, TestMediumBTCExample) {
 }
 
 TEST(asof_join_partitioning_left, TestSmallUniformExample) {
-    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/uniform_small_positions.csv", ',', true);
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -170,8 +170,8 @@ TEST(asof_join_partitioning_left, TestSmallUniformExample) {
 }
 
 TEST(asof_join_partitioning_left, TestSmallZipfExample) {
-    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/zipf_small_positions.csv", ',', true);
     PartitioningLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -181,8 +181,8 @@ TEST(asof_join_partitioning_left, TestSmallZipfExample) {
 }
 
 TEST(asof_join_partitioning_sort, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/prices_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv", ',', true);
     PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -192,8 +192,8 @@ TEST(asof_join_partitioning_sort, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_partitioning_sort, TestSmallBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_small.csv", ',', true);
     PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -210,8 +210,8 @@ TEST(asof_join_partitioning_sort, TestSmallBTCExample) {
 }
 
 TEST(asof_join_partitioning_sort, TestMediumBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv", ',', true);
     PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -221,8 +221,8 @@ TEST(asof_join_partitioning_sort, TestMediumBTCExample) {
 }
 
 TEST(asof_join_partitioning_sort, TestSmallUniformExample) {
-    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/uniform_small_positions.csv", ',', true);
     PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -232,8 +232,8 @@ TEST(asof_join_partitioning_sort, TestSmallUniformExample) {
 }
 
 TEST(asof_join_partitioning_sort, TestSmallZipfExample) {
-    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/zipf_small_positions.csv", ',', true);
     PartitioningSortedMergeJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -243,8 +243,8 @@ TEST(asof_join_partitioning_sort, TestSmallZipfExample) {
 }
 
 TEST(asof_join_right_partitioning_btree, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/prices_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv", ',', true);
     PartitioningRightBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -254,8 +254,8 @@ TEST(asof_join_right_partitioning_btree, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_right_partitioning_btree, TestSmallBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_small.csv", ',', true);
     PartitioningRightBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -272,8 +272,8 @@ TEST(asof_join_right_partitioning_btree, TestSmallBTCExample) {
 }
 
 TEST(asof_join_right_partitioning_btree, TestMediumBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv", ',', true);
     PartitioningRightBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -283,8 +283,8 @@ TEST(asof_join_right_partitioning_btree, TestMediumBTCExample) {
 }
 
 TEST(asof_join_left_partitioning_btree, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/prices_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv", ',', true);
     PartitioningLeftBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -294,8 +294,8 @@ TEST(asof_join_left_partitioning_btree, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_left_partitioning_btree, TestSmallBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_small.csv", ',', true);
     PartitioningLeftBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -312,8 +312,8 @@ TEST(asof_join_left_partitioning_btree, TestSmallBTCExample) {
 }
 
 TEST(asof_join_left_partitioning_btree, TestMediumBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv", ',', true);
     PartitioningLeftBTreeASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -323,8 +323,8 @@ TEST(asof_join_left_partitioning_btree, TestMediumBTCExample) {
 }
 
 TEST(asof_join_both_partitioning_sort_left, TestSmallDuckDBExample) {
-    Prices prices = load_prices("../data/prices_small.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/prices_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv", ',', true);
     PartitioningBothSortLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -334,8 +334,8 @@ TEST(asof_join_both_partitioning_sort_left, TestSmallDuckDBExample) {
 }
 
 TEST(asof_join_both_partitioning_sort_left, TestSmallBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_small.csv", ',', true);
     PartitioningBothSortLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -352,8 +352,8 @@ TEST(asof_join_both_partitioning_sort_left, TestSmallBTCExample) {
 }
 
 TEST(asof_join_both_partitioning_sort_left, TestMediumBTCExample) {
-    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv", ',', true);
     PartitioningBothSortLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -363,8 +363,8 @@ TEST(asof_join_both_partitioning_sort_left, TestMediumBTCExample) {
 }
 
 TEST(asof_join_both_partitioning_sort_left, TestSmallUniformExample) {
-    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/uniform_small_positions.csv", ',', true);
     PartitioningBothSortLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
@@ -374,8 +374,8 @@ TEST(asof_join_both_partitioning_sort_left, TestSmallUniformExample) {
 }
 
 TEST(asof_join_both_partitioning_sort_left, TestSmallZipfExample) {
-    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    Prices prices = load_prices("../test/data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/zipf_small_positions.csv", ',', true);
     PartitioningBothSortLeftASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();
