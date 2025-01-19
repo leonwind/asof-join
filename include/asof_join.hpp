@@ -101,6 +101,12 @@ public:
     void join() override;
 };
 
+class PartitioningLeftFilterMinASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    void join() override;
+};
+
 struct ASOFJoin::RightEntry : JoinEntry {
     uint64_t timestamp;
     size_t idx;

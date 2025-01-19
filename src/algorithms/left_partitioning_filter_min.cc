@@ -14,7 +14,7 @@
 // Morsel size is 16384
 #define MORSEL_SIZE (2<<14)
 
-void PartitioningLeftASOFJoin::join() {
+void PartitioningLeftFilterMinASOFJoin::join() {
     PerfEvent e;
     Timer<milliseconds> timer;
     timer.start();

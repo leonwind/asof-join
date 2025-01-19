@@ -383,3 +383,65 @@ TEST(asof_join_both_partitioning_sort_left, TestSmallZipfExample) {
     ASSERT_EQ(join.result.size, 1024);
     ASSERT_EQ(join.result.value_sum, 2532396);
 }
+
+TEST(asof_join_partitioning_left_filter_min, TestSmallDuckDBExample) {
+    Prices prices = load_prices("../data/prices_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    PartitioningLeftFilterMinASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.size, 4);
+    ASSERT_EQ(join.result.value_sum, 9581);
+}
+
+TEST(asof_join_partitioning_left_filter_min, TestSmallBTCExample) {
+    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/btc_orderbook_small.csv", ',', true);
+    PartitioningLeftFilterMinASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+    auto result_values = join.result.collect_values();
+    std::sort(result_values.begin(), result_values.end());
+
+    std::vector<uint64_t> correct_values = {
+        5244, 9632, 247800, 523980, 4648032, 11277600, 11787330, 13727200, 33081768, 35807400
+    };
+    ASSERT_EQ(result_values.size(), correct_values.size());
+    for (size_t i = 0; i < result_values.size(); ++i) {
+        ASSERT_EQ(result_values[i], correct_values[i]) << "Failed at index " << i;
+    }
+}
+
+TEST(asof_join_partitioning_left_filter_min, TestMediumBTCExample) {
+    Prices prices = load_prices("../data/btc_usd_data.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    PartitioningLeftFilterMinASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 70580346356);
+}
+
+TEST(asof_join_partitioning_left_filter_min, TestSmallUniformExample) {
+    Prices prices = load_prices("../data/uniform_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/uniform_small_positions.csv", ',', true);
+    PartitioningLeftFilterMinASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.size, 10000);
+    ASSERT_EQ(join.result.value_sum, 24168000);
+}
+
+TEST(asof_join_partitioning_left_filter_min, TestSmallZipfExample) {
+    Prices prices = load_prices("../data/zipf_small_prices.csv", ',', true);
+    OrderBook order_book = load_order_book("../data/zipf_small_positions.csv", ',', true);
+    PartitioningLeftFilterMinASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
+
+    join.join();
+
+    ASSERT_EQ(join.result.size, 1024);
+    ASSERT_EQ(join.result.value_sum, 2532396);
+}

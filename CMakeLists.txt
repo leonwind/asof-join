@@ -26,12 +26,15 @@ add_library(asof_join_lib
     src/relation.cc
 	src/algorithms/nested_loop_join.cc
     src/algorithms/sorted_merge_join.cc
+	src/algorithms/partition_sorted_merge_join.cc
+
     src/algorithms/left_partitioning_join.cc
     src/algorithms/right_partitioning_join.cc
-    src/algorithms/partition_sorted_merge_join.cc
+	src/algorithms/partitioning_both_sort_left.cc
+	src/algorithms/left_partitioning_filter_min.cc
+
     src/algorithms/left_partitioning_btree.cc
-    src/algorithms/right_partitioning_btree.cc
-    src/algorithms/partitioning_both_sort_left.cc)
+    src/algorithms/right_partitioning_btree.cc)
 
 target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt atomic)
 
