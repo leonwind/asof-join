@@ -59,11 +59,11 @@ void PartitioningLeftASOFJoin::join() {
         }
     });
     e.stopCounters();
-    log("\n\nBinary Search Perf: ");
+    log("\n\nBinary Search Perf:");
     log(e.getReport(prices.size));
     log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
-    //e.startCounters();
+    e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         std::vector<LeftEntry>& partition_bin = iter.second;
@@ -72,7 +72,8 @@ void PartitioningLeftASOFJoin::join() {
 
         /// We have to parallel iterate over the number of thread chunks since TBB is not forced to align
         /// each chunk to [[MORSEL_SIZE]] which would make [[range.begin() / MORSEL_SIZE]] a non-correct
-        /// chunk position. This would yield wrong results.
+        /// chunk position.
+        /// This would yield wrong results.
         tbb::blocked_range<size_t> chunks_range(0, num_thread_chunks);
 
         tbb::parallel_for(chunks_range,
@@ -120,6 +121,7 @@ void PartitioningLeftASOFJoin::join() {
                         result.insert(
                                 /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                                 /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
+                                ///* price= */ prices.prices[last_match->price_idx],
                                 /* price= */ prices.prices[last_match->diff_price.load().price_idx],
                                 /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
                                 /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
@@ -130,7 +132,8 @@ void PartitioningLeftASOFJoin::join() {
         });
     });
     e.stopCounters();
-    log("\n\nFinding Match Perf: ");
+    log("\n\nFinding Match Perf:");
+    log(e.getReport(order_book.size));
     log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     // Print lock contention duration.
