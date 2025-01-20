@@ -33,6 +33,8 @@ public:
 
     ResultRelation result;
 
+    [[nodiscard]] virtual std::string_view get_strategy_name() const = 0;
+
     struct JoinEntry {
         virtual ~JoinEntry() = default;
 
@@ -57,54 +59,90 @@ class BaselineASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "BASELINE";
+    }
 };
 
 class SortingASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "SORTING NO PARTITIONING";
+    }
 };
 
 class PartitioningRightASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION RIGHT";
+    }
 };
 
 class PartitioningLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION LEFT";
+    }
 };
 
 class PartitioningSortedMergeJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION SORTED MERGE";
+    }
 };
 
 class PartitioningRightBTreeASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION RIGHT BTREE";
+    }
 };
 
 class PartitioningLeftBTreeASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION LEFT BTREE";
+    }
 };
 
 class PartitioningBothSortLeftASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION BOTH + SORT LEFT";
+    }
 };
 
 class PartitioningLeftFilterMinASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
     void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION LEFT + FILTER MIN";
+    }
 };
 
 struct ASOFJoin::RightEntry : JoinEntry {
