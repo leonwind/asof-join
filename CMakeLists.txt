@@ -32,6 +32,7 @@ add_library(asof_join_lib
     src/algorithms/right_partitioning_join.cc
 	src/algorithms/partitioning_both_sort_left.cc
 	src/algorithms/left_partitioning_filter_min.cc
+	src/algorithms/right_partitioning_filter_min.cc
 
     src/algorithms/left_partitioning_btree.cc
     src/algorithms/right_partitioning_btree.cc)

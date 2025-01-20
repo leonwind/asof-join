@@ -135,6 +135,16 @@ public:
     }
 };
 
+class PartitioningRightFilterMinASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION RIGHT + FILTER MIN";
+    }
+};
+
 class PartitioningLeftFilterMinASOFJoin : public ASOFJoin {
 public:
     using ASOFJoin::ASOFJoin;
