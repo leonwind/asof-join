@@ -51,16 +51,17 @@ def _parse_data_into_groups(data):
             strategy = strategy_exec_time[0]
             exec_time = int(strategy_exec_time[1])
             groups[curr_distribution].add_strategy_exec_time(
-                strategy, curr_num_positions, exec_time)
+                strategy, curr_num_positions, micro_to_seconds(exec_time))
 
     return groups
 
 
 def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, log_scale=True):
-    for strategy, exec_times in strategy_exec_times.items():
+    markers = ['*','o','x','^','s','D']
+    for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
         # Sort by num positions
         exec_times.sort(key = lambda x: x[0])
-        plt.plot(*zip(*exec_times), label=strategy.title())
+        plt.plot(*zip(*exec_times), marker=markers[i], label=strategy.title())
 
     if log_scale:
         plt.xscale("log")
