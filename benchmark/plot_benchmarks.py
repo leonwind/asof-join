@@ -7,6 +7,16 @@ texify.latexify(5, 1.8)
 style.set_custom_style()
 
 
+class DistributionRun:
+    def __init__(self):
+        self.strategy_exec_times = {}
+
+    def add_strategy_exec_time(self, strategy, num_positions, exec_time):
+        if strategy not in self.strategy_exec_times:
+            self.strategy_exec_times[strategy] = []
+        self.strategy_exec_times[strategy].append((num_positions, exec_time))
+
+
 def _read_data(path):
     with open(path, 'r') as f:
         data = f.read().splitlines()
@@ -16,46 +26,41 @@ def _read_data(path):
 def micro_to_seconds(micro):
     return micro / 1_000_000.0
 
+
 def milli_to_seconds(milli):
     return milli / 1_000.0
 
 
-def _parse_data(data):
+def _parse_data_into_groups(data):
     groups = {}
     group_pattern = r'\[(\w+)-(\d+)\.csv\]'
 
     curr_distribution = None
     curr_num_positions = None
+
     for row in data:
         if row.startswith("Run"):
-            match = re.search(group_pattern, row)
-            curr_distribution = match.group(1)
-            curr_num_positions = int(match.group(2))
+            regex_match = re.search(group_pattern, row)
+            curr_distribution = regex_match.group(1)
+            curr_num_positions = int(regex_match.group(2))
             if curr_distribution not in groups:
-                groups[curr_distribution] = {curr_num_positions: []}
-            else:
-                groups[curr_distribution][curr_num_positions] = []
+                groups[curr_distribution] = DistributionRun()
 
-            continue
-        
-        exec_time = row.split(": ")[1]
-        groups[curr_distribution][curr_num_positions].append(int(exec_time))
-    
+        else:
+            strategy_exec_time = row.split(": ")
+            strategy = strategy_exec_time[0]
+            exec_time = int(strategy_exec_time[1])
+            groups[curr_distribution].add_strategy_exec_time(
+                strategy, curr_num_positions, exec_time)
+
     return groups
 
 
-def _plot_distribution(distribution_name, num_positions, dir_name, log_scale=True):
-    data_sizes = sorted(num_positions.keys())
-
-    right_partitioning_times = [micro_to_seconds(num_positions[key][0]) for key in data_sizes]
-    left_partitioning_times = [micro_to_seconds(num_positions[key][1]) for key in data_sizes]
-    both_partitioning_times = [micro_to_seconds(num_positions[key][2]) for key in data_sizes]
-    partitioning_sort_times = [micro_to_seconds(num_positions[key][3]) for key in data_sizes]
-
-    plt.plot(data_sizes, right_partitioning_times, marker="x", label="Right partitioning")
-    plt.plot(data_sizes, left_partitioning_times, marker="o", label="Left partitioning")
-    plt.plot(data_sizes, both_partitioning_times, marker="+", label="Both Partitioning + Sort Left")
-    plt.plot(data_sizes, partitioning_sort_times, marker="v", label="Sort partitioning")
+def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, log_scale=True):
+    for strategy, exec_times in strategy_exec_times.items():
+        # Sort by num positions
+        exec_times.sort(key = lambda x: x[0])
+        plt.plot(*zip(*exec_times), label=strategy.title())
 
     if log_scale:
         plt.xscale("log")
@@ -64,7 +69,6 @@ def _plot_distribution(distribution_name, num_positions, dir_name, log_scale=Tru
     log_label_prefix = "[log]" if log_scale else ""
     plt.xlabel(f"Num positions {log_label_prefix}")
     plt.ylabel(f"Time [s] {log_label_prefix}")
-    #plt.ticklabel_format(style="plain")
 
     plt.title(distribution_name)
     plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -76,18 +80,23 @@ def _plot_distribution(distribution_name, num_positions, dir_name, log_scale=Tru
     plt.savefig(filename, dpi=400, bbox_inches="tight")
     os.system(f"pdfcrop {filename} {filename}")
 
-    #plt.show()
     plt.close()
 
 
 def plot_data(path):
     raw_data = _read_data(path)
-    groups = _parse_data(raw_data)
+    groups = _parse_data_into_groups(raw_data)
     dir_name = path.split("/")[1].split(".")[0]
 
-    for distribution, num_positions in groups.items():
-        _plot_distribution(distribution, num_positions, dir_name, log_scale=True)
-        _plot_distribution(distribution, num_positions, dir_name, log_scale=False)
+    for distribution_name, distribution_group in groups.items():
+        _plot_distribution_group(distribution_name,
+                           distribution_group.strategy_exec_times,
+                           dir_name,
+                           log_scale=True)
+        _plot_distribution_group(distribution_name,
+                           distribution_group.strategy_exec_times,
+                           dir_name,
+                           log_scale=False)
     
 
 if __name__ == "__main__":
@@ -95,4 +104,6 @@ if __name__ == "__main__":
     #plot_data("results/zipf_large_benchmark.txt")
     #plot_data("results/new_res.txt")
     #plot_data("results/last_results/benchmark.txt")
-    plot_data("results/2024-12-18/benchmark.txt")
+
+    #plot_data("results/2024-12-18/benchmark.txt")
+    plot_data("results/2025-01-22/benchmark.txt")
