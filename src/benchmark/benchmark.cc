@@ -62,10 +62,10 @@ void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num
     //auto both_partitioning_time= util::run_join_return_best_time(both_partitioning_sort_left, num_runs);
     //std::cout << fmt::format("{}: {}",both_partitioning_sort_left.get_strategy_name(), both_partitioning_time) << std::endl;
 
-    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto partition_sort_time=
-        util::run_join_return_best_time(partition_sort, num_runs);
-    std::cout << fmt::format("{}: {}", partition_sort.get_strategy_name(), partition_sort_time) << std::endl;
+    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //auto partition_sort_time=
+    //    util::run_join_return_best_time(partition_sort, num_runs);
+    //std::cout << fmt::format("{}: {}", partition_sort.get_strategy_name(), partition_sort_time) << std::endl;
 
     PartitioningRightFilterMinASOFJoin filter_min_right_partition(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto right_partitioning_filter_min_time = util::run_join_return_best_time(filter_min_right_partition, num_runs);
@@ -79,10 +79,10 @@ void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num
 
     uint64_t right_result = right_partitioning.result.value_sum;
     uint64_t left_result = left_partitioning.result.value_sum;
-    uint64_t sorted_partitioned_result = partition_sort.result.value_sum;
+    //uint64_t sorted_partitioned_result = partition_sort.result.value_sum;
 
-    if (!(right_result == left_result && left_result == sorted_partitioned_result)) {
-        std::cout << fmt::format("RESULTS NOT EQUAL {}, {}, {}", right_result, left_result, sorted_partitioned_result)
-                  << std::endl;
-    }
+    //if (!(right_result == left_result && left_result == sorted_partitioned_result)) {
+    //    std::cout << fmt::format("RESULTS NOT EQUAL {}, {}, {}", right_result, left_result, sorted_partitioned_result)
+    //              << std::endl;
+    //}
 }

@@ -20,22 +20,22 @@ void PartitioningRightFilterMinASOFJoin::join() {
     timer.start();
     PerfEvent e;
 
-    e.startCounters();
+    //e.startCounters();
     MultiMapTB<RightEntry> prices_lookup(prices.stock_ids, prices.timestamps);
-    e.stopCounters();
-    log("Partitioning Perf");
-    log(e.getReport(prices.size));
-    log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("Partitioning Perf");
+    //log(e.getReport(prices.size));
+    //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
-    e.stopCounters();
-    log("\n\nSorting Perf: ");
-    log(e.getReport(prices.size));
+    //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("\n\nSorting Perf: ");
+    //log(e.getReport(prices.size));
 
     uint64_t global_min = UINT64_MAX;
     for (const auto& [_, partition] : prices_lookup) {

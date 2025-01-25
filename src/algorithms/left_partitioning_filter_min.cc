@@ -23,9 +23,9 @@ void PartitioningLeftFilterMinASOFJoin::join() {
     //e.startCounters();
     MultiMapTB<LeftEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
     //e.stopCounters();
-    log("Partitioning Perf");
+    //log("Partitioning Perf");
     //e.printReport(std::cout, order_book.size);
-    log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
     //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
@@ -33,9 +33,9 @@ void PartitioningLeftFilterMinASOFJoin::join() {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
     //e.stopCounters();
-    log("\n\nSorting Perf: ");
+    //log("\n\nSorting Perf: ");
     //e.printReport(std::cout, prices.size);
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     e.startCounters();
     std::atomic<uint64_t> global_min = 0;
@@ -95,10 +95,10 @@ void PartitioningLeftFilterMinASOFJoin::join() {
     e.stopCounters();
     log("\n\nBinary Search Perf:");
     log(e.getReport(prices.size));
-    log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
+    //log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
     log(fmt::format("Num lookups skipped: {}", num_lookups_skipped.load()));
 
-    e.startCounters();
+    //e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         std::vector<LeftEntry>& partition_bin = iter.second;
@@ -168,10 +168,10 @@ void PartitioningLeftFilterMinASOFJoin::join() {
             }
         });
     });
-    e.stopCounters();
-    log("\n\nFinding Match Perf:");
-    log(e.getReport(order_book.size));
-    log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
+    //e.stopCounters();
+    //log("\n\nFinding Match Perf:");
+    //log(e.getReport(order_book.size));
+    //log(fmt::format("Finding match in {}{}", timer.lap(), timer.unit()));
 
     // Print lock contention duration.
     //size_t total_duration = 0;

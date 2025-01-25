@@ -91,8 +91,8 @@ int main() {
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto right_duration = run_join(right_partitioning, input_size);
 
-    PartitioningBothSortLeftASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto both_duration = run_join(partitioning_both, input_size);
+    //PartitioningBothSortLeftASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //auto both_duration = run_join(partitioning_both, input_size);
 
     PartitioningLeftFilterMinASOFJoin left_filter_min(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto left_filter_min_duration = run_join(left_filter_min, input_size);
@@ -100,7 +100,7 @@ int main() {
     std::cout << "### Total durations: ###" << std::endl;
     std::cout << fmt::format("Left duration: {}[ms]", left_duration) << std::endl;
     std::cout << fmt::format("Right duration: {}[ms]", right_duration) << std::endl;
-    std::cout << fmt::format("Both duration: {}[ms]", both_duration) << std::endl;
+    //std::cout << fmt::format("Both duration: {}[ms]", both_duration) << std::endl;
     std::cout << fmt::format("Left Filter min duration: {}[ms]", left_filter_min_duration) << std::endl;
 
     return 0;
