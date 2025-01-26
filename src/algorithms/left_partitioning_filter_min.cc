@@ -39,14 +39,14 @@ void PartitioningLeftFilterMinASOFJoin::join() {
 
     e.startCounters();
     /// Use alignas(64) to prevent false sharing.
-    alignas(64) std::atomic<uint64_t> global_min = 0;
-    alignas(64) std::atomic<uint64_t> num_lookups_skipped = 0;
+    /*alignas(64)*/ std::atomic<uint64_t> global_min = 0;
+    /*alignas(64)*/ std::atomic<uint64_t> num_lookups_skipped = 0;
 
-    struct PartitionMetadata {
-        bool head_has_match = false;
-        uint64_t head_timestamp = UINT64_MAX;
-    };
-    std::unordered_map<std::string_view, PartitionMetadata> partition_metadata(order_book_lookup.size());
+    //struct PartitionMetadata {
+    //    bool head_has_match = false;
+    //    uint64_t head_timestamp = UINT64_MAX;
+    //};
+    //std::unordered_map<std::string_view, PartitionMetadata> partition_metadata(order_book_lookup.size());
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
@@ -63,7 +63,7 @@ void PartitioningLeftFilterMinASOFJoin::join() {
             }
 
             auto& partition_bin = order_book_lookup[stock_id];
-            auto* match= Search::Binary::greater_equal_than(
+            auto* match= Search::Interpolation::greater_equal_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
 

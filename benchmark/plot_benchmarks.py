@@ -41,6 +41,8 @@ def _parse_data_into_groups(data):
     for row in data:
         if row.startswith("Run"):
             regex_match = re.search(group_pattern, row)
+            if regex_match is None:
+                print(f"Regex error: {row}")
             curr_distribution = regex_match.group(1)
             curr_num_positions = int(regex_match.group(2))
             if curr_distribution not in groups:
@@ -107,4 +109,6 @@ if __name__ == "__main__":
     #plot_data("results/last_results/benchmark.txt")
 
     #plot_data("results/2024-12-18/benchmark.txt")
-    plot_data("results/2025-01-22/benchmark.txt")
+    #plot_data("results/2025-01-22/benchmark.txt")
+
+    plot_data("results/2025-01-26/p90_uniform.log")
