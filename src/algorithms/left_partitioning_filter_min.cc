@@ -38,31 +38,45 @@ void PartitioningLeftFilterMinASOFJoin::join() {
     log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     e.startCounters();
-    std::atomic<uint64_t> global_min = 0;
-    std::atomic<uint64_t> num_lookups_skipped = 0;
+    /// Use alignas(64) to prevent false sharing.
+    alignas(64) std::atomic<uint64_t> global_min = 0;
+    alignas(64) std::atomic<uint64_t> num_lookups_skipped = 0;
+
+    struct PartitionMetadata {
+        bool head_has_match = false;
+        uint64_t head_timestamp = UINT64_MAX;
+    };
+    std::unordered_map<std::string_view, PartitionMetadata> partition_metadata(order_book_lookup.size());
+
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
-            const auto& stock_id = prices.stock_ids[i];
-            if (!order_book_lookup.contains(stock_id)) {
-                continue;
-            }
-
             auto timestamp = prices.timestamps[i];
-            //std::cout << "Timestamp: " << timestamp << ", global min: " << global_min << std::endl;
             if (timestamp < global_min) {
                 ++num_lookups_skipped;
                 continue;
             }
 
+            const auto& stock_id = prices.stock_ids[i];
+            if (!order_book_lookup.contains(stock_id)) {
+                continue;
+            }
+
             auto& partition_bin = order_book_lookup[stock_id];
-            auto* match= Search::Interpolation::greater_equal_than(
+            auto* match= Search::Binary::greater_equal_than(
                 /* data= */ partition_bin,
                 /* target= */ timestamp);
 
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
                 match->atomic_compare_swap_diffs(diff, i);
+
+                /// Update metadata
+                //auto& metadata = partition_metadata[stock_id];
+                //metadata.head_has_match = partition_bin[0].matched;
+                //metadata.head_timestamp = metadata.head_has_match
+                //        ? prices.timestamps[partition_bin[0].diff_price.load().price_idx]
+                //        : UINT64_MAX;
             }
         }
 
@@ -71,6 +85,12 @@ void PartitioningLeftFilterMinASOFJoin::join() {
         /// If all bucket heads have a match, the global min is the minimum of all bucket heads.
         uint64_t local_min = UINT64_MAX;
         bool all_partitions_have_match = true;
+
+        //for (const auto& [s_id, metadata] : partition_metadata) {
+        //    all_partitions_have_match &= metadata.head_has_match;
+        //    local_min = std::min(local_min, metadata.head_timestamp);
+        //}
+
         for (const auto& [s_id, partition] : order_book_lookup) {
             bool partition_head_has_match = partition.empty() || partition[0].matched;
             all_partitions_have_match = all_partitions_have_match && partition_head_has_match;
@@ -81,7 +101,7 @@ void PartitioningLeftFilterMinASOFJoin::join() {
         }
 
         /// Use CAS to tighten the global minimum if the current minimum is greater.
-        if (all_partitions_have_match) {
+        if (all_partitions_have_match && local_min > global_min) {
             uint64_t old_global_min = global_min.load(std::memory_order_relaxed);
             while (local_min > global_min) {
                 if (global_min.compare_exchange_weak(
