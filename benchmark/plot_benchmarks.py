@@ -109,6 +109,6 @@ if __name__ == "__main__":
     #plot_data("results/last_results/benchmark.txt")
 
     #plot_data("results/2024-12-18/benchmark.txt")
-    #plot_data("results/2025-01-22/benchmark.txt")
+    plot_data("results/2025-01-22/benchmark.txt")
 
-    plot_data("results/2025-01-26/p90_uniform.log")
+    #plot_data("results/2025-01-26/p90_uniform.log")
