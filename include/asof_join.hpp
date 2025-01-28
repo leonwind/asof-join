@@ -47,6 +47,7 @@ public:
 
     struct RightEntry;
     struct LeftEntry;
+    struct LeftEntryCopy;
 
 protected:
     Prices& prices;
@@ -155,6 +156,16 @@ public:
     }
 };
 
+class PartitioningLeftCopyLeftASOFJoin : public ASOFJoin {
+public:
+    using ASOFJoin::ASOFJoin;
+    void join() override;
+
+    [[nodiscard]] std::string_view get_strategy_name() const override {
+        return "PARTITION + COPY LEFT";
+    }
+};
+
 struct ASOFJoin::RightEntry : JoinEntry {
     uint64_t timestamp;
     size_t idx;
@@ -245,6 +256,52 @@ struct ASOFJoin::LeftEntry : JoinEntry {
                 /* success= */ std::memory_order_acquire,
                 /* failure= */ std::memory_order_relaxed)) { break; }
         }
+    }
+
+    [[nodiscard]] inline uint64_t get_key() const override {
+        return timestamp;
+    }
+};
+
+struct ASOFJoin::LeftEntryCopy : JoinEntry {
+    uint64_t timestamp;
+    size_t order_idx;
+    size_t price_idx;
+    uint64_t diff;
+    bool matched;
+
+    LeftEntryCopy(): timestamp(-1), order_idx(-1),
+                 price_idx(-1), diff(-1), matched(false) {}
+
+    LeftEntryCopy(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
+                                                     price_idx(0), diff(UINT64_MAX), matched(false) {}
+
+    LeftEntryCopy(const LeftEntryCopy &other) : timestamp(other.timestamp), order_idx(other.order_idx),
+                                        price_idx(other.price_idx), diff(other.diff), matched(other.matched) {}
+
+    LeftEntryCopy(LeftEntryCopy &&other) noexcept: timestamp(other.timestamp), order_idx(other.order_idx),
+                                           price_idx(other.price_idx), diff(other.diff), matched(other.matched) {}
+
+    LeftEntryCopy &operator=(const LeftEntryCopy &other) {
+        if (this != &other) {
+            timestamp = other.timestamp;
+            order_idx = other.order_idx;
+            price_idx = other.price_idx;
+            diff = other.diff;
+            matched = other.matched;
+        }
+        return *this;
+    }
+
+    LeftEntryCopy &operator=(LeftEntryCopy &&other) noexcept {
+        if (this != &other) {
+            timestamp = other.timestamp;
+            order_idx = other.order_idx;
+            price_idx = other.price_idx;
+            diff = other.diff;
+            matched = other.matched;
+        }
+        return *this;
     }
 
     [[nodiscard]] inline uint64_t get_key() const override {

@@ -35,7 +35,9 @@ add_library(asof_join_lib
 	src/algorithms/right_partitioning_filter_min.cc
 
     src/algorithms/left_partitioning_btree.cc
-    src/algorithms/right_partitioning_btree.cc)
+    src/algorithms/right_partitioning_btree.cc
+
+	src/algorithms/copy_left_partitioning_join.cc)
 
 target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt atomic)
 
