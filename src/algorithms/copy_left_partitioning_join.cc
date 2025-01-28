@@ -78,10 +78,7 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, global_bin.size()),
             [&](tbb::blocked_range<size_t>& range) {
-
-            tbb::parallel_for_each(order_book_lookups.begin(), order_book_lookups.end(),
-                [&](auto& local_order_book) {
-
+            for (auto& local_order_book : order_book_lookups) {
                 auto& local_bin = local_order_book[s_id];
                 for (size_t i = range.begin(); i < range.end(); ++i) {
                     if (local_bin[i].matched && local_bin[i].diff < global_bin[i].diff) {
@@ -90,7 +87,7 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
                         global_bin[i].matched = true;
                     }
                 }
-            });
+            }
         });
     });
 
