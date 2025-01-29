@@ -12,6 +12,8 @@ namespace benchmarks {
 
     void run_small_order_book_contention_benchmark();
 
+    void run_copying_vs_locking_benchmark();
+
     void run_single_stock_benchmark();
 
     void run_all();

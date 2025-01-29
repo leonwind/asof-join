@@ -44,7 +44,8 @@ target_link_libraries(asof_join_lib PUBLIC TBB::tbb fmt atomic)
 add_library(asof_benchmark_lib
     src/benchmark/benchmark.cc
     src/benchmark/diff_zipf_skews.cc
-	src/benchmark/small_order_book_contention.cc)
+	src/benchmark/small_order_book_contention.cc
+	src/benchmark/copying_vs_locking.cc)
 # Link main lib sources into benchmark lib
 target_link_libraries(asof_benchmark_lib asof_join_lib)
 
