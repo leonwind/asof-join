@@ -67,7 +67,7 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
 
     if log_scale:
         plt.xscale("log")
-        plt.yscale("log")
+        #plt.yscale("log")
 
     log_label_prefix = "[log]" if log_scale else ""
     plt.xlabel(f"Num positions {log_label_prefix}")
@@ -109,6 +109,8 @@ if __name__ == "__main__":
     #plot_data("results/last_results/benchmark.txt")
 
     #plot_data("results/2024-12-18/benchmark.txt")
-    plot_data("results/2025-01-22/benchmark.txt")
+    #plot_data("results/2025-01-22/benchmark.txt")
 
     #plot_data("results/2025-01-26/p90_uniform.log")
+
+    plot_data("results/copying_vs_locking.log")

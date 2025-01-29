@@ -12,7 +12,8 @@ int main(int argc, const char* argv[]) {
     //run_benchmark(prices, order_book, /* num_runs */ 3);
 
     //benchmarks::run_diff_zipf_skews_benchmarks();
-    benchmarks::run_small_order_book_contention_benchmark();
+    //benchmarks::run_small_order_book_contention_benchmark();
+    benchmarks::run_copying_vs_locking_benchmark();
 
     return 0;
 }

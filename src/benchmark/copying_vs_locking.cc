@@ -13,7 +13,7 @@ void benchmarks::run_copying_vs_locking_benchmark() {
     size_t num_runs = 3;
     std::string small_order_book_data = "../data/uniform_small";
 
-    Prices prices = load_prices("../data/zipf_prices.csv");
+    Prices prices = load_prices("../data/prices_1_2000000.csv");
 
     for (auto& positions_entry : fs::directory_iterator(small_order_book_data)) {
         const auto& positions_path = positions_entry.path().string();

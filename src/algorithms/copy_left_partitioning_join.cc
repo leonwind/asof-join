@@ -20,10 +20,9 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
     timer.start();
 
     //e.startCounters();
+    const size_t num_threads = tbb::this_task_arena::max_concurrency();
     MultiMapTB<LeftEntryCopy> order_book_lookup(order_book.stock_ids, order_book.timestamps);
-    tbb::enumerable_thread_specific<MultiMapTB<LeftEntryCopy>> order_book_lookups(
-        [&]{ return order_book_lookup; });
-    //e.stopCounters();
+
     log("Partitioning Perf");
     //e.printReport(std::cout, order_book.size);
     log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
@@ -33,6 +32,9 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
+
+    std::vector<MultiMapTB<LeftEntryCopy>> order_book_lookups(num_threads, order_book_lookup);
+
     //e.stopCounters();
     log("\n\nSorting Perf: ");
     //e.printReport(std::cout, prices.size);
@@ -41,7 +43,9 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
     e.startCounters();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
-        auto& local_order_book_lookup = order_book_lookups.local();
+        const size_t thread_id = tbb::this_task_arena::current_thread_index();
+        auto& local_order_book_lookup = order_book_lookups[thread_id];
+        //auto& local_order_book_lookup = order_book_lookups_tbb.local();
 
         for (size_t i = range.begin(); i < range.end(); ++i) {
             const auto& stock_id = prices.stock_ids[i];
@@ -70,6 +74,7 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
     log(e.getReport(prices.size));
     log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
 
+    e.startCounters();
     /// Merge all thread local order book lookups into the global [[order_book_lookup]].
     /// For all stock_ids iterate over all partitions and copy for a thread-local range
     /// the local matched values, if the [[diff]] is smaller, into [[order_book_lookup]].
@@ -92,6 +97,10 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
             }
         });
     });
+    e.stopCounters();
+    log("\n\nMerging Perf:");
+    log(e.getReport(order_book.size));
+    log(fmt::format("Merging in {}{}", timer.lap(), timer.unit()));
 
 
     e.startCounters();

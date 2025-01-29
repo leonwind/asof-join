@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "tbb/enumerable_thread_specific.h"
+#include "tbb/parallel_invoke.h"
 #include "tbb/parallel_for.h"
 #include "tbb/parallel_for_each.h"
 
@@ -114,6 +115,26 @@ public:
         combine_partitions();
     }
 
+    MultiMapTB(const MultiMapTB& other):
+        equality_keys(other.equality_keys),
+        sort_by_keys(other.sort_by_keys),
+        num_partitions(other.num_partitions),
+        mask(other.mask),
+        thread_data(Partitions(0)),
+        local_maps(),
+        partitioned_map(other.partitioned_map) {}
+
+
+    ~MultiMapTB() {
+        tbb::parallel_invoke(
+            [&] { partitioned_map.clear(); },
+            [&] { local_maps.clear(); },
+
+            [&] { thread_data.clear(); }
+    );
+
+}
+
     [[nodiscard]] inline iterator begin() {
         return partitioned_map.begin();
     }
@@ -122,11 +143,11 @@ public:
         return partitioned_map.end();
     }
 
-    [[nodiscard]] inline bool contains(MapKey key) {
+    [[nodiscard]] inline bool contains(MapKey key) const {
         return partitioned_map.contains(key);
     }
 
-    [[nodiscard]] inline size_t size() {
+    [[nodiscard]] inline size_t size() const {
         return partitioned_map.size();
     }
 
@@ -166,7 +187,7 @@ private:
         partitioned_map.reserve(total_size);
         for (auto& local_map : local_maps) {
             for (auto& [key, value]: local_map) {
-                partitioned_map.insert({key, std::move(value.copy_tuples())});
+                partitioned_map.insert({key, value.copy_tuples()});
             }
         }
     }
