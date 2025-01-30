@@ -46,14 +46,15 @@ class Positions:
             self,
             stock_prices: StockPrices,
             num_positions,
-            random_stock_generator: RandomStockGenerator):
+            random_stock_generator: RandomStockGenerator,
+            start_time = 0):
         self.stock_names = stock_prices.stock_names
         self.num_stocks = len(self.stock_names)
         self.num_positions = num_positions
         self.random_stock_generator = random_stock_generator
 
-        self.start_time = 0
-        self.end_time = stock_prices.get_end_time()
+        self.start_time = int(start_time)
+        self.end_time = int(stock_prices.get_end_time())
 
     def _get_random_stock(self):
         return self.stock_names[self.random_stock_generator.generate()]
@@ -80,10 +81,11 @@ def generate_positions(
         num_positions,
         random_stock_generator,
         output_positions_file,
+        start_time = 0,
         shuffle = True):
     prices = StockPrices(num_stocks, data_points_per_stock)
     
-    positions = Positions(prices, num_positions, random_stock_generator)
+    positions = Positions(prices, num_positions, random_stock_generator, start_time)
     positions_df = positions.generate()
 
     if shuffle:
