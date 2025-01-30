@@ -6,7 +6,6 @@
 #include "benchmark.hpp"
 
 namespace fs = std::filesystem;
-//using namespace benchmarks::util;
 
 
 void benchmarks::run_copying_vs_locking_benchmark() {

@@ -50,14 +50,17 @@ void PartitioningLeftFilterMinASOFJoin::join() {
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
+        bool possible_new_min = false;
+        size_t local_num_skipped = 0;
         for (size_t i = range.begin(); i < range.end(); ++i) {
             auto timestamp = prices.timestamps[i];
             if (timestamp < global_min) {
                 #ifndef BENCHMARK_MODE
-                    ++num_lookups_skipped;
+                    ++local_num_skipped;
                 #endif
                 continue;
             }
+            possible_new_min = true;
 
             const auto& stock_id = prices.stock_ids[i];
             if (!order_book_lookup.contains(stock_id)) {
@@ -71,8 +74,8 @@ void PartitioningLeftFilterMinASOFJoin::join() {
 
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
-                match->lock_compare_swap_diffs(diff, i);
-                //match->atomic_compare_swap_diffs(diff, i);
+                //match->lock_compare_swap_diffs(diff, i);
+                match->atomic_compare_swap_diffs(diff, i);
 
                 /// Update metadata
                 //auto& metadata = partition_metadata[stock_id];
@@ -81,6 +84,14 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                 //        ? prices.timestamps[partition_bin[0].diff_price.load().price_idx]
                 //        : UINT64_MAX;
             }
+        }
+        #ifndef BENCHMARK_MODE
+            num_lookups_skipped += local_num_skipped;
+        #endif
+
+        if (!possible_new_min) {
+            /// Can skip updates.
+            return;
         }
 
         /// Update global min for filtering after each morsel chunk.
@@ -180,9 +191,9 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                                 /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                                 /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
                                 /// Price if locking was used.
-                                /* price= */ prices.prices[last_match->price_idx],
+                                ///* price= */ prices.prices[last_match->price_idx],
                                 /// Price if CAS was used.
-                                ///* price= */ prices.prices[last_match->diff_price.load().price_idx],
+                                /* price= */ prices.prices[last_match->diff_price.load().price_idx],
                                 /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
                                 /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
                                 /* amount= */ order_book.amounts[entry.order_idx]);

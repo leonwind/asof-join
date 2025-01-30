@@ -36,7 +36,7 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
     std::vector<MultiMapTB<LeftEntryCopy>> order_book_lookups(num_threads, order_book_lookup);
 
     //e.stopCounters();
-    log("\n\nSorting Perf: ");
+    log("\n\nSorting Perf:");
     //e.printReport(std::cout, prices.size);
     log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
@@ -101,7 +101,6 @@ void PartitioningLeftCopyLeftASOFJoin::join() {
     log("\n\nMerging Perf:");
     log(e.getReport(order_book.size));
     log(fmt::format("Merging in {}{}", timer.lap(), timer.unit()));
-
 
     e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),

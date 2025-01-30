@@ -14,6 +14,8 @@ namespace benchmarks {
 
     void run_copying_vs_locking_benchmark();
 
+    void run_left_partitioning_filtering_diff_percentile();
+
     void run_single_stock_benchmark();
 
     void run_all();
