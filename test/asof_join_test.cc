@@ -386,7 +386,7 @@ TEST(asof_join_both_partitioning_sort_left, TestSmallZipfExample) {
 
 TEST(asof_join_partitioning_left_filter_min, TestSmallDuckDBExample) {
     Prices prices = load_prices("../test/data/prices_small.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/orderbook_small.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/orderbook_small.csv", ',', true);
     PartitioningLeftFilterMinASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();

@@ -53,7 +53,9 @@ void PartitioningLeftFilterMinASOFJoin::join() {
         for (size_t i = range.begin(); i < range.end(); ++i) {
             auto timestamp = prices.timestamps[i];
             if (timestamp < global_min) {
-                ++num_lookups_skipped;
+                #ifndef BENCHMARK_MODE
+                    ++num_lookups_skipped;
+                #endif
                 continue;
             }
 
@@ -69,7 +71,8 @@ void PartitioningLeftFilterMinASOFJoin::join() {
 
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
-                match->atomic_compare_swap_diffs(diff, i);
+                match->lock_compare_swap_diffs(diff, i);
+                //match->atomic_compare_swap_diffs(diff, i);
 
                 /// Update metadata
                 //auto& metadata = partition_metadata[stock_id];
@@ -177,9 +180,9 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                                 /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                                 /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
                                 /// Price if locking was used.
-                                ///* price= */ prices.prices[last_match->price_idx],
+                                /* price= */ prices.prices[last_match->price_idx],
                                 /// Price if CAS was used.
-                                /* price= */ prices.prices[last_match->diff_price.load().price_idx],
+                                ///* price= */ prices.prices[last_match->diff_price.load().price_idx],
                                 /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
                                 /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
                                 /* amount= */ order_book.amounts[entry.order_idx]);
