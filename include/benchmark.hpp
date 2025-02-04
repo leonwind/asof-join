@@ -16,6 +16,8 @@ namespace benchmarks {
 
     void run_left_partitioning_filtering_diff_percentile();
 
+    void run_different_num_threads();
+
     void run_single_stock_benchmark();
 
     void run_all();

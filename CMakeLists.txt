@@ -46,7 +46,8 @@ add_library(asof_benchmark_lib
     src/benchmark/diff_zipf_skews.cc
 	src/benchmark/small_order_book_contention.cc
 	src/benchmark/copying_vs_locking.cc
-	src/benchmark/left_partitioning_vs_filter_diff_percentile.cc)
+	src/benchmark/left_partitioning_vs_filter_diff_percentile.cc
+	src/benchmark/benchmark_threads_scalability.cc)
 # Link main lib sources into benchmark lib
 target_link_libraries(asof_benchmark_lib asof_join_lib)
 
