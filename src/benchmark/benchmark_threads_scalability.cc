@@ -26,19 +26,18 @@ void benchmarks::run_different_num_threads() {
 
         PartitioningLeftASOFJoin lock_left_join(prices, order_book, LESS_EQUAL_THAN, INNER);
         auto lock_left_time = util::run_join_return_best_time(lock_left_join, num_runs);
+        std::cout << fmt::format("{}: {}", lock_left_join.get_strategy_name(), lock_left_time) << std::endl;
 
         PartitioningLeftCopyLeftASOFJoin copy_left_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-        auto copy_left_time = util::run_join_return_best_time(lock_left_join, num_runs);
+        auto copy_left_time = util::run_join_return_best_time(copy_left_join, num_runs);
+        std::cout << fmt::format("{}: {}", copy_left_join.get_strategy_name(), copy_left_time) << std::endl;
 
         PartitioningLeftFilterMinASOFJoin left_filter_min_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-        auto left_filter_time = util::run_join_return_best_time(lock_left_join, num_runs);
+        auto left_filter_time = util::run_join_return_best_time(left_filter_min_join, num_runs);
+        std::cout << fmt::format("{}: {}", left_filter_min_join.get_strategy_name(), left_filter_time) << std::endl;
 
         PartitioningRightASOFJoin right_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-        auto right_join_time = util::run_join_return_best_time(lock_left_join, num_runs);
-
-        std::cout << fmt::format("{}: {}", lock_left_join.get_strategy_name(), lock_left_time) << std::endl;
-        std::cout << fmt::format("{}: {}", copy_left_join.get_strategy_name(), copy_left_time) << std::endl;
-        std::cout << fmt::format("{}: {}", left_filter_min_join.get_strategy_name(), left_filter_time) << std::endl;
+        auto right_join_time = util::run_join_return_best_time(right_join, num_runs);
         std::cout << fmt::format("{}: {}", right_join.get_strategy_name(), right_join_time) << std::endl;
     }
 }
