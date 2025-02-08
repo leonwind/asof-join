@@ -4,7 +4,7 @@ import math
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(6, 5)
+#texify.latexify(6, 4)
 style.set_custom_style()
 
 
@@ -81,7 +81,7 @@ def _parse_data_into_groups(data):
         elif row.startswith("PARTITION"):
             parts = row.split(": ")
             strategy_label = parts[0].strip()
-            total_time = int(parts[1])
+            total_time = micro_to_seconds(int(parts[1]))
             
             if current_strategy is None:
                 current_strategy = Phases()
@@ -116,6 +116,11 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
                     phases_times[phase_label] = []
                 phases_times[phase_label].append(time)
 
+            total_time_label = "total time"
+            if total_time_label not in phases_times:
+                phases_times[total_time_label] = []
+            phases_times[total_time_label].append(strategy_run.total_time)
+
         num_threads.append(num_thread)
 
     print(num_threads)
@@ -128,8 +133,6 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     fig, axs = plt.subplots(num_phases, 1)
     plot_idx = 0
 
-    #fig.suptitle(competitor_label)
-    
     for label, times in phases_times.items():
         single_thread_time = times[0]
         perfect_scale = [single_thread_time / i for i in num_threads]
@@ -139,7 +142,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
         if plot_idx == 0:
             axs[plot_idx].legend(loc="upper right")
 
-        axs[plot_idx].set_title(label.title(), y=0.7)
+        axs[plot_idx].set_title(label.title(), y=0.65)
 
         axs[plot_idx].set_ylabel("Time [s]")
         axs[plot_idx].set_xticks(num_threads)
@@ -151,7 +154,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
         
         plot_idx += 1
     
-    competitor_name_file = competitor_label.replace(" ", "_")
+    competitor_name_file = competitor_label.replace(" ", "_").lower()
     filename = f"plots/{dir_name}/{competitor_name_file}_phases_breakup_plot.pdf"
     print(f"Plotting {filename}")
 
