@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import regex as re
+import math
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(5, 1.8)
+texify.latexify(6, 5)
 style.set_custom_style()
 
 
@@ -18,15 +19,15 @@ class Phases:
 
 
 class StrategyRun:
-    def __init__(self, strategy_name, num_threads, total_time, phases_times):
-        self.strategy_name = strategy_name
+    def __init__(self, label, num_threads, total_time, phases_times):
+        self.label = label 
         self.num_threads = num_threads
         self.total_time = total_time
         self.phases_times = phases_times
 
 
     def __repr__(self):
-        return (f"StrategyRun({self.strategy_name}, num_threads={self.num_threads}, total_time={self.total_time}, "
+        return (f"StrategyRun({self.label}, num_threads={self.num_threads}, total_time={self.total_time}, "
                 f"phases_times={self.phases_times})")
 
 
@@ -99,13 +100,77 @@ def _plot_strategies_time_phases(strategy_run):
     pass
 
 
+def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name):
+    num_threads = []
+    phases_times = {}
+
+    for num_thread, strategy_runs in groups.items():
+        for strategy_run in strategy_runs:
+            if strategy_run.label != competitor_label:
+                continue
+
+            phases = strategy_run.phases_times 
+
+            for phase_label, time in phases.items():
+                if phase_label not in phases_times:
+                    phases_times[phase_label] = []
+                phases_times[phase_label].append(time)
+
+        num_threads.append(num_thread)
+
+    print(num_threads)
+    print(phases_times)
+
+    num_phases = len(phases_times.keys())
+    subplots_square_length = math.ceil(math.sqrt(num_phases))
+    print(subplots_square_length)
+
+    fig, axs = plt.subplots(num_phases, 1)
+    plot_idx = 0
+
+    #fig.suptitle(competitor_label)
+    
+    for label, times in phases_times.items():
+        single_thread_time = times[0]
+        perfect_scale = [single_thread_time / i for i in num_threads]
+        axs[plot_idx].plot(num_threads, times, label=competitor_label)
+        axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical Scale")
+
+        if plot_idx == 0:
+            axs[plot_idx].legend(loc="upper right")
+
+        axs[plot_idx].set_title(label.title(), y=0.7)
+
+        axs[plot_idx].set_ylabel("Time [s]")
+        axs[plot_idx].set_xticks(num_threads)
+
+        if plot_idx == num_phases - 1:
+            axs[plot_idx].set_xlabel("Num Threads")
+        else:
+            axs[plot_idx].set_xticklabels([])
+        
+        plot_idx += 1
+    
+    competitor_name_file = competitor_label.replace(" ", "_")
+    filename = f"plots/{dir_name}/{competitor_name_file}_phases_breakup_plot.pdf"
+    print(f"Plotting {filename}")
+
+    plt.savefig(filename, dpi=400)
+    os.system(f"pdfcrop {filename} {filename}")
+
+    plt.close()
+
+
 def plot_data(path):
     raw_data = _read_data(path)
     groups = _parse_data_into_groups(raw_data)
     dir_name = path.split("/")[1].split(".")[0]
 
-    print(groups)
-    print(dir_name)
+    #print(groups)
+    #print(dir_name)
+
+    _plot_all_phases_of_competitor_separately(groups, "Partition Right", dir_name)
+    _plot_all_phases_of_competitor_separately(groups, "Partition Left", dir_name)
 
     
 if __name__ == "__main__":
