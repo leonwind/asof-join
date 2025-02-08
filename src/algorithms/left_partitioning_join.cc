@@ -53,8 +53,8 @@ void PartitioningLeftASOFJoin::join() {
 
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
-                //match->lock_compare_swap_diffs(diff, i);
-                match->atomic_compare_swap_diffs(diff, i);
+                match->lock_compare_swap_diffs(diff, i);
+                //match->atomic_compare_swap_diffs(diff, i);
             }
         }
     });
@@ -119,13 +119,13 @@ void PartitioningLeftASOFJoin::join() {
 
                     if (last_match && last_match->matched) {
                         result.insert(
-                                /* price_timestamp= */ prices.timestamps[last_match->price_idx],
-                                /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
-                                ///* price= */ prices.prices[last_match->price_idx],
-                                /* price= */ prices.prices[last_match->diff_price.load().price_idx],
-                                /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
-                                /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
-                                /* amount= */ order_book.amounts[entry.order_idx]);
+                            /* price_timestamp= */ prices.timestamps[last_match->price_idx],
+                            /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
+                            /* price= */ prices.prices[last_match->price_idx],
+                            ///* price= */ prices.prices[last_match->diff_price.load().price_idx],
+                            /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
+                            /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
+                            /* amount= */ order_book.amounts[entry.order_idx]);
                     }
                 }
             }

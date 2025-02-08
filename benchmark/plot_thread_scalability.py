@@ -92,4 +92,4 @@ def plot_data(path):
  
 
 if __name__ == "__main__":
-    plot_data("results/thread_scalability.log")
+    plot_data("results/2025-02-05/threads_scalability.log")

@@ -25,7 +25,7 @@ public:
         lock_.clear(std::memory_order_release);
     }
 
-    uint64_t get_contended_duration_ns() {
+    [[nodiscard]] uint64_t get_contended_duration_ns() const {
         return total_contended_duration;
     }
 

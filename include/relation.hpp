@@ -49,11 +49,8 @@ OrderBook load_order_book(std::string_view path, char delimiter = ',', bool shuf
 
 struct ResultRelation : Relation {
 
-    ResultRelation(): Relation(), simulate_pipelining(false), value_sum(0) {}
-    explicit ResultRelation(bool simulate_pipelining): Relation(), simulate_pipelining(simulate_pipelining),
-        value_sum(0) {}
+    ResultRelation(): Relation(), value_sum(0) {}
 
-    bool simulate_pipelining;
     uint64_t value_sum;
 
     struct OutputData {
@@ -68,7 +65,7 @@ struct ResultRelation : Relation {
 
     tbb::enumerable_thread_specific<OutputData> thread_data;
 
-    void insert(
+    inline void insert(
         uint64_t price_timestamp,
         std::string& price_stock_id,
         uint64_t price,

@@ -74,34 +74,35 @@ void run_join_in_new_process(ASOFJoin& asof_op) {
 
 int main() {
     auto [prices, order_book] = load_data(
-        /* prices_path= */ "../data/btc_usd_data.csv",
-        /* positions_path= */"../data/btc_orderbook_medium.csv",
-        ///* prices_path= */ "../data/zipf_prices.csv",
-        ///* positions_path= */"../data/zipf_1_5_positions_2000000.csv",
+        ///* prices_path= */ "../data/btc_usd_data.csv",
+        ///* positions_path= */"../data/btc_orderbook_medium.csv",
+        /* prices_path= */ "../data/zipf_prices.csv",
+        /* positions_path= */"../data/zipf_1_5_positions_2000000.csv",
         /* delimiter= */ ',',
         /* shuffle= */ true);
     size_t input_size = prices.size + order_book.size;
 
-    PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //PartitioningSortedMergeJoin partition_sort(prices, order_book, LESS_EQUAL_THAN, INNER);
     //run_join(partition_sort, input_size, "partitioning sort");
 
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto left_duration = run_join(left_partitioning, input_size);
+    //auto left_duration = run_join(left_partitioning, input_size);
 
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto right_duration = run_join(right_partitioning, input_size);
 
-    PartitioningBothSortLeftASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto both_duration = run_join(partitioning_both, input_size);
+    //PartitioningBothSortLeftASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //auto both_duration = run_join(partitioning_both, input_size);
 
-    PartitioningLeftFilterMinASOFJoin left_filter_min(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto left_filter_min_duration = run_join(left_filter_min, input_size);
+    //PartitioningLeftFilterMinASOFJoin left_filter_min(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //auto left_filter_min_duration = run_join(left_filter_min, input_size);
 
-    std::cout << "### Total durations: ###" << std::endl;
-    std::cout << fmt::format("Left duration: {}[ms]", left_duration) << std::endl;
-    std::cout << fmt::format("Right duration: {}[ms]", right_duration) << std::endl;
-    std::cout << fmt::format("Both duration: {}[ms]", both_duration) << std::endl;
-    std::cout << fmt::format("Left Filter min duration: {}[ms]", left_filter_min_duration) << std::endl;
+    //std::cout << "### Total durations: ###" << std::endl;
+    //std::cout << fmt::format("Left duration: {}[ms]", left_duration) << std::endl;
+    //std::cout << fmt::format("Right duration: {}[ms]", right_duration) << std::endl;
+    //std::cout << fmt::format("Both duration: {}[ms]", both_duration) << std::endl;
+    //std::cout << fmt::format("Left Filter min duration: {}[ms]", left_filter_min_duration) << std::endl;
 
     return 0;
 }

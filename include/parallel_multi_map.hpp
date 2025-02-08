@@ -120,7 +120,7 @@ public:
         sort_by_keys(other.sort_by_keys),
         num_partitions(other.num_partitions),
         mask(other.mask),
-        thread_data(Partitions(0)),
+        thread_data(Partitions()),
         local_maps(),
         partitioned_map(other.partitioned_map) {}
 
@@ -162,9 +162,9 @@ private:
             auto& local_partitions = thread_data.local();
             for (size_t i = local_range.begin(); i < local_range.end(); ++i) {
                 size_t pos = hash(equality_keys[i]) & mask;
-                local_partitions.partitions[pos].store_tuple(std::make_pair(
+                local_partitions.partitions[pos].emplace_back(
                     equality_keys[i],
-                    Entry(sort_by_keys[i], i)));
+                    Entry(sort_by_keys[i], i));
             }
         });
     }
@@ -177,7 +177,7 @@ private:
             for (auto& local_data : thread_data) {
                 for (size_t i = local_range.begin(); i < local_range.end(); ++i) {
                     for (auto& [key, entry] : local_data.partitions[i]) {
-                        local_map[key].store_tuple(entry);
+                        local_map[key].emplace_back(entry);
                     }
                 }
             }
@@ -193,6 +193,7 @@ private:
     }
 
     struct Partitions {
+        Partitions(): partitions(0) {}
         explicit Partitions(size_t num_partitions): partitions(num_partitions) {}
         std::vector<TupleBuffer<std::pair<Key, Entry>>> partitions;
     };

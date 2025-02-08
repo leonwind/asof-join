@@ -154,7 +154,7 @@ public:
         num_tuples = 0;
     }
 
-    char* next_slot() {
+    inline char* next_slot() {
         ++num_tuples;
         if (!curr->has_space(TUPLE_SIZE)) {
             old_buffers.push_back(std::move(curr));

@@ -74,8 +74,8 @@ void PartitioningLeftFilterMinASOFJoin::join() {
 
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
-                //match->lock_compare_swap_diffs(diff, i);
-                match->atomic_compare_swap_diffs(diff, i);
+                match->lock_compare_swap_diffs(diff, i);
+                //match->atomic_compare_swap_diffs(diff, i);
 
                 /// Update metadata
                 //auto& metadata = partition_metadata[stock_id];
@@ -111,7 +111,8 @@ void PartitioningLeftFilterMinASOFJoin::join() {
 
             local_min = std::min(local_min, partition.empty() || !partition_head_has_match
                 ? UINT64_MAX
-                : prices.timestamps[partition[0].diff_price.load().price_idx]);
+                : prices.timestamps[partition[0].price_idx]);
+                //: prices.timestamps[partition[0].diff_price.load().price_idx]);
         }
 
         /// Use CAS to tighten the global minimum if the current minimum is greater.
@@ -191,9 +192,9 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                                 /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                                 /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
                                 /// Price if locking was used.
-                                ///* price= */ prices.prices[last_match->price_idx],
+                                /* price= */ prices.prices[last_match->price_idx],
                                 /// Price if CAS was used.
-                                /* price= */ prices.prices[last_match->diff_price.load().price_idx],
+                                ///* price= */ prices.prices[last_match->diff_price.load().price_idx],
                                 /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
                                 /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
                                 /* amount= */ order_book.amounts[entry.order_idx]);
