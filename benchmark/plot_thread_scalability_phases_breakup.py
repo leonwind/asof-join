@@ -116,7 +116,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
                     phases_times[phase_label] = []
                 phases_times[phase_label].append(time)
 
-            total_time_label = "total time"
+            total_time_label = "total execution"
             if total_time_label not in phases_times:
                 phases_times[total_time_label] = []
             phases_times[total_time_label].append(strategy_run.total_time)
@@ -135,16 +135,16 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
 
     for label, times in phases_times.items():
         single_thread_time = times[0]
-        perfect_scale = [single_thread_time / i for i in num_threads]
-        axs[plot_idx].plot(num_threads, times, label=competitor_label)
-        axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical Scale")
+        perfect_scale = [i for i in num_threads]
+        axs[plot_idx].plot(num_threads, [times[0] / x for x in times], label=competitor_label)
+        axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical")
 
         if plot_idx == 0:
             axs[plot_idx].legend(loc="upper right")
 
         axs[plot_idx].set_title(label.title(), y=0.65)
 
-        axs[plot_idx].set_ylabel("Time [s]")
+        axs[plot_idx].set_ylabel("Speedup")
         axs[plot_idx].set_xticks(num_threads)
 
         if plot_idx == num_phases - 1:
