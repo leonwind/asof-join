@@ -129,7 +129,6 @@ public:
         tbb::parallel_invoke(
             [&] { partitioned_map.clear(); },
             [&] { local_maps.clear(); },
-
             [&] { thread_data.clear(); }
     );
 
@@ -153,6 +152,15 @@ public:
 
     [[nodiscard]] inline std::vector<Entry>& operator[](MapKey key) {
         return partitioned_map[key];
+    }
+
+    [[nodiscard]] size_t total_size_bytes() const {
+        size_t total_size = sizeof(MultiMapTB);
+        for (auto& [k, v] : partitioned_map) {
+            total_size += sizeof(k);
+            total_size += v.size() * sizeof(Entry);
+        }
+        return total_size;
     }
 
 private:

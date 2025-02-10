@@ -23,11 +23,10 @@ void benchmarks::run_copying_vs_locking_benchmark() {
 
         PartitioningLeftASOFJoin lock_left_join(prices, order_book, LESS_EQUAL_THAN, INNER);
         auto lock_left_time = util::run_join_return_best_time(lock_left_join, num_runs);
+        std::cout << fmt::format("{}: {}", lock_left_join.get_strategy_name(), lock_left_time) << std::endl;
 
         PartitioningLeftCopyLeftASOFJoin copy_left_join(prices, order_book, LESS_EQUAL_THAN, INNER);
         auto copy_left_time = util::run_join_return_best_time(copy_left_join, num_runs);
-
-        std::cout << fmt::format("{}: {}", lock_left_join.get_strategy_name(), lock_left_time) << std::endl;
         std::cout << fmt::format("{}: {}", copy_left_join.get_strategy_name(), copy_left_time) << std::endl;
     }
 }

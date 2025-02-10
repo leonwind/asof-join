@@ -26,6 +26,17 @@ struct Prices : Relation {
         timestamps(std::move(timestamps)),
         stock_ids(std::move(stock_ids)),
         prices(std::move(prices)) {};
+
+    [[nodiscard]] size_t total_size() const {
+        size_t total_size = sizeof(Prices);
+        total_size += timestamps.size() * sizeof(uint64_t);
+        total_size += prices.size() * sizeof(uint64_t);
+        total_size += stock_ids.size() * sizeof(std::string);
+        for (const auto& stock_id : stock_ids) {
+            total_size += stock_id.size();
+        }
+        return total_size;
+    }
 };
 
 Prices load_prices(std::string_view path, char delimiter = ',', bool shuffle = false);
@@ -43,6 +54,17 @@ struct OrderBook : Relation {
         timestamps(std::move(timestamps)),
         stock_ids(std::move(stock_ids)),
         amounts(std::move(amounts)) {};
+
+    [[nodiscard]] size_t total_size() const {
+        size_t total_size = sizeof(OrderBook);
+        total_size += timestamps.size() * sizeof(uint64_t);
+        total_size += amounts.size() * sizeof(uint64_t);
+        total_size += stock_ids.size() * sizeof(std::string);
+        for (const auto& stock_id : stock_ids) {
+            total_size += stock_id.size();
+        }
+        return total_size;
+    }
 };
 
 OrderBook load_order_book(std::string_view path, char delimiter = ',', bool shuffle = false);

@@ -6,10 +6,19 @@ from benchmark_plotter import style, texify, colors
 texify.latexify(5, 1.8)
 style.set_custom_style()
 
+L1_SIZE = 320 << 10 # 320 KiB
+L2_SIZE = 10 << 20 # 10 MiB
+NUM_CORES = 10
+
 TOTAL_L1 = L1_SIZE * NUM_CORES
 TOTAL_L2 = L2_SIZE * NUM_CORES
 
-DATA_SIZES = [131, 182, 284, 488, 896, 1712, 3344, 6608, 13136, 26192, 52304, 104528, 208976, 417872, 835664, 1671248, 3342416]
+DATA_SIZES = [131, 182, 284, 488, 896, 1712, 3344, 
+              6608, 13136, 26192, 52304, 104528, 
+              208976, 417872, 835664, 1671248, 3342416]
+
+NUM_POSITIONS = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048,
+                 4096, 8192, 16384, 32768, 65536]
 
 
 class DistributionRun:
@@ -62,9 +71,48 @@ def _parse_data_into_groups(data):
 
     return groups
 
+def _find_num_positions_fitting_cache(num_positions, cache_size):
+    for i in range(len(DATA_SIZES) - 1):
+        if DATA_SIZES[i] <= cache_size <= DATA_SIZES[i + 1]:
+            print(i)
+            lower_size, upper_size = DATA_SIZES[i], DATA_SIZES[i + 1]
+            lower_pos, upper_pos = num_positions[i], num_positions[i + 1]
+
+            fraction = (cache_size - lower_size) / (upper_size - lower_size)
+            estimated_positions = lower_pos + fraction * (upper_pos - lower_pos)
+            return estimated_positions
+        
+    if cache_size > DATA_SIZES[-1]:
+        last_size = DATA_SIZES[-1]
+        last_positions = num_positions[-1]
+        
+        factor = cache_size / last_size
+        extrapolated_positions = last_positions * factor
+        print(factor, extrapolated_positions)
+        return extrapolated_positions
+
+    return None
+
 
 def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, log_scale=True):
     markers = ['*','o','x','^','s','D']
+    l1_pos = _find_num_positions_fitting_cache(NUM_POSITIONS, L1_SIZE)
+    l2_pos = _find_num_positions_fitting_cache(NUM_POSITIONS, L2_SIZE)
+    print(l1_pos, l2_pos)
+
+    plt.axvline(x=l1_pos, linewidth=1, ls='--', color=colors.colors["blue"])
+    plt.axvline(x=l2_pos, linewidth=1, ls='--', color=colors.colors["blue"])
+
+    plt.text(l1_pos, 0.4, "L1",
+              ha="center",
+              size=8,
+              bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
+    
+    plt.text(l2_pos, 0.4, "L2",
+              ha="center",
+              size=8,
+              bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
+
     for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
         # Sort by num positions
         exec_times.sort(key = lambda x: x[0])
@@ -72,7 +120,7 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
 
     if log_scale:
         plt.xscale("log")
-        plt.yscale("log")
+        #plt.yscale("log")
 
     log_label_prefix = "[log]" if log_scale else ""
     plt.xlabel(f"Num positions {log_label_prefix}")
