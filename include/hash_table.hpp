@@ -11,11 +11,10 @@
 #include <string_view>
 
 template <typename Value>
-class LazyMultiMap {
+class MultiMap {
     using Key = std::string_view;
 
 protected:
-
     struct Entry {
         Entry *next;
         Key key;
@@ -59,61 +58,11 @@ protected:
         bool operator!=(const EqualRangeIterator& other) const { return ptr_ != other.ptr_; }
 
      protected:
-        // Entry pointer
         Entry *ptr_;
-        // Key that is being searched for
         Key key_;
     };
 
 public:
-
-    void insert(const Entry& val) {
-        entries_.emplace_back(val);
-    }
-
-    void finalize() {
-        auto num_entries = entries_.size();
-        auto hash_table_size = NextPow2_32(num_entries);
-        mask_ = hash_table_size - 1;
-        hash_table_.resize(hash_table_size);
-
-        // For each entry, calculate the hash and insert it at the head of the collision list.
-        for (Entry& entry : entries_) {
-            size_t idx = hasher(entry.key) & mask_;
-            entry.next = hash_table_[idx];
-            hash_table_[idx] = &entry;
-        }
-    }
-
-    bool contains(Key key) {
-        auto hash_table_i = hasher(key) & mask_;
-        Entry *curr = hash_table_[hash_table_i];
-
-        while (curr != nullptr && curr->key != key) {
-            curr = curr->next;
-        }
-        return curr != nullptr;
-    }
-
-
-    std::pair<EqualRangeIterator, EqualRangeIterator> equal_range(Key key) {
-        auto idx = hasher(key) & mask_;
-
-        Entry* curr = hash_table_[idx];
-        while (curr != nullptr && curr->key != key) {
-            curr = curr->next;
-        }
-
-        EqualRangeIterator begin = EqualRangeIterator(curr, key);
-        return {begin, EqualRangeIterator()};
-    }
-
- protected:
-    std::vector<Entry> entries_;
-    std::vector<Entry*> hash_table_;
-    std::hash<Key> hasher;
-    uint32_t mask_;
-
 
     inline uint32_t NextPow2_32(uint32_t v) {
         v--;

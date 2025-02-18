@@ -45,7 +45,7 @@ TEST(multimap, SingleInsert) {
     std::vector<std::string> keys{"key0"};
     std::vector<uint64_t> values{0};
 
-    MultiMapTB<TestEntry> multi_map(keys, values, /* num_partitions= */ 1);
+    MultiMapTB<TestEntry> multi_map(keys, values, /* num_partitions= */ 2);
 
     auto& data = multi_map["key0"];
     ASSERT_EQ(data.size(), 1);

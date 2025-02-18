@@ -11,6 +11,7 @@
 
 #include "tuple_buffer.hpp"
 
+
 template<typename Entry>
 class MultiMap {
 public:
@@ -108,9 +109,12 @@ public:
     using iterator = std::unordered_map<MapKey, std::vector<Entry>>::iterator;
 
     MultiMapTB(const std::vector<Key>& equality_keys, const std::vector<Value>& sort_by_keys,
-             size_t num_partitions = 1024): equality_keys(equality_keys),
+             unsigned num_partitions = 1024): equality_keys(equality_keys),
              sort_by_keys(sort_by_keys), num_partitions(num_partitions),
-             mask(num_partitions - 1), thread_data(Partitions(num_partitions)) {
+             mask(num_partitions - 1), partition_shift(__builtin_ctz(num_partitions)),
+             thread_data(Partitions(num_partitions)),
+             maps_per_partition(num_partitions) {
+        std::cout << "Num partitions: " << num_partitions << ", partition shift: " << partition_shift << std::endl;
         partition();
         combine_partitions();
     }
@@ -120,19 +124,18 @@ public:
         sort_by_keys(other.sort_by_keys),
         num_partitions(other.num_partitions),
         mask(other.mask),
+        partition_shift(other.partition_shift),
         thread_data(Partitions()),
-        local_maps(),
+        maps_per_partition(other.maps_per_partition),
         partitioned_map(other.partitioned_map) {}
-
 
     ~MultiMapTB() {
         tbb::parallel_invoke(
             [&] { partitioned_map.clear(); },
-            [&] { local_maps.clear(); },
+            //[&] { local_maps.clear(); },
             [&] { thread_data.clear(); }
-    );
-
-}
+        );
+    }
 
     [[nodiscard]] inline iterator begin() {
         return partitioned_map.begin();
@@ -150,8 +153,10 @@ public:
         return partitioned_map.size();
     }
 
-    [[nodiscard]] inline std::vector<Entry>& operator[](MapKey key) {
-        return partitioned_map[key];
+    [[nodiscard]] [[gnu::always_inline]] std::vector<Entry>& operator[](MapKey key) {
+        unsigned partition_idx = get_partition_index(key);
+        return maps_per_partition[partition_idx][key];
+        //return partitioned_map[key];
     }
 
     [[nodiscard]] size_t total_size_bytes() const {
@@ -169,7 +174,8 @@ private:
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& local_range) {
             auto& local_partitions = thread_data.local();
             for (size_t i = local_range.begin(); i < local_range.end(); ++i) {
-                size_t pos = hash(equality_keys[i]) & mask;
+                unsigned pos = get_partition_index(equality_keys[i]);
+                //std::cout << "Partition pos: " << pos << std::endl;
                 local_partitions.partitions[pos].emplace_back(
                     equality_keys[i],
                     Entry(sort_by_keys[i], i));
@@ -178,44 +184,65 @@ private:
     }
 
     void combine_partitions() {
-        std::atomic<size_t> total_size = 0;
+        //std::atomic<size_t> total_size = 0;
         tbb::blocked_range<size_t> range(0, num_partitions);
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& local_range) {
-            auto& local_map = local_maps.local();
-            for (auto& local_data : thread_data) {
-                for (size_t i = local_range.begin(); i < local_range.end(); ++i) {
+            for (size_t i = local_range.begin(); i < local_range.end(); ++i) {
+                auto& local_map = maps_per_partition[i];
+
+                for (auto& local_data : thread_data) {
                     for (auto& [key, entry] : local_data.partitions[i]) {
-                        local_map[key].emplace_back(entry);
+                        local_map[key].push_back(entry);
                     }
                 }
+
+                //total_size += local_map.size();
             }
-            total_size += local_map.bucket_count();
         });
 
-        partitioned_map.reserve(total_size);
-        for (auto& local_map : local_maps) {
-            for (auto& [key, value]: local_map) {
-                partitioned_map.insert({key, value.copy_tuples()});
-            }
-        }
+        //size_t global_num_buckets = next_power_of_two(total_size);
+
+
+        //partitioned_map.reserve(total_size);
+        //for (auto& local_map : maps_per_partition) {
+        //    for (auto& [key, value]: local_map) {
+        //        partitioned_map.insert({key, value.copy_tuples()});
+        //    }
+        //}
+    }
+
+    [[gnu::always_inline]] unsigned get_partition_index(MapKey key) {
+        return hash(key) >> (64 - partition_shift);
+    }
+
+    inline uint32_t next_power_of_two(uint32_t v) {
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v++;
+        return v;
     }
 
     struct Partitions {
         Partitions(): partitions(0) {}
-        explicit Partitions(size_t num_partitions): partitions(num_partitions) {}
+        explicit Partitions(unsigned num_partitions): partitions(num_partitions) {}
         std::vector<TupleBuffer<std::pair<Key, Entry>>> partitions;
     };
 
     const std::vector<Key>& equality_keys;
     const std::vector<Value>& sort_by_keys;
-    const size_t num_partitions;
-    const uint64_t mask;
+    const unsigned num_partitions;
+    const unsigned mask;
+    const unsigned partition_shift;
 
-    std::hash<Key> hash;
+    std::hash<MapKey> hash;
 
     tbb::enumerable_thread_specific<Partitions> thread_data;
-    tbb::enumerable_thread_specific<std::unordered_map<MapKey, TupleBuffer<Entry>>> local_maps;
 
+    std::vector<std::unordered_map<MapKey, std::vector<Entry>>> maps_per_partition;
     std::unordered_map<MapKey, std::vector<Entry>> partitioned_map;
 };
 
