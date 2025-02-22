@@ -185,10 +185,10 @@ struct ASOFJoin::LeftEntry : JoinEntry {
     bool matched;
     SpinLock lock;
 
-    struct DiffPrice {
-        uint64_t diff;
-        uint64_t price_idx;
-    };
+    //struct DiffPrice {
+    //    uint64_t diff;
+    //    uint64_t price_idx;
+    //};
     //std::atomic<DiffPrice> diff_price;
 
     LeftEntry(): timestamp(-1), order_idx(-1),
@@ -196,8 +196,8 @@ struct ASOFJoin::LeftEntry : JoinEntry {
                  //price_idx(-1), diff(-1), matched(false), lock(), diff_price(DiffPrice(-1, -1)) {}
 
     LeftEntry(uint64_t timestamp, size_t order_idx): timestamp(timestamp), order_idx(order_idx),
-                                                     price_idx(0), diff(UINT64_MAX), matched(false), lock() {} //,
-                                                     //diff_price(DiffPrice(UINT64_MAX, 0)) {}
+                                                     price_idx(0), diff(UINT64_MAX), matched(false), lock() {}
+                                                     //, diff_price(DiffPrice(UINT64_MAX, 0)) {}
 
     LeftEntry(const LeftEntry &other) : timestamp(other.timestamp), order_idx(other.order_idx),
                                         price_idx(other.price_idx), diff(other.diff), matched(other.matched),
