@@ -117,8 +117,18 @@ public:
              thread_data(Partitions(num_partitions)),
              maps_per_partition(num_partitions) {
         //std::cout << "Num partitions: " << num_partitions << ", partition shift: " << partition_shift << std::endl;
+        PerfEvent e;
+        e.startCounters();
         partition();
+        e.stopCounters();
+        std::cout << "Partition:" << std::endl;
+        e.printReport(std::cout, equality_keys.size());
+
+        e.startCounters();
         combine_partitions();
+        e.stopCounters();
+        std::cout << "Combine partitions:" << std::endl;
+        e.printReport(std::cout, equality_keys.size());
     }
 
     MultiMapTB(const MultiMapTB& other):
@@ -133,7 +143,14 @@ public:
 
     ~MultiMapTB() {
         tbb::parallel_invoke(
-            [&] { maps_per_partition.clear(); },
+            [&] {
+                tbb::parallel_for_each(maps_per_partition.begin(), maps_per_partition.end(),
+                    [&](auto& x) {
+                    x.clear();
+                });
+
+                maps_per_partition.clear();
+            },
             //[&] { partitioned_map.clear(); },
             //[&] { local_maps.clear(); },
             [&] { thread_data.clear(); }
