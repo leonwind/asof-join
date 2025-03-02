@@ -117,18 +117,8 @@ public:
              thread_data(Partitions(num_partitions)),
              maps_per_partition(num_partitions) {
         //std::cout << "Num partitions: " << num_partitions << ", partition shift: " << partition_shift << std::endl;
-        PerfEvent e;
-        e.startCounters();
         partition();
-        e.stopCounters();
-        std::cout << "Partition:" << std::endl;
-        e.printReport(std::cout, equality_keys.size());
-
-        e.startCounters();
         combine_partitions();
-        e.stopCounters();
-        std::cout << "Combine partitions:" << std::endl;
-        e.printReport(std::cout, equality_keys.size());
     }
 
     MultiMapTB(const MultiMapTB& other):
@@ -206,6 +196,9 @@ public:
 
 private:
     void partition() {
+        //e.startCounters();
+        //Timer<milliseconds> timer;
+        //timer.start();
         tbb::blocked_range<size_t> range(0, equality_keys.size());
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& local_range) {
             auto& local_partitions = thread_data.local();
@@ -217,10 +210,17 @@ private:
                     Entry(sort_by_keys[i], i));
             }
         });
+        //auto dur = timer.stop();
+        //std::cout << "Partition in: " << dur <<  timer.unit() << std::endl;
+        //e.stopCounters();
+        //e.printReport(std::cout, equality_keys.size());
     }
 
     void combine_partitions() {
         //std::atomic<size_t> total_size = 0;
+        //e.startCounters();
+        //Timer<milliseconds> timer;
+        //timer.start();
         tbb::blocked_range<size_t> range(0, num_partitions);
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& local_range) {
             for (size_t i = local_range.begin(); i < local_range.end(); ++i) {
@@ -235,20 +235,15 @@ private:
                 //total_size += local_map.size();
             }
         });
-
-        //size_t global_num_buckets = next_power_of_two(total_size);
-
-
-        //partitioned_map.reserve(total_size);
-        //for (auto& local_map : maps_per_partition) {
-        //    for (auto& [key, value]: local_map) {
-        //        partitioned_map.insert({key, value.copy_tuples()});
-        //    }
-        //}
+        //auto dur = timer.stop();
+        //std::cout << "Combine Partitions in: " << dur <<  timer.unit() << std::endl;
+        //e.stopCounters();
+        //e.printReport(std::cout, equality_keys.size());
     }
 
     [[gnu::always_inline]] [[nodiscard]] unsigned get_partition_index(MapKey key) const {
-        return hash(key) >> (64 - partition_shift);
+        return hash(key) & mask;
+        //return hash(key) >> (64 - partition_shift);
     }
 
     inline uint32_t next_power_of_two(uint32_t v) {
@@ -275,10 +270,10 @@ private:
     const unsigned partition_shift;
 
     std::hash<MapKey> hash;
-
     tbb::enumerable_thread_specific<Partitions> thread_data;
-
     std::vector<std::unordered_map<MapKey, std::vector<Entry>>> maps_per_partition;
+
+    //PerfEvent e;
 };
 
 template<typename Entry>

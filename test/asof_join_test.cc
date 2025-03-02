@@ -488,7 +488,7 @@ TEST(asof_join_partitioning_right_filter_min, TestSmallBTCExample) {
 
 TEST(asof_join_partitioning_right_filter_min, TestMediumBTCExample) {
     Prices prices = load_prices("../test/data/btc_usd_data.csv", ',', true);
-    OrderBook order_book = load_order_book("../data/btc_orderbook_medium.csv", ',', true);
+    OrderBook order_book = load_order_book("../test/data/btc_orderbook_medium.csv", ',', true);
     PartitioningRightFilterMinASOFJoin join(prices, order_book, LESS_EQUAL_THAN, INNER);
 
     join.join();

@@ -105,6 +105,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     phases_times = {}
 
     for num_thread, strategy_runs in groups.items():
+        total_time = 0
         for strategy_run in strategy_runs:
             if strategy_run.label != competitor_label:
                 continue
@@ -115,11 +116,14 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
                 if phase_label not in phases_times:
                     phases_times[phase_label] = []
                 phases_times[phase_label].append(time)
+                total_time += time
 
             total_time_label = "total execution"
             if total_time_label not in phases_times:
                 phases_times[total_time_label] = []
-            phases_times[total_time_label].append(strategy_run.total_time)
+            #phases_times[total_time_label].append(strategy_run.total_time)
+            phases_times[total_time_label].append(total_time)
+
 
         num_threads.append(num_thread)
 
@@ -133,6 +137,9 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     fig, axs = plt.subplots(num_phases, 1)
     plot_idx = 0
 
+    x_ticks = num_threads[1::2]
+    y_ticks = [0, 10, 20]
+
     for label, times in phases_times.items():
         single_thread_time = times[0]
         perfect_scale = [i for i in num_threads]
@@ -144,13 +151,15 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
 
         axs[plot_idx].set_title(label.title(), y=0.65)
 
+        axs[plot_idx].set_xticks(x_ticks)
         axs[plot_idx].set_ylabel("Speedup")
-        axs[plot_idx].set_xticks(num_threads)
+        axs[plot_idx].set_yticks(y_ticks)
 
         if plot_idx == num_phases - 1:
-            axs[plot_idx].set_xlabel("Num Threads")
+            axs[plot_idx].set_xlabel("Number of Threads")
         else:
             axs[plot_idx].set_xticklabels([])
+            axs[plot_idx].xaxis.set_ticks_position("none")
         
         plot_idx += 1
     
@@ -177,4 +186,5 @@ def plot_data(path):
 
     
 if __name__ == "__main__":
-    plot_data("results/thread_scalability/thread_scalability_phases.log")
+    #plot_data("results/thread_scalability/thread_scalability_phases.log")
+    plot_data("results/skylake/thread_scalability.log")

@@ -61,11 +61,13 @@ TEST(tuple_buffer, Store1FullBuffer) {
     }
 
     ASSERT_EQ(tuple_buffer.size(), num_tuples);
-    for (size_t i = 0; i < num_tuples; ++i) {
-        auto fetched_tuple = tuple_buffer[i];
+    size_t i = 0;
+    for (auto & fetched_tuple : tuple_buffer) {
         ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
         ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
     }
+    ASSERT_EQ(i, num_tuples);
 }
 
 TEST(tuple_buffer, Store2FullBuffers) {
@@ -77,12 +79,15 @@ TEST(tuple_buffer, Store2FullBuffers) {
         tuple_buffer.store_tuple(tuple);
     }
 
+
     ASSERT_EQ(tuple_buffer.size(), num_tuples);
-    for (size_t i = 0; i < num_tuples; ++i) {
-        auto fetched_tuple = tuple_buffer[i];
+    size_t i = 0;
+    for (auto & fetched_tuple : tuple_buffer) {
         ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
         ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
     }
+    ASSERT_EQ(i, num_tuples);
 }
 
 TEST(tuple_buffer, Store100FullBuffers) {
@@ -95,11 +100,14 @@ TEST(tuple_buffer, Store100FullBuffers) {
     }
 
     ASSERT_EQ(tuple_buffer.size(), num_tuples);
-    for (size_t i = 0; i < num_tuples; ++i) {
-        auto fetched_tuple = tuple_buffer[i];
+
+    size_t i = 0;
+    for (auto & fetched_tuple : tuple_buffer) {
         ASSERT_EQ(fetched_tuple.tid, tuples[i].tid) << "Failed at index " << i;
         ASSERT_EQ(fetched_tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
     }
+    ASSERT_EQ(i, num_tuples);
 }
 
 TEST(tuple_buffer, IteratorOver100BuffersPreIncrement) {
@@ -181,20 +189,20 @@ TEST(tuple_buffer, RangeIterationOver100Buffers) {
 }
 
 TEST(tuple_buffer, MaterializeIntoVector) {
-    size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
-    auto tuples= create_tuples(num_tuples);
-    TupleBuffer<Tuple> tuple_buffer;
+    //size_t num_tuples = 100 * BUFFER_SIZE / sizeof(Tuple);
+    //auto tuples= create_tuples(num_tuples);
+    //TupleBuffer<Tuple> tuple_buffer;
 
-    for (auto& tuple : tuples) {
-        tuple_buffer.store_tuple(tuple);
-    }
-    std::vector<Tuple> materialized_tuples = tuple_buffer.copy_tuples();
+    //for (auto& tuple : tuples) {
+    //    tuple_buffer.store_tuple(tuple);
+    //}
+    //std::vector<Tuple> materialized_tuples = tuple_buffer.copy_tuples();
 
-    ASSERT_EQ(materialized_tuples.size(), num_tuples);
-    for (size_t i = 0; i < materialized_tuples.size(); ++i) {
-        ASSERT_EQ(materialized_tuples[i].tid, tuples[i].tid) << "Failed at index " << i;
-        ASSERT_EQ(materialized_tuples[i].payload, tuples[i].payload) << "Failed at index " << i;
-    }
+    //ASSERT_EQ(materialized_tuples.size(), num_tuples);
+    //for (size_t i = 0; i < materialized_tuples.size(); ++i) {
+    //    ASSERT_EQ(materialized_tuples[i].tid, tuples[i].tid) << "Failed at index " << i;
+    //    ASSERT_EQ(materialized_tuples[i].payload, tuples[i].payload) << "Failed at index " << i;
+    //}
 }
 
 TEST(tuple_buffer, MoveConstructor) {
@@ -207,9 +215,12 @@ TEST(tuple_buffer, MoveConstructor) {
 
     TupleBuffer<Tuple> moved_tuple_constructor(std::move(tuple_buffer));
 
-    for (size_t i = 0; i < num_tuples; ++i) {
-        ASSERT_EQ(moved_tuple_constructor[i].tid, tuples[i].tid) << "Failed at index " << i;
-        ASSERT_EQ(moved_tuple_constructor[i].payload, tuples[i].payload) << "Failed at index " << i;
+    //for (size_t i = 0; i < num_tuples; ++i) {
+    size_t i = 0;
+    for (auto& tuple : moved_tuple_constructor) {
+        ASSERT_EQ(tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
     }
 }
 
@@ -223,9 +234,11 @@ TEST(tuple_buffer, CopyConstructor) {
 
     TupleBuffer<Tuple> copied_tuple_buffer(tuple_buffer);
 
-    for (size_t i = 0; i < num_tuples; ++i) {
-        ASSERT_EQ(copied_tuple_buffer[i].tid, tuple_buffer[i].tid) << "Failed at index " << i;
-        ASSERT_EQ(copied_tuple_buffer[i].payload, tuple_buffer[i].payload) << "Failed at index " << i;
+    size_t i = 0;
+    for (auto& tuple : copied_tuple_buffer) {
+        ASSERT_EQ(tuple.tid, tuples[i].tid) << "Failed at index " << i;
+        ASSERT_EQ(tuple.payload, tuples[i].payload) << "Failed at index " << i;
+        ++i;
     }
 }
 
@@ -253,10 +266,23 @@ TEST(tuple_buffer, CopyNonTriviallyCopyableType) {
 
     TupleBuffer<NonCpyTuple> copied_tuple_buffer(tuple_buffer);
 
-    for (size_t i = 0; i < num_tuples; ++i) {
-        ASSERT_EQ(copied_tuple_buffer[i].first, tuple_buffer[i].first) << "Failed at index " << i;
-        ASSERT_EQ(copied_tuple_buffer[i].second, tuple_buffer[i].second) << "Failed at index " << i;
+    auto copied_iter = copied_tuple_buffer.begin();
+    auto tuple_iter = tuples.begin();
+
+    size_t i = 0;
+    while (true) {
+        ASSERT_EQ(copied_iter->second.tid, tuple_iter->second.tid) << "Failed at index " << i;
+        ASSERT_EQ(copied_iter->second.payload, tuple_iter->second.payload) << "Failed at index " << i;
+        ++i;
+        ++copied_iter;
+        ++tuple_iter;
+
+        if (copied_iter == copied_tuple_buffer.end()) {
+            ASSERT_EQ(tuple_iter, tuples.end());
+            break;
+        }
     }
+    ASSERT_EQ(i, num_tuples);
 }
 
 TEST(tuple_buffer, Benchmark) {

@@ -21,6 +21,7 @@ class Buffer {
     void *chunk = nullptr;
     size_t buffer_size = 0;
     size_t bytes_used = 0;
+    size_t tuple_size = 0;
 
 public:
     Buffer() = default;
@@ -76,15 +77,17 @@ public:
         return tuple_size + bytes_used <= buffer_size;
     }
 
-    [[nodiscard]] char* data() {
+    [[nodiscard]] inline char* data() {
         return reinterpret_cast<char*>(chunk);
     }
 
-    [[nodiscard]] const char* data() const {
+    [[nodiscard]] inline const char* data() const {
         return reinterpret_cast<const char*>(chunk);
     }
 
     [[nodiscard]] inline size_t get_bytes_used() const { return bytes_used; }
+
+    [[nodiscard]] inline size_t capacity() const { return buffer_size; }
 
 private:
     [[nodiscard]] inline static void* allocate_memory(size_t memory_size) {
@@ -115,24 +118,29 @@ class TupleBuffer {
     std::unique_ptr<Buffer> curr;
     std::vector<std::unique_ptr<Buffer>> old_buffers;
     size_t num_tuples;
+    size_t next_buffer_size;
 
 public:
     class Iterator;
 
-    TupleBuffer(): curr(Buffer::create(BUFFER_SIZE)), old_buffers(), num_tuples(0) {}
+    TupleBuffer(): curr(Buffer::create(BUFFER_SIZE)), old_buffers(), num_tuples(0),
+        next_buffer_size(BUFFER_SIZE * 2) {}
 
     /// Copy constructor must exist for [[tbb::enumerable_thread_specific]]
     TupleBuffer(const TupleBuffer& other): num_tuples(other.num_tuples) {
         old_buffers.reserve(other.old_buffers.size());
 
+        next_buffer_size = BUFFER_SIZE;
         for (auto& buff : other.old_buffers) {
-            auto new_buffer = Buffer::create(BUFFER_SIZE);
+            auto new_buffer = Buffer::create(next_buffer_size);
+            next_buffer_size *= 2;
             Buffer::copy_buffer_data<T>(*buff, *new_buffer);
             old_buffers.push_back(std::move(new_buffer));
         }
 
-        curr = Buffer::create(BUFFER_SIZE);
+        curr = Buffer::create(next_buffer_size);
         Buffer::copy_buffer_data<T>(*other.curr, *curr);
+        next_buffer_size *= 2;
     }
 
     /// Delete copy-assignment
@@ -140,7 +148,8 @@ public:
 
     TupleBuffer(TupleBuffer&& other) noexcept: curr(std::move(other.curr)),
           old_buffers(std::move(other.old_buffers)),
-          num_tuples(other.num_tuples) { other.num_tuples = 0; }
+          num_tuples(other.num_tuples),
+          next_buffer_size(other.next_buffer_size) { other.num_tuples = 0; }
 
     ~TupleBuffer() {
         curr = nullptr;
@@ -158,7 +167,8 @@ public:
         ++num_tuples;
         if (!curr->has_space(TUPLE_SIZE)) {
             old_buffers.push_back(std::move(curr));
-            curr = Buffer::create(BUFFER_SIZE);
+            curr = Buffer::create(next_buffer_size);
+            next_buffer_size *= 2;
         }
         return curr->alloc_tuple(TUPLE_SIZE);
     }
@@ -188,13 +198,16 @@ public:
         std::vector<T> all_tuples(num_tuples);
 
         /// Copy all old buffer pages in parallel
+
+        /// TODO: FIX ME
+        /// Currently the offset [[n]] is wrong due to the doubling of the buffer sizes.
         tbb::blocked_range<size_t> range(0, old_buffers.size());
         tbb::parallel_for(range, [&](tbb::blocked_range<size_t>& range) {
             for (size_t i = range.begin(); i < range.end(); ++i) {
                 const auto* buff = old_buffers[i].get();
                 std::copy_n(
                     /* src= */ reinterpret_cast<const T*>(buff->data()),
-                    /* n= */ BUFFER_CAPACITY,
+                    /* n= */ buff->capacity() / TUPLE_SIZE,
                     /* dest= */ all_tuples.data() + i * BUFFER_CAPACITY);
             }
         });
@@ -277,7 +290,7 @@ private:
 
     void advance() {
         if (buffer_idx_ < buffer_->old_buffers.size()) {
-            if (tuple_idx_ >= buffer_->BUFFER_CAPACITY) {
+            if (tuple_idx_ >= buffer_->old_buffers[buffer_idx_]->capacity() / TUPLE_SIZE) {
                 ++buffer_idx_;
                 tuple_idx_ = 0;
             }
