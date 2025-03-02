@@ -6,10 +6,10 @@ from benchmark_plotter import style, texify, colors
 texify.latexify(5, 1.8)
 style.set_custom_style()
 
-TOTAL_L1 = L1_SIZE * NUM_CORES
-TOTAL_L2 = L2_SIZE * NUM_CORES
-
-DATA_SIZES = [131, 182, 284, 488, 896, 1712, 3344, 6608, 13136, 26192, 52304, 104528, 208976, 417872, 835664, 1671248, 3342416]
+#TOTAL_L1 = L1_SIZE * NUM_CORES
+#TOTAL_L2 = L2_SIZE * NUM_CORES
+#
+#DATA_SIZES = [131, 182, 284, 488, 896, 1712, 3344, 6608, 13136, 26192, 52304, 104528, 208976, 417872, 835664, 1671248, 3342416]
 
 
 class DistributionRun:
@@ -72,7 +72,7 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
 
     if log_scale:
         plt.xscale("log")
-        plt.yscale("log")
+        #plt.yscale("log")
 
     log_label_prefix = "[log]" if log_scale else ""
     plt.xlabel(f"Num positions {log_label_prefix}")
@@ -118,6 +118,10 @@ if __name__ == "__main__":
 
     #plot_data("results/2025-01-26/p90_uniform.log")
 
-    plot_data("results/copying_vs_locking.log")
+
+
+    #plot_data("results/copying_vs_locking.log")
 
     #plot_data("results/2025-02-05/uniform_zipf.log")
+
+    plot_data("results/skylake/diff_zipf_skews.log")

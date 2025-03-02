@@ -20,6 +20,8 @@ namespace benchmarks {
 
     void run_single_stock_benchmark();
 
+    void run_different_search_algorithms();
+
     void run_all();
 
     void run_benchmark(Prices& prices, OrderBook& order_book, size_t num_runs);
