@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import regex as re
 import os
 
+
 from benchmark_plotter import style, texify, colors
 texify.latexify(7)
 style.set_custom_style()
@@ -34,101 +35,175 @@ def milli_to_seconds(milli):
     return milli / 1_000.0
 
 
-def _parse_data_into_groups(data):
-    groups = {}
-    group_pattern = r'\[(\w+)-(\d+)\.csv\]'
 
-    curr_distribution = None
-    curr_num_positions = None
+class PlotFullExecTimesDiffSearchAlgos:
 
-    for row in data:
-        if row.startswith("Run"):
-            regex_match = re.search(group_pattern, row)
-            if regex_match is None:
-                print(f"Regex error: {row}")
-            curr_distribution = regex_match.group(1)
-            curr_num_positions = int(regex_match.group(2))
-            if curr_distribution not in groups:
-                groups[curr_distribution] = DistributionRun()
+    def _parse_data_into_groups(data):
+        groups = {}
+        group_pattern = r'\[(\w+)-(\d+)\.csv\]'
 
-        else:
-            strategy_exec_time = row.split(": ")
-            strategy = strategy_exec_time[0]
-            exec_time = int(strategy_exec_time[1])
-            groups[curr_distribution].add_strategy_exec_time(
-                strategy, curr_num_positions, micro_to_seconds(exec_time))
+        curr_distribution = None
+        curr_num_positions = None
 
-    return groups
+        for row in data:
+            if row.startswith("Run"):
+                regex_match = re.search(group_pattern, row)
+                if regex_match is None:
+                    print(f"Regex error: {row}")
+                curr_distribution = regex_match.group(1)
+                curr_num_positions = int(regex_match.group(2))
+                if curr_distribution not in groups:
+                    groups[curr_distribution] = DistributionRun()
 
+            else:
+                strategy_exec_time = row.split(": ")
+                strategy = strategy_exec_time[0]
+                exec_time = int(strategy_exec_time[1])
+                groups[curr_distribution].add_strategy_exec_time(
+                    strategy, curr_num_positions, micro_to_seconds(exec_time))
 
-def _plot_search_algs(interpolation_data, exponential_data, binary_data, dir_name, log_scale=True):
-    print(dir_name)
-    markers = ['*','o','x','^','s','D']
-    print(interpolation_data)
-    print(exponential_data)
-    print(binary_data) 
-
-    line_styles = ["-", "--"]
-
-    i = 0
-    for strategy, exec_times in interpolation_data.strategy_exec_times.items():
-        exec_times.sort(key = lambda x: x[0])
-        plt.plot(*zip(*exec_times), line_styles[i % 2], marker=markers[i], label=f"{strategy.title()} + Interpolation")
-        i += 1
-
-    for strategy, exec_times in exponential_data.strategy_exec_times.items():
-        exec_times.sort(key = lambda x: x[0])
-        plt.plot(*zip(*exec_times), line_styles[i % 2], marker=markers[i], label=f"{strategy.title()} + Exponential")
-        i += 1
-
-    for strategy, exec_times in binary_data.strategy_exec_times.items():
-        exec_times.sort(key = lambda x: x[0])
-        plt.plot(*zip(*exec_times), line_styles[i % 2], marker=markers[i], label=f"{strategy.title()} + Binary")
-        i += 1
-
-    if log_scale:
-        plt.xscale("log")
-        #plt.yscale("log")
-    
-    log_label_prefix = "[log]" if log_scale else ""
-    plt.xlabel(f"Num positions {log_label_prefix}")
-    plt.ylabel(f"Time [s]")
-
-    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-
-    is_log_plot_path = "log_" if log_scale else ""
-    filename = f"plots/{dir_name}/{is_log_plot_path}uniform_plot.pdf"
-    print(f"Plotting {filename}")
-
-    plt.savefig(filename, dpi=400, bbox_inches="tight")
-    os.system(f"pdfcrop {filename} {filename}")
-
-    plt.close()
+        return groups
 
 
-def _get_group(file):
-    raw = _read_data(file)
-    return _parse_data_into_groups(raw)
+    def _plot_search_algs(interpolation_data, exponential_data, binary_data, dir_name, log_scale=True):
+        print(dir_name)
+        markers = ['*','o','x','^','s','D']
+        print(interpolation_data)
+        print(exponential_data)
+        print(binary_data)
+
+        line_styles = ["-", "--"]
+
+        i = 0
+        for strategy, exec_times in interpolation_data.strategy_exec_times.items():
+            exec_times.sort(key = lambda x: x[0])
+            plt.plot(*zip(*exec_times), line_styles[i % 2], marker=markers[i], label=f"{strategy.title()} + Interpolation")
+            i += 1
+
+        for strategy, exec_times in exponential_data.strategy_exec_times.items():
+            exec_times.sort(key = lambda x: x[0])
+            plt.plot(*zip(*exec_times), line_styles[i % 2], marker=markers[i], label=f"{strategy.title()} + Exponential")
+            i += 1
+
+        for strategy, exec_times in binary_data.strategy_exec_times.items():
+            exec_times.sort(key = lambda x: x[0])
+            plt.plot(*zip(*exec_times), line_styles[i % 2], marker=markers[i], label=f"{strategy.title()} + Binary")
+            i += 1
+
+        if log_scale:
+            plt.xscale("log")
+            #plt.yscale("log")
+
+        log_label_prefix = "[log]" if log_scale else ""
+        plt.xlabel(f"Num positions {log_label_prefix}")
+        plt.ylabel(f"Time [s]")
+
+        plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+
+        is_log_plot_path = "log_" if log_scale else ""
+        filename = f"plots/{dir_name}/{is_log_plot_path}uniform_plot.pdf"
+        print(f"Plotting {filename}")
+
+        plt.savefig(filename, dpi=400, bbox_inches="tight")
+        os.system(f"pdfcrop {filename} {filename}")
+
+        plt.close()
 
 
-def plot_data(interpolation_path, exponential_path, binary_path):
-    interpolation_groups = _get_group(interpolation_path)
-    exponential_groups = _get_group(exponential_path)
-    binary_groups = _get_group(binary_path)
+    def _get_group(file):
+        raw = _read_data(file)
+        return c1._parse_data_into_groups(raw)
 
 
-    dir_name = interpolation_path.split("/")[1].split(".")[0]
+    def plot_data(interpolation_path, exponential_path, binary_path):
+        interpolation_groups = c1._get_group(interpolation_path)
+        exponential_groups = c1._get_group(exponential_path)
+        binary_groups = c1._get_group(binary_path)
 
-    _plot_search_algs(
-        interpolation_groups["uniform"],
-        exponential_groups["uniform"],
-        binary_groups["uniform"],
-        dir_name,
-        log_scale=True)
+
+        dir_name = interpolation_path.split("/")[1].split(".")[0]
+
+        c1._plot_search_algs(
+            interpolation_groups["uniform"],
+            exponential_groups["uniform"],
+            binary_groups["uniform"],
+            dir_name,
+            log_scale=True)
+
+c1 = PlotFullExecTimesDiffSearchAlgos
+
+
+"""
+Plot only the time of the search phases of the different algorithms in a bar plot.
+Normalize over the number of searches.
+"""
+class PlotBarPlotsOnlySearchPhaseDiffAlgos:
+
+    def _bar_plot(left_data, right_data):
+        # Create two subplots next to each other (1 row, 2 columns)
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+        # Plot the left_data (first dictionary)
+        axes[0].bar(left_data.keys(), left_data.values(), color='skyblue')
+        axes[0].set_title('Left Data')
+        axes[0].set_ylabel('Values')
+        axes[0].set_xlabel('Methods')
+
+        # Plot the right_data (second dictionary)
+        axes[1].bar(right_data.keys(), right_data.values(), color='salmon')
+        axes[1].set_title('Right Data')
+        axes[1].set_ylabel('Values')
+        axes[1].set_xlabel('Methods')
+
+        filename = f"plots/skylake/diff_search_algos_side_by_side.pdf"
+        print(f"Plotting {filename}")
+
+        plt.savefig(filename, dpi=400, bbox_inches="tight")
+        os.system(f"pdfcrop {filename} {filename}")
+
+        plt.close()
+
+
+    def plot_search_diff_algos(path):
+        raw_data = _read_data(path)
+        print(raw_data)
+
+        left_data = {}
+        right_data = {}
+
+        left_normalization_constant = 24 / (128 * 2000000)
+        right_normalization_constant = 24 / (100 * 2**10)
+
+        pattern = r"^([A-Za-z]+)\s([A-Za-z]+):\s(\d+)\[us\]$"
+
+        for row in raw_data:
+            print(row)
+            match = re.search(pattern, row)
+            if match is None:
+                print("No match")
+            else:
+                strategy = match.group(1)
+                label = match.group(2)
+                duration = int(match.group(3))
+                print(strategy, label, duration)
+
+                if strategy == "Left":
+                    left_data[label] = duration * left_normalization_constant
+                else:
+                    right_data[label] = duration * right_normalization_constant
+
+        print(left_data)
+        print(right_data)
+
+        c2._bar_plot(left_data, right_data)
+
+c2 = PlotBarPlotsOnlySearchPhaseDiffAlgos
 
 
 if __name__ == "__main__":
-    interpolation_path = "results/diff_search_algs/interpolation_results.log"
-    exponential_path = "results/diff_search_algs/exponential_search_results.log"
-    binary_path = "results/diff_search_algs/binary_search_results.log"
-    plot_data(interpolation_path, exponential_path, binary_path)
+    #interpolation_path = "results/diff_search_algs/interpolation_results.log"
+    #exponential_path = "results/diff_search_algs/exponential_search_results.log"
+    #binary_path = "results/diff_search_algs/binary_search_results.log"
+    #c1.plot_data(interpolation_path, exponential_path, binary_path)
+
+    c2.plot_search_diff_algos("results/skylake/diff_search_algorithms.log")
