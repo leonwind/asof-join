@@ -140,20 +140,33 @@ Normalize over the number of searches.
 class PlotBarPlotsOnlySearchPhaseDiffAlgos:
 
     def _bar_plot(left_data, right_data):
-        # Create two subplots next to each other (1 row, 2 columns)
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
-        # Plot the left_data (first dictionary)
-        axes[0].bar(left_data.keys(), left_data.values(), color='skyblue')
-        axes[0].set_title('Left Data')
-        axes[0].set_ylabel('Values')
-        axes[0].set_xlabel('Methods')
+        left_bars = []
+        left_bars.append(axes[0].bar("Binary", left_data["Binary"], color=colors.colors["blue"], label="Binary"))
+        left_bars.append(axes[0].bar("Exponential", left_data["Exponential"], color=colors.colors["green"], label="Exponential"))
+        left_bars.append(axes[0].bar("Interpolation", left_data["Interpolation"], color=colors.colors["orange"], label="Interpolation"))
 
-        # Plot the right_data (second dictionary)
-        axes[1].bar(right_data.keys(), right_data.values(), color='salmon')
-        axes[1].set_title('Right Data')
-        axes[1].set_ylabel('Values')
-        axes[1].set_xlabel('Methods')
+        axes[0].set_title('Partition Left')
+        axes[0].set_ylabel('Time [us]')
+        axes[0].set_xticks([])
+
+        # Plot data for right partition
+        right_bars = []
+        right_bars.append(axes[1].bar("Binary", right_data["Binary"], color=colors.colors["blue"], label="Binary"))
+        right_bars.append(axes[1].bar("Exponential", right_data["Exponential"], color=colors.colors["green"], label="Exponential"))
+        right_bars.append(axes[1].bar("Interpolation", right_data["Interpolation"], color=colors.colors["orange"], label="Interpolation"))
+
+        axes[1].set_title("Partition Right")
+        axes[1].set_ylabel("Time [us]")
+
+        axes[0].set_xticks([])
+        axes[1].set_xticks([])
+
+        handles, labels = axes[0].get_legend_handles_labels()
+        print(handles, labels)
+        axes[1].legend(handles, labels, loc="upper right", #bbox_to_anchor=(0.57, 1.01),
+            borderaxespad=0.2) #prop={'size': 8})
 
         filename = f"plots/skylake/diff_search_algos_side_by_side.pdf"
         print(f"Plotting {filename}")
@@ -188,9 +201,9 @@ class PlotBarPlotsOnlySearchPhaseDiffAlgos:
                 print(strategy, label, duration)
 
                 if strategy == "Left":
-                    left_data[label] = duration * left_normalization_constant
+                    left_data[label] = duration
                 else:
-                    right_data[label] = duration * right_normalization_constant
+                    right_data[label] = duration
 
         print(left_data)
         print(right_data)
