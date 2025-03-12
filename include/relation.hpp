@@ -40,6 +40,7 @@ struct Prices : Relation {
 };
 
 Prices load_prices(std::string_view path, char delimiter = ',', bool shuffle = false);
+Prices shuffle_prices(Prices& prices);
 
 struct OrderBook : Relation {
     std::vector<uint64_t> timestamps;

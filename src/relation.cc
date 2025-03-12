@@ -86,7 +86,7 @@ Prices load_prices(std::string_view path, char delimiter, bool shuffle) {
 OrderBook load_order_book(std::string_view path, char delimiter, bool shuffle) {
     auto data = load_prices(path, delimiter, shuffle);
 
-    return {
+    return /* OrderBook= */ {
         /* timestamps= */ data.timestamps,
         /* stock_ids= */ data.stock_ids,
         /* amounts= */ data.prices,

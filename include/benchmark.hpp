@@ -22,6 +22,8 @@ namespace benchmarks {
 
     void run_different_search_algorithms();
 
+    void run_runtime_l_vs_r();
+
     void run_all();
 
     void run_benchmark(Prices& prices, OrderBook& order_book, size_t num_runs);
