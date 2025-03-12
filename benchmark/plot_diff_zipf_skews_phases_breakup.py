@@ -19,17 +19,16 @@ class Phases:
 
 
 class StrategyRun:
-    def __init__(self, label, num_threads, total_time, phases_times):
+    def __init__(self, label, size, total_time, phases_times):
         self.label = label 
-        self.num_threads = num_threads
+        self.size = size 
         self.total_time = total_time
         self.phases_times = phases_times
 
 
     def __repr__(self):
-        return (f"StrategyRun({self.label}, num_threads={self.num_threads}, total_time={self.total_time}, "
+        return (f"StrategyRun({self.label}, positions={self.size}, total_time={self.total_time}, "
                 f"phases_times={self.phases_times})")
-
 
 
 def _read_data(path):
@@ -48,24 +47,36 @@ def milli_to_seconds(milli):
 
 def _parse_data_into_groups(data):
     groups = {}
-    current_num_threads = None
-    current_strategy = None 
+    
+    run_pattern = r'\[(\w+)-(\d+)\.csv\]'
+    
+    # Variables to keep track of the current group details
+    curr_distribution = None
+    curr_num_positions = None
+    curr_strategy = None
 
     for row in data:
-        row = row.strip()
         if not row:
             continue
 
-        if row.startswith("Run num threads:"):
-            current_num_threads = int(row.split(": ")[1])
-            groups[current_num_threads] = []
-            current_strategy = None
+        if row.startswith("Run"):
+            regex_match = re.search(run_pattern, row)
+            if regex_match is None:
+                print(f"Regex error: {row}")
+            curr_distribution = regex_match.group(1)
+            curr_num_positions = int(regex_match.group(2))
+            curr_strategy = None 
 
-        elif " in " in row:
+            if curr_distribution not in groups:
+                groups[curr_distribution] = {}
+            groups[curr_distribution][curr_num_positions] = []
+            continue
+
+        if " in " in row:
             parts = row.split(" in ")
             phase_name = parts[0].strip()
             time_str = parts[1].strip() 
-            
+
             if time_str.endswith("[ms]"):
                 time_val = milli_to_seconds(int(time_str[:-4]))
             elif time_str.endswith("[us]"):
@@ -74,56 +85,51 @@ def _parse_data_into_groups(data):
                 print(f"Missing unit??: {time_str}")
                 time_val = int(time_str)
 
-            if current_strategy is None:
-                current_strategy = Phases()
-            current_strategy.add_phase_time(phase_name, time_val)
+            if curr_strategy is None:
+                curr_strategy = Phases()
+            curr_strategy.add_phase_time(phase_name, time_val)
+            continue
 
-        elif row.startswith("PARTITION"):
+        if row.startswith("PARTITION"):
             parts = row.split(": ")
             strategy_label = parts[0].strip()
             total_time = micro_to_seconds(int(parts[1]))
-            
-            if current_strategy is None:
-                current_strategy = Phases()
-            
-            strategy_run = StrategyRun(strategy_label.title(), current_num_threads, total_time, current_strategy.phases_times)
-            groups[current_num_threads].append(strategy_run)
-            current_strategy = None
+            print(row, total_time)
 
-        else:
-            continue
-
+            strategy_run = StrategyRun(strategy_label.title(), curr_num_positions, total_time, curr_strategy.phases_times)
+            groups[curr_distribution][curr_num_positions].append(strategy_run)
+            
+            curr_strategy = None 
+    
     return groups
 
 
 def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name):
-    num_threads = []
+    num_positions = []
     phases_times = {}
 
-    for num_thread, strategy_runs in groups.items():
+    for position_size, strategy_runs in groups.items():
         total_time = 0
         for strategy_run in strategy_runs:
             if strategy_run.label != competitor_label:
                 continue
+            
+            print(strategy_run)
 
             phases = strategy_run.phases_times 
 
             for phase_label, time in phases.items():
                 if phase_label not in phases_times:
                     phases_times[phase_label] = []
-                phases_times[phase_label].append(time)
+                phases_times[phase_label].append((position_size, time))
                 total_time += time
 
             total_time_label = "total execution"
             if total_time_label not in phases_times:
                 phases_times[total_time_label] = []
             #phases_times[total_time_label].append(strategy_run.total_time)
-            phases_times[total_time_label].append(total_time)
+            phases_times[total_time_label].append((position_size, strategy_run.total_time))
 
-
-        num_threads.append(num_thread)
-
-    print(num_threads)
     print(phases_times)
 
     num_phases = len(phases_times.keys())
@@ -133,34 +139,35 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     fig, axs = plt.subplots(num_phases, 1)
     plot_idx = 0
 
-    x_ticks = num_threads[1::2]
-    y_ticks = [0, 10, 20]
-
     for label, times in phases_times.items():
-        single_thread_time = times[0]
-        perfect_scale = [i for i in num_threads]
-        axs[plot_idx].plot(num_threads, [times[0] / x for x in times], label=competitor_label)
-        axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical")
+        times.sort(key = lambda x: x[0])
+        num_positions, exec_times = zip(*times)
+        print(exec_times)
+        axs[plot_idx].plot(num_positions, exec_times, label=competitor_label)
 
         if plot_idx == 0:
             axs[plot_idx].legend(loc="upper right")
 
         axs[plot_idx].set_title(label.title(), y=0.65)
 
-        axs[plot_idx].set_xticks(x_ticks)
-        axs[plot_idx].set_ylabel("Speedup")
-        axs[plot_idx].set_yticks(y_ticks)
+        axs[plot_idx].set_xticks(num_positions)
+        axs[plot_idx].set_xscale("log")
+        
+        #axs[plot_idx].set_yscale("log")
+        axs[plot_idx].set_ylabel("Time [s]")
 
         if plot_idx == num_phases - 1:
-            axs[plot_idx].set_xlabel("Number of Threads")
+            axs[plot_idx].set_xlabel("Num positions")
         else:
             axs[plot_idx].set_xticklabels([])
             axs[plot_idx].xaxis.set_ticks_position("none")
         
         plot_idx += 1
-    
+
+    #plt.xscale("log")
+
     competitor_name_file = competitor_label.replace(" ", "_").lower()
-    filename = f"plots/{dir_name}/{competitor_name_file}_phases_breakup_plot.pdf"
+    filename = f"plots/{dir_name}/{competitor_name_file}_total_phase_breakdown_plot.pdf"
     print(f"Plotting {filename}")
 
     plt.savefig(filename, dpi=400)
@@ -172,15 +179,16 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
 def plot_data(path):
     raw_data = _read_data(path)
     groups = _parse_data_into_groups(raw_data)
+    #print(groups)
+
     dir_name = path.split("/")[1].split(".")[0]
 
-    #print(groups)
-    #print(dir_name)
+    print("Uniform data:")
+    print(groups["uniform"])
 
-    _plot_all_phases_of_competitor_separately(groups, "Partition Right", dir_name)
-    _plot_all_phases_of_competitor_separately(groups, "Partition Left", dir_name)
+    _plot_all_phases_of_competitor_separately(groups["zipf_2"], "Partition Left", dir_name)
+    _plot_all_phases_of_competitor_separately(groups["uniform"], "Partition Right", dir_name)
 
     
 if __name__ == "__main__":
-    #plot_data("results/thread_scalability/thread_scalability_phases.log")
-    plot_data("results/skylake/thread_scalability.log")
+    plot_data("results/skylake/diff_zipf_skews_phase_breakdown_new.log")

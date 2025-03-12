@@ -4,7 +4,7 @@ import os
 
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(7)
+texify.latexify(fig_width=3.39, fig_height=1.5)
 style.set_custom_style()
 
 
@@ -33,7 +33,6 @@ def micro_to_seconds(micro):
 
 def milli_to_seconds(milli):
     return milli / 1_000.0
-
 
 
 class PlotFullExecTimesDiffSearchAlgos:
@@ -140,36 +139,40 @@ Normalize over the number of searches.
 class PlotBarPlotsOnlySearchPhaseDiffAlgos:
 
     def _bar_plot(left_data, right_data):
-        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        fig, axes = plt.subplots(1, 2)
 
         left_bars = []
         left_bars.append(axes[0].bar("Binary", left_data["Binary"], color=colors.colors["blue"], label="Binary"))
         left_bars.append(axes[0].bar("Exponential", left_data["Exponential"], color=colors.colors["green"], label="Exponential"))
         left_bars.append(axes[0].bar("Interpolation", left_data["Interpolation"], color=colors.colors["orange"], label="Interpolation"))
 
-        axes[0].set_title('Partition Left')
-        axes[0].set_ylabel('Time [us]')
+        axes[0].set_title("Partition Left")
+        axes[0].set_ylabel("Time [us]")
         axes[0].set_xticks([])
 
-        # Plot data for right partition
         right_bars = []
         right_bars.append(axes[1].bar("Binary", right_data["Binary"], color=colors.colors["blue"], label="Binary"))
         right_bars.append(axes[1].bar("Exponential", right_data["Exponential"], color=colors.colors["green"], label="Exponential"))
         right_bars.append(axes[1].bar("Interpolation", right_data["Interpolation"], color=colors.colors["orange"], label="Interpolation"))
-
         axes[1].set_title("Partition Right")
-        axes[1].set_ylabel("Time [us]")
+        #axes[1].set_ylabel("Time [us]$")
 
         axes[0].set_xticks([])
         axes[1].set_xticks([])
 
+        #axes[0].set_yticks([0, 1, 2])
+        #axes[1].set_yticks([0, 1, 2])
+
         handles, labels = axes[0].get_legend_handles_labels()
         print(handles, labels)
-        axes[1].legend(handles, labels, loc="upper right", #bbox_to_anchor=(0.57, 1.01),
-            borderaxespad=0.2) #prop={'size': 8})
+        fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.53, -0.07),
+           ncols=3, prop={"size": 8})
+            #borderaxespad=0.2, ncols=3, prop={"size": 8})
 
         filename = f"plots/skylake/diff_search_algos_side_by_side.pdf"
         print(f"Plotting {filename}")
+
+        plt.tight_layout()
 
         plt.savefig(filename, dpi=400, bbox_inches="tight")
         os.system(f"pdfcrop {filename} {filename}")
@@ -185,7 +188,7 @@ class PlotBarPlotsOnlySearchPhaseDiffAlgos:
         right_data = {}
 
         left_normalization_constant = 24 / (128 * 2000000)
-        right_normalization_constant = 24 / (100 * 2**10)
+        right_normalization_constant = 24 / (100000 * 2**10)
 
         pattern = r"^([A-Za-z]+)\s([A-Za-z]+):\s(\d+)\[us\]$"
 
@@ -201,9 +204,9 @@ class PlotBarPlotsOnlySearchPhaseDiffAlgos:
                 print(strategy, label, duration)
 
                 if strategy == "Left":
-                    left_data[label] = duration
+                    left_data[label] = duration * left_normalization_constant
                 else:
-                    right_data[label] = duration
+                    right_data[label] = duration * right_normalization_constant
 
         print(left_data)
         print(right_data)

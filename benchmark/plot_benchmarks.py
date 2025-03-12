@@ -3,7 +3,7 @@ import regex as re
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(5, 1.8)
+texify.latexify()
 style.set_custom_style()
 
 #TOTAL_L1 = L1_SIZE * NUM_CORES
@@ -76,10 +76,13 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
 
     log_label_prefix = "[log]" if log_scale else ""
     plt.xlabel(f"Num positions {log_label_prefix}")
-    plt.ylabel(f"Time [s] {log_label_prefix}")
+    plt.ylabel(f"Time [s]")
 
     plt.title(distribution_name)
-    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    plt.legend(loc="upper left")#, bbox_to_anchor=(1, 0.5))
+
+    #plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.3),
+    #       ncols=3, prop={"size": 8})
 
     is_log_plot_path = "log_" if log_scale else ""
     filename = f"plots/{dir_name}/{is_log_plot_path}{distribution_name}_plot.pdf"

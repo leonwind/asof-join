@@ -29,6 +29,7 @@ def latexify(fig_width=None, fig_height=None, columns=1, width_heigth_ratio=None
     if fig_height is None:
         golden_mean = (np.sqrt(5) - 1.0) / 2.0  # Aesthetic ratio
         fig_height = fig_width * golden_mean  # height in inches
+    print(fig_height)
 
     if width_heigth_ratio is not None:
         fig_height = fig_width / width_heigth_ratio
