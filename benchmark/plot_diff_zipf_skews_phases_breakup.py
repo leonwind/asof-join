@@ -186,7 +186,7 @@ def plot_data(path):
     print("Uniform data:")
     print(groups["uniform"])
 
-    _plot_all_phases_of_competitor_separately(groups["zipf_2"], "Partition Left", dir_name)
+    _plot_all_phases_of_competitor_separately(groups["uniform"], "Partition Left", dir_name)
     _plot_all_phases_of_competitor_separately(groups["uniform"], "Partition Right", dir_name)
 
     
