@@ -38,7 +38,7 @@ public:
     struct JoinEntry {
         virtual ~JoinEntry() = default;
 
-        [[nodiscard]] inline virtual uint64_t get_key() const = 0;
+        [[nodiscard]] [[gnu::always_inline]] virtual uint64_t get_key() const = 0;
         
         virtual std::strong_ordering operator<=>(const JoinEntry &other) const {
             return get_key() <=> other.get_key();
@@ -172,7 +172,7 @@ struct ASOFJoin::RightEntry : JoinEntry {
     RightEntry(): timestamp(-1), idx(-1) {}
     RightEntry(uint64_t timestamp, size_t idx) : timestamp(timestamp), idx(idx) {}
 
-    [[nodiscard]] inline uint64_t get_key() const override {
+    [[nodiscard]] [[gnu::always_inline]] uint64_t get_key() const override {
         return timestamp;
     }
 };
@@ -259,7 +259,7 @@ struct ASOFJoin::LeftEntry : JoinEntry {
     //    }
     //}
 
-    [[nodiscard]] inline uint64_t get_key() const override {
+    [[nodiscard]] [[gnu::always_inline]] uint64_t get_key() const override {
         return timestamp;
     }
 };
@@ -305,7 +305,7 @@ struct ASOFJoin::LeftEntryCopy : JoinEntry {
         return *this;
     }
 
-    [[nodiscard]] inline uint64_t get_key() const override {
+    [[nodiscard]] [[gnu::always_inline]] uint64_t get_key() const override {
         return timestamp;
     }
 };

@@ -48,7 +48,7 @@ namespace {
     void test_search_less_than_small(const SearchFn& search_less_equal_than) {
         size_t n = 5;
         size_t offset = 10;
-        auto data = generate_data(/* n= */ 5, /* data_gap= */ 1, /* offset= */ 10);
+        auto data = generate_data(/* n= */ n, /* data_gap= */ 1, /* offset= */ 10);
 
         for (size_t i = 0; i < n + offset + 10; ++i) {
             auto *res = search_less_equal_than(data, i);
@@ -69,7 +69,7 @@ namespace {
     void test_search_greater_than_small(const SearchFn& search_greater_equal_than) {
         size_t n = 5;
         size_t offset = 10;
-        auto data = generate_data(/* n= */ 5, /* data_gap= */ 1, /* offset= */ 10);
+        auto data = generate_data(/* n= */ n, /* data_gap= */ 1, /* offset= */ 10);
 
         for (size_t i = 0; i < n + offset + 10; ++i) {
             auto *res = search_greater_equal_than(data, i);

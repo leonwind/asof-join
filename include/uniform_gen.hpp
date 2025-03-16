@@ -12,7 +12,9 @@ namespace uniform {
     }
 
     std::size_t gen_int(size_t max) {
-        return rand() & max;
+        static thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<std::size_t> dist(0, max);
+        return dist(rng);
     }
 } // namespace uniform
 
