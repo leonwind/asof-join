@@ -10,7 +10,7 @@ template <typename T>
 using IsJoinEntry = std::enable_if_t<std::is_base_of<ASOFJoin::JoinEntry, T>::value>;
 
 namespace {
-    [[gnu::always_inline]] size_t interpolate(uint64_t target, uint64_t first_val, uint64_t last_val, size_t n) {
+    inline size_t interpolate(uint64_t target, uint64_t first_val, uint64_t last_val, size_t n) {
         return ((target - first_val) * (n - 1)) / (last_val - first_val);
     }
 } // namespace
@@ -48,7 +48,7 @@ namespace Search::Binary {
             right = is_valid_value ? middle : right;
         }
 
-        return (data[right].get_key() >= target) ? &data[right] : nullptr;
+        return (right < data.size() && data[right].get_key() >= target) ? &data[right] : nullptr;
     }
 } // namespace Search::Binary
 
@@ -138,43 +138,14 @@ namespace Search::Interpolation {
                 bound *= 2;
             }
         }
-        //size_t bound = pos;
-        //if (data[pos].get_key() >= target) {
-        //    overestimated = true;
-        //    while (bound > 0 && data[bound].get_key() >= target) {
-        //        bound /= 2;
-        //    }
-        //} else {
-        //    overestimated = false;
-        //    bound = (bound == 0) ? 1 : 0;
-        //    while (bound < n && data[bound].get_key() < target) {
-        //        //bound = (bound == 0) ? 1 : bound * 2;
-        //        bound *= 2;
-        //    }
-        //}
 
         size_t left = overestimated ? (pos > bound ? pos - bound : 0) : pos;
-        size_t right = overestimated ? pos + 1 : std::min(pos + bound, n);  // Fix right bound
-
-        // Binary search within the range found by exponential search.
-        //size_t left = overestimated ? bound : pos;
-        //size_t right = overestimated
-        //        // Set right to the last valid bound by multiplying by 2.
-        //        // +1 in case the start was odd -> lost one index
-        //        ? std::min((bound == 0 ? 1 : bound * 2 + 1), pos) + 1
-        //        : std::min(bound + 1, n);
-
+        size_t right = overestimated ? pos + 1 : std::min(pos + bound, n);
 
         while (left < right) {
             size_t middle = left + (right - left) / 2;
 
             bool is_valid_value = data[middle].get_key() <= target;
-            //if (data[middle].get_key() <= target) {
-            //    left = middle + 1;
-            //} else {
-            //    right = middle;
-            //}
-            //result = is_valid_value ? &data[middle] : result;
             left = is_valid_value ? middle + 1 : left;
             right = is_valid_value ? right : middle;
         }
@@ -212,47 +183,14 @@ namespace Search::Interpolation {
             }
         }
 
-        //size_t bound = pos;
-        //if (data[pos].get_key() >= target) {
-        //    overestimated = true;
-        //    while (bound > 0 && data[bound].get_key() >= target) {
-        //        bound /= 2;
-        //    }
-        //} else {
-        //    overestimated = false;
-        //    bound = (bound == 0) ? 1 : bound;
-        //    while (bound < n && data[bound].get_key() < target) {
-        //        //bound = (bound == 0) ? 1 : bound * 2;
-        //        bound *= 2;
-        //    }
-        //    //while (bound < n && data[bound].get_key() < target) {
-        //    //    bound = (bound == 0) ? 1 : bound * 2;
-        //    //}
-        //}
-
         // Binary search within the range found by exponential search.
         size_t left = overestimated ? (pos > bound ? pos - bound : 0) : pos;
         size_t right = overestimated ? pos + 1 : std::min(pos + bound, n);
-
-       // size_t left = overestimated ? bound : pos;
-       // size_t right = overestimated
-       //         // Set right to the last valid bound by multiplying by 2.
-       //         // +1 in case the start was odd -> lost one index
-       //         ? std::min((bound == 0 ? 1 : bound * 2 + 1), pos) + 1
-       //         : std::min(bound + 1, n);
-
-       //std::cout << "l, r: " << left << ", " << right << std::endl;
 
         while (left < right) {
             size_t middle = left + (right - left) / 2;
 
             bool is_valid_value = data[middle].get_key() >= target;
-            //if (data[middle].get_key() >= target) {
-            //    right = middle;
-            //} else {
-            //    left = middle + 1;
-            //}
-            //result = is_valid_value ? &data[middle] : result;
             left = is_valid_value ? left : middle + 1;
             right = is_valid_value ? middle : right;
         }

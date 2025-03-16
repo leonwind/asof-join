@@ -10,6 +10,8 @@
 namespace benchmarks {
     void run_diff_zipf_skews_benchmarks();
 
+    void run_uniform_both_sides_benchmark();
+
     void run_small_order_book_contention_benchmark();
 
     void run_copying_vs_locking_benchmark();

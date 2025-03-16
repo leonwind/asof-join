@@ -49,7 +49,8 @@ add_library(asof_benchmark_lib
 	src/benchmark/left_partitioning_vs_filter_diff_percentile.cc
 	src/benchmark/benchmark_threads_scalability.cc
 	src/benchmark/benchmark_search_algorithms.cc
-	src/benchmark/benchmark_runtime_l_vs_r.cpp)
+	src/benchmark/benchmark_runtime_l_vs_r.cc
+	src/benchmark/benchmark_uniform_both_sides.cc)
 # Link main lib sources into benchmark lib
 target_link_libraries(asof_benchmark_lib asof_join_lib)
 
