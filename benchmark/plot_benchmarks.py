@@ -38,7 +38,7 @@ def milli_to_seconds(milli):
 
 def _parse_data_into_groups(data):
     groups = {}
-    group_pattern = r'\[(\w+)-(\d+)\.csv\]'
+    group_pattern = r'\[(\w+)-(\d+)\]'
 
     curr_distribution = None
     curr_num_positions = None
@@ -52,8 +52,9 @@ def _parse_data_into_groups(data):
             curr_num_positions = int(regex_match.group(2))
             if curr_distribution not in groups:
                 groups[curr_distribution] = DistributionRun()
-
-        else:
+        
+        #else:
+        elif row.startswith("PARTITION"):
             strategy_exec_time = row.split(": ")
             strategy = strategy_exec_time[0]
             exec_time = int(strategy_exec_time[1])
@@ -127,4 +128,5 @@ if __name__ == "__main__":
 
     #plot_data("results/2025-02-05/uniform_zipf.log")
 
-    plot_data("results/skylake/diff_zipf_skews.log")
+    #plot_data("results/skylake/diff_zipf_skews.log")
+    plot_data("results/skylake/uniform_both_sides_phases_breakdown.log")

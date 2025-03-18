@@ -23,6 +23,7 @@ namespace benchmarks {
     void run_single_stock_benchmark();
 
     void run_different_search_algorithms();
+    void benchmark_partitioning_search_part();
 
     void run_runtime_l_vs_r();
 

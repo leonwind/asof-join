@@ -68,7 +68,7 @@ void PartitioningLeftASOFJoin::join() {
             [&](auto& iter) {
         std::vector<LeftEntry>& partition_bin = iter.second;
         const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
-        std::vector<LeftEntry*> last_match_per_range(num_thread_chunks);
+        std::vector<LeftEntry*> last_match_per_range(num_thread_chunks, nullptr);
 
         /// We have to parallel iterate over the number of thread chunks since TBB is not forced to align
         /// each chunk to [[MORSEL_SIZE]] which would make [[range.begin() / MORSEL_SIZE]] a non-correct
@@ -80,36 +80,37 @@ void PartitioningLeftASOFJoin::join() {
                 [&](tbb::blocked_range<size_t>& chunks_range) {
             for (size_t chunks_idx = chunks_range.begin(); chunks_idx != chunks_range.end(); ++chunks_idx) {
                 size_t start = chunks_idx * MORSEL_SIZE;
-                size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
-                                      partition_bin.size());
-                LeftEntry *last_match = nullptr;
+                size_t end = std::min(start + MORSEL_SIZE, partition_bin.size());
 
                 for (size_t i = end; i != start; --i) {
                     if (partition_bin[i - 1].matched) {
-                        last_match = &partition_bin[i - 1];
+                        last_match_per_range[chunks_idx] = &partition_bin[i - 1];
                         break;
                     }
                 }
-                size_t morsel_pos = start / MORSEL_SIZE;
-                last_match_per_range[morsel_pos] = last_match;
             }
         });
+
+        /// Calculate prefix sum of last match per chunk
+        for (size_t i = 1; i < num_thread_chunks; ++i) {
+            if (!last_match_per_range[i]) {
+                last_match_per_range[i] = last_match_per_range[i - 1];
+            }
+        }
 
         tbb::parallel_for(chunks_range,
                 [&](tbb::blocked_range<size_t>& chunks_range) {
             for (size_t chunks_idx = chunks_range.begin(); chunks_idx != chunks_range.end(); ++chunks_idx) {
                 size_t start = chunks_idx * MORSEL_SIZE;
-                size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
-                                      partition_bin.size());
-                LeftEntry *last_match = nullptr;
+                size_t end = std::min(start + MORSEL_SIZE, partition_bin.size());
+                LeftEntry *last_match = chunks_idx == 0 ? nullptr : last_match_per_range[chunks_idx - 1];
 
-                size_t morsel_pos = start / MORSEL_SIZE;
-                for (size_t i = morsel_pos; i != 0; --i) {
-                    if (last_match_per_range[i - 1] != nullptr) {
-                        last_match = last_match_per_range[i - 1];
-                        break;
-                    }
-                }
+                //for (size_t i = chunks_idx; i != 0; --i) {
+                //    if (last_match_per_range[i - 1] != nullptr) {
+                //        last_match = last_match_per_range[i - 1];
+                //        break;
+                //    }
+                //}
 
                 for (size_t i = start; i != end; ++i) {
                     auto &entry = partition_bin[i];
@@ -117,7 +118,7 @@ void PartitioningLeftASOFJoin::join() {
                         last_match = &entry;
                     }
 
-                    if (last_match && last_match->matched) {
+                    if (last_match) {
                         result.insert(
                             /* price_timestamp= */ prices.timestamps[last_match->price_idx],
                             /* price_stock_id= */ prices.stock_ids[last_match->price_idx],

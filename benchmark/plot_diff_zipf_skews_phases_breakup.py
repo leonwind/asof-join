@@ -49,6 +49,7 @@ def _parse_data_into_groups(data):
     groups = {}
     
     run_pattern = r'\[(\w+)-(\d+)\.csv\]'
+    run_pattern_no_csv = r'\[(\w+)-(\d+)\]'
     
     # Variables to keep track of the current group details
     curr_distribution = None
@@ -60,7 +61,8 @@ def _parse_data_into_groups(data):
             continue
 
         if row.startswith("Run"):
-            regex_match = re.search(run_pattern, row)
+            #regex_match = re.search(run_pattern, row)
+            regex_match = re.search(run_pattern_no_csv, row)
             if regex_match is None:
                 print(f"Regex error: {row}")
             curr_distribution = regex_match.group(1)
@@ -191,4 +193,6 @@ def plot_data(path):
 
     
 if __name__ == "__main__":
-    plot_data("results/skylake/diff_zipf_skews_phase_breakdown_new.log")
+    #plot_data("results/skylake/diff_zipf_skews_phase_breakdown_new.log")
+    plot_data("results/skylake/uniform_both_sides_phases_breakdown.log")
+

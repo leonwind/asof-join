@@ -8,9 +8,9 @@
 #include "tbb/parallel_for.h"
 #include "tbb/parallel_for_each.h"
 
+#include "asof_join.hpp"
 #include "uniform_gen.hpp"
 #include "searches.hpp"
-#include "relation.hpp"
 #include "benchmark.hpp"
 #include "parallel_multi_map.hpp"
 
@@ -38,17 +38,18 @@ namespace {
         }
     };
 
-    std::vector<TestEntry> generate_random_prices(size_t num_prices) {
+    std::vector<TestEntry> generate_random_price_list(size_t num_prices) {
         std::vector<TestEntry> data;
 
         for (size_t i = 0; i < num_prices; ++i) {
-            data.emplace_back(i * PRICE_SAMPLING_RATE);
+            data.emplace_back(uniform::gen_int(num_prices * PRICE_SAMPLING_RATE));
         }
 
+        tbb::parallel_sort(data.begin(), data.end());
         return data;
     }
 
-    std::vector<TestEntry> generate_random_orderbook(size_t num_orders, size_t max_timestamp) {
+    std::vector<TestEntry> generate_random_orderbook_list(size_t num_orders, size_t max_timestamp) {
         std::vector<TestEntry> data;
 
         for (size_t i = 0; i < num_orders; ++i) {
@@ -124,8 +125,8 @@ void benchmarks::run_different_search_algorithms() {
     size_t num_prices = 10'000'000;
     size_t num_positions = 10'000'000;
 
-    auto prices = generate_random_prices(num_prices);
-    auto order_book = generate_random_orderbook(num_positions, num_prices * PRICE_SAMPLING_RATE);
+    auto prices = generate_random_price_list(num_prices);
+    auto order_book = generate_random_orderbook_list(num_positions, num_prices * PRICE_SAMPLING_RATE);
 
     std::vector<std::pair<fn, std::string_view>> left_search_algos = {
          {Search::Binary::greater_equal_than<TestEntry>, "Binary"},
@@ -157,4 +158,81 @@ void benchmarks::run_different_search_algorithms() {
             right_search_algo.second,
             num_runs);
     }
+}
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+void benchmark_left_partition_search(Prices& prices, OrderBook& order_book) {
+    MultiMapTB<ASOFJoin::LeftEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
+    tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
+            [&](auto& iter) {
+        tbb::parallel_sort(iter.second.begin(), iter.second.end());
+    });
+
+    size_t matches = 0;
+    PerfEventBlock e(prices.size);
+    for (size_t i = 0; i < prices.size; ++i) {
+        const auto& stock_id = prices.stock_ids[i];
+        if (!order_book_lookup.contains(stock_id)) {
+            continue;
+        }
+
+        auto& partition_bin = order_book_lookup[stock_id];
+        auto timestamp = prices.timestamps[i];
+        auto* match= Search::Interpolation::greater_equal_than(
+            /* data= */ partition_bin,
+            /* target= */ timestamp);
+
+        if (match != nullptr) {
+            uint64_t diff = match->timestamp - timestamp;
+            match->lock_compare_swap_diffs(diff, i);
+            ++matches;
+        }
+    }
+
+    std::cout << "LP num matches: " << matches << std::endl;
+}
+
+
+void benchmark_right_partition_search(Prices& prices, OrderBook& order_book) {
+    MultiMapTB<ASOFJoin::RightEntry> prices_lookup(prices.stock_ids, prices.timestamps);
+    tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
+            [&](auto& iter) {
+        tbb::parallel_sort(iter.second.begin(), iter.second.end());
+    });
+
+    size_t matches = 0;
+    PerfEventBlock e(order_book.size);
+    for (size_t i = 0; i < order_book.size; ++i) {
+        auto& stock_id = order_book.stock_ids[i];
+        if (!prices_lookup.contains(stock_id)) {
+           continue;
+        }
+
+        auto& partition_bin = prices_lookup[stock_id];
+        auto timestamp = order_book.timestamps[i];
+        auto* match = Search::Interpolation::less_equal_than(
+            /* data= */ partition_bin,
+            /* target= */ timestamp);
+
+        if (match != nullptr) {
+            ++matches;
+        }
+    }
+
+    std::cout << "RP num matches: " << matches << std::endl;
+}
+
+
+void benchmarks::benchmark_partitioning_search_part() {
+    size_t l_r_size = 100'000'000;
+    size_t max_timestamp = 50 * l_r_size;
+    size_t num_partitions = 30;
+
+    Prices prices = generate_uniform_prices(l_r_size, max_timestamp, num_partitions);
+    OrderBook order_book = generate_uniform_orderbook(l_r_size, max_timestamp, num_partitions);
+
+    benchmark_left_partition_search(prices, order_book);
+    benchmark_right_partition_search(prices, order_book);
 }

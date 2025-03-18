@@ -2,6 +2,8 @@
 #include <random>
 #include "relation.hpp"
 #include "mmap_file.hpp"
+#include "uniform_gen.hpp"
+
 
 Prices shuffle_prices(Prices& prices) {
     std::vector<size_t> indices(prices.size);
@@ -91,5 +93,108 @@ OrderBook load_order_book(std::string_view path, char delimiter, bool shuffle) {
         /* stock_ids= */ data.stock_ids,
         /* amounts= */ data.prices,
         /* size= */ data.size
+    };
+}
+
+Prices generate_equal_distributed_prices(size_t num_prices, size_t price_sampling_rate, size_t num_diff_stocks) {
+    std::vector<uint64_t> timestamps;
+    std::vector<uint64_t> prices;
+    std::vector<std::string> stock_ids;
+
+    const size_t max_price = 100;
+
+    for (size_t i = 0; i < num_prices; ++i) {
+        timestamps.emplace_back(i * price_sampling_rate);
+        prices.emplace_back(uniform::gen_int(max_price));
+        stock_ids.emplace_back(uniform::gen_stock_id(num_diff_stocks));
+    }
+
+    Prices result = {
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* prices= */ prices,
+        /* size= */ timestamps.size()
+    };
+
+    return shuffle_prices(result);
+}
+
+
+Prices generate_uniform_prices(size_t num_prices, size_t max_timestamp, size_t num_diff_stocks) {
+    std::vector<uint64_t> timestamps;
+    std::vector<uint64_t> prices;
+    std::vector<std::string> stock_ids;
+
+    const size_t max_price = 100;
+
+    for (size_t i = 0; i < num_prices; ++i) {
+        timestamps.emplace_back(uniform::gen_int(max_timestamp));
+        prices.emplace_back(uniform::gen_int(max_price));
+        stock_ids.emplace_back(uniform::gen_stock_id(num_diff_stocks));
+    }
+
+    return /* Prices= */ {
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* prices= */ prices,
+        /* size= */ timestamps.size()
+    };
+}
+
+
+OrderBook generate_uniform_orderbook(size_t num_orders, size_t max_timestamp, size_t num_diff_stocks) {
+    std::vector<uint64_t> timestamps;
+    std::vector<uint64_t> amounts;
+    std::vector<std::string> stock_ids;
+
+    const size_t max_amount = 100;
+
+    for (size_t i = 0; i < num_orders; ++i) {
+        timestamps.emplace_back(uniform::gen_int(max_timestamp));
+        amounts.emplace_back(uniform::gen_int(max_amount));
+        stock_ids.emplace_back(uniform::gen_stock_id(num_diff_stocks));
+    }
+
+    return /* OrderBook= */ {
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* amounts= */ amounts,
+        /* size= */ timestamps.size()
+    };
+}
+
+Prices select_first_n_prices(Prices& prices_og, size_t n) {
+    std::vector<uint64_t> timestamps(n);
+    std::copy_n(prices_og.timestamps.begin(), n, timestamps.begin());
+
+    std::vector<uint64_t> prices(n);
+    std::copy_n(prices_og.prices.begin(), n, prices.begin());
+
+    std::vector<std::string> stock_ids(n);
+    std::copy_n(prices_og.stock_ids.begin(), n, stock_ids.begin());
+
+    return /* Prices= */ {
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* prices= */ prices,
+        /* size= */ n
+    };
+}
+
+OrderBook select_first_n_orders(OrderBook& order_book, size_t n) {
+    std::vector<uint64_t> timestamps(n);
+    std::copy_n(order_book.timestamps.begin(), n, timestamps.begin());
+
+    std::vector<uint64_t> amounts(n);
+    std::copy_n(order_book.amounts.begin(), n, amounts.begin());
+
+    std::vector<std::string> stock_ids(n);
+    std::copy_n(order_book.stock_ids.begin(), n, stock_ids.begin());
+
+    return /* OrderBook= */ {
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* amounts= */ amounts,
+        /* size= */ n
     };
 }

@@ -1,33 +1,33 @@
-#include <iostream>
-#include <filesystem>
 #include <vector>
-#include <fmt/format.h>
 #include "relation.hpp"
 #include "benchmark.hpp"
-
-namespace fs = std::filesystem;
 
 
 void benchmarks::run_left_partitioning_filtering_diff_percentile() {
     size_t num_runs = 3;
-    std::string small_order_book_data = "../data/uniform_percentile";
 
-    Prices prices = load_prices("../data/prices_128_2000000.csv");
+    const size_t num_stocks = 128;
+    const size_t prices_per_stock = 2'000'000;
+    const size_t price_sampling_interval = 50;
 
-    for (auto& positions_entry : fs::directory_iterator(small_order_book_data)) {
-        const auto& positions_path = positions_entry.path().string();
-        auto num_positions = util::extract_num_positions(positions_path);
-        std::cout << fmt::format("Run [{}]", num_positions) << std::endl;
+    const size_t max_timestamp = prices_per_stock * price_sampling_interval;
 
-        OrderBook order_book = load_order_book(positions_path);
+    Prices prices = generate_uniform_prices(num_stocks * prices_per_stock, max_timestamp, num_stocks);
 
-        PartitioningLeftASOFJoin normal_left_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-        auto normal_left_time = util::run_join_return_best_time(normal_left_join, num_runs);
+    std::vector<double> percentiles = {
+            1, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1,
+            0.05, 0.025, 0.0125, 0.0001, 0.00001
+    };
 
-        PartitioningLeftFilterMinASOFJoin filter_left_join(prices, order_book, LESS_EQUAL_THAN, INNER);
-        auto filter_left_time = util::run_join_return_best_time(filter_left_join, num_runs);
+    const size_t num_orders = 6'400'000;
 
-        fmt::print("{}: {}\n", normal_left_join.get_strategy_name(), normal_left_time);
-        fmt::print("{}: {}\n", filter_left_join.get_strategy_name(), filter_left_time);
+    for (auto percentile : percentiles) {
+        auto positions_percentile_max_timestamp = static_cast<size_t>(max_timestamp * percentile);
+        OrderBook order_book = generate_uniform_orderbook(
+                num_orders,
+                positions_percentile_max_timestamp,
+                num_stocks);
+
+        run_benchmark(prices, order_book, num_runs);
     }
 }

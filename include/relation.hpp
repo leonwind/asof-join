@@ -40,7 +40,10 @@ struct Prices : Relation {
 };
 
 Prices load_prices(std::string_view path, char delimiter = ',', bool shuffle = false);
+Prices generate_equal_distributed_prices(size_t num_prices, size_t price_sampling_rate, size_t num_diff_stocks);
+Prices generate_uniform_prices(size_t num_prices, size_t max_timestamp, size_t num_diff_stocks);
 Prices shuffle_prices(Prices& prices);
+Prices select_first_n_prices(Prices& prices_og, size_t n);
 
 struct OrderBook : Relation {
     std::vector<uint64_t> timestamps;
@@ -69,6 +72,8 @@ struct OrderBook : Relation {
 };
 
 OrderBook load_order_book(std::string_view path, char delimiter = ',', bool shuffle = false);
+OrderBook generate_uniform_orderbook(size_t num_orders, size_t max_timestamp, size_t num_diff_stocks);
+OrderBook select_first_n_orders(OrderBook& order_book, size_t n);
 
 struct ResultRelation : Relation {
 

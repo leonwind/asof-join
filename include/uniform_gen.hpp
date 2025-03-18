@@ -6,12 +6,13 @@
 #include "fmt/format.h"
 
 namespace uniform {
-    std::string gen_stock_id(size_t num_stock_ids) {
-        size_t id = rand() % num_stock_ids;
-        return fmt::format("s-{}", id);
+    inline std::string gen_stock_id(size_t num_stock_ids) {
+        static thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<std::size_t> dist(0, num_stock_ids);
+        return fmt::format("s-{}", dist(rng));
     }
 
-    std::size_t gen_int(size_t max) {
+    inline std::size_t gen_int(size_t max) {
         static thread_local std::mt19937 rng(std::random_device{}());
         std::uniform_int_distribution<std::size_t> dist(0, max);
         return dist(rng);
