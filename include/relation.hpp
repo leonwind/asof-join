@@ -73,6 +73,7 @@ struct OrderBook : Relation {
 
 OrderBook load_order_book(std::string_view path, char delimiter = ',', bool shuffle = false);
 OrderBook generate_uniform_orderbook(size_t num_orders, size_t max_timestamp, size_t num_diff_stocks);
+OrderBook generate_uniform_orderbook(size_t num_orders, size_t min_timestamp, size_t max_timestamp, size_t num_diff_stocks);
 OrderBook select_first_n_orders(OrderBook& order_book, size_t n);
 
 struct ResultRelation : Relation {

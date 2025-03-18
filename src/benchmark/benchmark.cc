@@ -72,10 +72,10 @@ void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num
     //std::cout << fmt::format("{}: {}", filter_min_right_partition.get_strategy_name(), right_partitioning_filter_min_time)
     //          << std::endl;
 
-    //PartitioningLeftFilterMinASOFJoin filter_min_left_partition(prices, order_book, LESS_EQUAL_THAN, INNER);
-    //auto left_partitioning_filter_min_time = util::run_join_return_best_time(filter_min_left_partition, num_runs);
-    //std::cout << fmt::format("{}: {}", filter_min_left_partition.get_strategy_name(), left_partitioning_filter_min_time)
-    //          << std::endl;
+    PartitioningLeftFilterMinASOFJoin filter_min_left_partition(prices, order_book, LESS_EQUAL_THAN, INNER);
+    auto left_partitioning_filter_min_time = util::run_join_return_best_time(filter_min_left_partition, num_runs);
+    std::cout << fmt::format("{}: {}", filter_min_left_partition.get_strategy_name(), left_partitioning_filter_min_time)
+              << std::endl;
 
     //uint64_t right_result = right_partitioning.result.value_sum;
     //uint64_t left_result = left_partitioning.result.value_sum;

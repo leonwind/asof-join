@@ -163,6 +163,27 @@ OrderBook generate_uniform_orderbook(size_t num_orders, size_t max_timestamp, si
     };
 }
 
+OrderBook generate_uniform_orderbook(size_t num_orders, size_t min_timestamp, size_t max_timestamp, size_t num_diff_stocks) {
+    std::vector<uint64_t> timestamps;
+    std::vector<uint64_t> amounts;
+    std::vector<std::string> stock_ids;
+
+    const size_t max_amount = 100;
+
+    for (size_t i = 0; i < num_orders; ++i) {
+        timestamps.emplace_back(uniform::gen_int(min_timestamp, max_timestamp));
+        amounts.emplace_back(uniform::gen_int(max_amount));
+        stock_ids.emplace_back(uniform::gen_stock_id(num_diff_stocks));
+    }
+
+    return /* OrderBook= */ {
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* amounts= */ amounts,
+        /* size= */ timestamps.size()
+    };
+}
+
 Prices select_first_n_prices(Prices& prices_og, size_t n) {
     std::vector<uint64_t> timestamps(n);
     std::copy_n(prices_og.timestamps.begin(), n, timestamps.begin());
