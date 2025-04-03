@@ -8,9 +8,9 @@
 void benchmarks::run_left_partitioning_filtering_diff_percentile() {
     size_t num_runs = 3;
 
-    const size_t num_stocks = 128;
+    const size_t num_stocks = 8;
     const size_t prices_per_stock = 2'000'000;
-    const size_t price_sampling_interval = 50;
+    const size_t price_sampling_interval = 500;
 
     const size_t max_timestamp = prices_per_stock * price_sampling_interval;
 
@@ -21,7 +21,7 @@ void benchmarks::run_left_partitioning_filtering_diff_percentile() {
             0.95, 0.975, 0.99, 0.999, 0.9999
     };
 
-    const size_t num_orders = 12'800'000;
+    const size_t num_orders = 1000000;
 
     for (auto percentile : percentiles) {
         auto positions_percentile_min_timestamp = static_cast<size_t>(max_timestamp * percentile);

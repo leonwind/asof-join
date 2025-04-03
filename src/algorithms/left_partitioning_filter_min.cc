@@ -39,33 +39,32 @@ void PartitioningLeftFilterMinASOFJoin::join() {
 
     e.startCounters();
     /// Use alignas(64) to prevent false sharing.
-    /*alignas(64)*/ std::atomic<uint64_t> global_min = 0;
-    /*alignas(64)*/ std::atomic<uint64_t> num_lookups_skipped = 0;
-
-    //struct PartitionMetadata {
-    //    bool head_has_match = false;
-    //    uint64_t head_timestamp = UINT64_MAX;
-    //};
-    //std::unordered_map<std::string_view, PartitionMetadata> partition_metadata(order_book_lookup.size());
+    //alignas(64) std::atomic<uint64_t> global_min = 0;
+    uint64_t global_min = 0;
+    alignas(64) std::atomic<uint64_t> num_lookups_skipped = 0;
+    alignas(64) std::atomic<bool> update_lock_flag = false;
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         bool possible_new_min = false;
         size_t local_num_skipped = 0;
+
+        uint64_t local_global_min{global_min};
         for (size_t i = range.begin(); i < range.end(); ++i) {
             auto timestamp = prices.timestamps[i];
-            if (timestamp < global_min) {
+            if (timestamp < local_global_min) {
                 #ifndef BENCHMARK_MODE
                     ++local_num_skipped;
                 #endif
                 continue;
             }
-            possible_new_min = true;
 
             const auto& stock_id = prices.stock_ids[i];
             if (!order_book_lookup.contains(stock_id)) {
                 continue;
             }
+
+            possible_new_min = true;
 
             auto& partition_bin = order_book_lookup[stock_id];
             auto* match= Search::Interpolation::greater_equal_than(
@@ -75,22 +74,23 @@ void PartitioningLeftFilterMinASOFJoin::join() {
             if (match != nullptr) {
                 uint64_t diff = match->timestamp - timestamp;
                 match->lock_compare_swap_diffs(diff, i);
-                //match->atomic_compare_swap_diffs(diff, i);
-
-                /// Update metadata
-                //auto& metadata = partition_metadata[stock_id];
-                //metadata.head_has_match = partition_bin[0].matched;
-                //metadata.head_timestamp = metadata.head_has_match
-                //        ? prices.timestamps[partition_bin[0].diff_price.load().price_idx]
-                //        : UINT64_MAX;
             }
         }
         #ifndef BENCHMARK_MODE
-            num_lookups_skipped += local_num_skipped;
+          num_lookups_skipped += local_num_skipped;
         #endif
 
         if (!possible_new_min) {
             /// Can skip updates.
+            return;
+        }
+
+        /// Assert that only one thread updates the global min.
+        bool expected_lock_flag = false;
+        if (!update_lock_flag.compare_exchange_weak(
+                expected_lock_flag,
+                true,
+                std::memory_order_acquire)) {
             return;
         }
 
@@ -100,11 +100,6 @@ void PartitioningLeftFilterMinASOFJoin::join() {
         uint64_t local_min = UINT64_MAX;
         bool all_partitions_have_match = true;
 
-        //for (const auto& [s_id, metadata] : partition_metadata) {
-        //    all_partitions_have_match &= metadata.head_has_match;
-        //    local_min = std::min(local_min, metadata.head_timestamp);
-        //}
-
         for (const auto& [s_id, partition] : order_book_lookup) {
             bool partition_head_has_match = partition.empty() || partition[0].matched;
             all_partitions_have_match = all_partitions_have_match && partition_head_has_match;
@@ -112,33 +107,38 @@ void PartitioningLeftFilterMinASOFJoin::join() {
             local_min = std::min(local_min, partition.empty() || !partition_head_has_match
                 ? UINT64_MAX
                 : prices.timestamps[partition[0].price_idx]);
-                //: prices.timestamps[partition[0].diff_price.load().price_idx]);
         }
 
         /// Use CAS to tighten the global minimum if the current minimum is greater.
         if (all_partitions_have_match && local_min > global_min) {
-            uint64_t old_global_min = global_min.load(std::memory_order_relaxed);
-            while (local_min > global_min) {
-                if (global_min.compare_exchange_weak(
-                        /* expected= */ old_global_min,
-                        /* desired= */ local_min,
-                        /* success= */ std::memory_order_acquire,
-                        /* failure= */ std::memory_order_relaxed)) { break; }
-            }
+            global_min = local_min;
+            //uint64_t old_global_min = global_min.load(std::memory_order_relaxed);
+            //
+            //while (local_min > global_min) {
+            //    if (global_min.compare_exchange_weak(
+            //            /* expected= */ old_global_min,
+            //            /* desired= */ local_min,
+            //            /* success= */ std::memory_order_acquire,
+            //            /* failure= */ std::memory_order_relaxed)) { break; }
+            //}
         }
+
+        update_lock_flag = false;
     });
     e.stopCounters();
     log("\n\nBinary Search Perf:");
     log(e.getReport(prices.size));
     log(fmt::format("Binary Search in {}{}", timer.lap(), timer.unit()));
     log(fmt::format("Num lookups skipped: {}", num_lookups_skipped.load()));
+    log(fmt::format("Num lookups skipped (%): {}",
+                    static_cast<double>(num_lookups_skipped.load()) / prices.size));
 
     e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         std::vector<LeftEntry>& partition_bin = iter.second;
         const size_t num_thread_chunks = (partition_bin.size() + MORSEL_SIZE - 1) / MORSEL_SIZE;
-        std::vector<LeftEntry*> last_match_per_range(num_thread_chunks);
+        std::vector<LeftEntry*> last_match_per_range(num_thread_chunks, nullptr);
 
         /// We have to parallel iterate over the number of thread chunks since TBB is not forced to align
         /// each chunk to [[MORSEL_SIZE]] which would make [[range.begin() / MORSEL_SIZE]] a non-correct
@@ -150,36 +150,37 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                 [&](tbb::blocked_range<size_t>& chunks_range) {
             for (size_t chunks_idx = chunks_range.begin(); chunks_idx != chunks_range.end(); ++chunks_idx) {
                 size_t start = chunks_idx * MORSEL_SIZE;
-                size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
-                                      partition_bin.size());
-                LeftEntry *last_match = nullptr;
+                size_t end = std::min(start + MORSEL_SIZE, partition_bin.size());
 
                 for (size_t i = end; i != start; --i) {
                     if (partition_bin[i - 1].matched) {
-                        last_match = &partition_bin[i - 1];
+                        last_match_per_range[chunks_idx] = &partition_bin[i - 1];
                         break;
                     }
                 }
-                size_t morsel_pos = start / MORSEL_SIZE;
-                last_match_per_range[morsel_pos] = last_match;
             }
         });
+
+        /// Calculate prefix sum of last match per chunk
+        for (size_t i = 1; i < num_thread_chunks; ++i) {
+            if (!last_match_per_range[i]) {
+                last_match_per_range[i] = last_match_per_range[i - 1];
+            }
+        }
 
         tbb::parallel_for(chunks_range,
                 [&](tbb::blocked_range<size_t>& chunks_range) {
             for (size_t chunks_idx = chunks_range.begin(); chunks_idx != chunks_range.end(); ++chunks_idx) {
                 size_t start = chunks_idx * MORSEL_SIZE;
-                size_t end = std::min(chunks_idx * MORSEL_SIZE + MORSEL_SIZE,
-                                      partition_bin.size());
-                LeftEntry *last_match = nullptr;
+                size_t end = std::min(start + MORSEL_SIZE, partition_bin.size());
+                LeftEntry *last_match = chunks_idx == 0 ? nullptr : last_match_per_range[chunks_idx - 1];
 
-                size_t morsel_pos = start / MORSEL_SIZE;
-                for (size_t i = morsel_pos; i != 0; --i) {
-                    if (last_match_per_range[i - 1] != nullptr) {
-                        last_match = last_match_per_range[i - 1];
-                        break;
-                    }
-                }
+                //for (size_t i = chunks_idx; i != 0; --i) {
+                //    if (last_match_per_range[i - 1] != nullptr) {
+                //        last_match = last_match_per_range[i - 1];
+                //        break;
+                //    }
+                //}
 
                 for (size_t i = start; i != end; ++i) {
                     auto &entry = partition_bin[i];
@@ -187,17 +188,15 @@ void PartitioningLeftFilterMinASOFJoin::join() {
                         last_match = &entry;
                     }
 
-                    if (last_match && last_match->matched) {
+                    if (last_match) {
                         result.insert(
-                                /* price_timestamp= */ prices.timestamps[last_match->price_idx],
-                                /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
-                                /// Price if locking was used.
-                                /* price= */ prices.prices[last_match->price_idx],
-                                /// Price if CAS was used.
-                                ///* price= */ prices.prices[last_match->diff_price.load().price_idx],
-                                /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
-                                /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
-                                /* amount= */ order_book.amounts[entry.order_idx]);
+                            /* price_timestamp= */ prices.timestamps[last_match->price_idx],
+                            /* price_stock_id= */ prices.stock_ids[last_match->price_idx],
+                            /* price= */ prices.prices[last_match->price_idx],
+                            ///* price= */ prices.prices[last_match->diff_price.load().price_idx],
+                            /* order_book_timestamp= */ order_book.timestamps[entry.order_idx],
+                            /* order_book_stock_id= */ order_book.stock_ids[entry.order_idx],
+                            /* amount= */ order_book.amounts[entry.order_idx]);
                     }
                 }
             }

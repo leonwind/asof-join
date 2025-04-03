@@ -3,7 +3,7 @@ import regex as re
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(5, 1.8)
+texify.latexify(3.39, 1.7)
 style.set_custom_style()
 
 
@@ -34,16 +34,18 @@ def milli_to_seconds(milli):
 
 def _parse_data_into_groups(data):
     groups = {}
-    group_pattern = r'\[(\w+)\.csv\]'
+    #group_pattern = r'\[(\w+)\.csv\]'
+    group_pattern = r'Percentile: ([\d\.]+)'
 
     curr_percentile = None
 
     for row in data:
-        if row.startswith("Run"):
+        if row.startswith("Percentile"):
+            print(row)
             regex_match = re.search(group_pattern, row)
             if regex_match is None:
                 print(f"Regex error: {row}")
-            curr_percentile = int(regex_match.group(1)[1:])
+            curr_percentile = float(regex_match.group(1))
             print(curr_percentile)
 
         else:
@@ -60,24 +62,50 @@ def _parse_data_into_groups(data):
 
 def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
     markers = ['*','o','x','^','s','D']
+    cs=[colors.colors["blue"], colors.colors["orange"], colors.colors["green"]]
+
+    fig, axes = plt.subplots(1, 2)
+
     for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
         # Sort by percentile
         exec_times.sort(key = lambda x: x[0])
-        plt.plot(*zip(*exec_times), marker=markers[i], label=strategy.title())
+        percentiles, times = zip(*exec_times)
+        axes[0].plot(percentiles, times, marker=markers[i], label=strategy.title())
+
+
+    for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
+        if "right" in strategy.lower():
+            continue
+
+        exec_times.sort(key = lambda x: x[0])
+        percentiles, times = zip(*exec_times)
+        ratio_times = [times[0] / times[i] for i in range(len(times))]
+
+        axes[1].plot(percentiles, ratio_times, linestyle="--", color=cs[i],
+                    label='_nolegend_')
+
+        #if "filter" in strategy.lower():
+        #    theo_times = [ratio_times[0] / (1 - percentiles[i]) for i in range(len(percentiles))]
+        #    axes[1].plot(percentiles, theo_times)
+    
+    #axes[1].set_yscale("log")
 
     if log_scale:
-        plt.xscale("log")
+        axes[0].xscale("log")
         #plt.yscale("log")
 
     log_label_prefix = "[log]" if log_scale else ""
-    plt.xlabel(f"Percentile {log_label_prefix}")
-    plt.ylabel(f"Time [s] {log_label_prefix}")
+    axes[0].set_xlabel(f"Percentile {log_label_prefix}")
+    axes[1].set_xlabel(f"Percentile {log_label_prefix}")
+    axes[0].set_ylabel(f"Time [s] {log_label_prefix}")
+    axes[1].set_ylabel("Improvement Ratio")
 
-    plt.title(dir_name.replace("_", " ").title())
-    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-
+    #plt.title(dir_name.replace("_", " ").title())
+    fig.legend(loc="upper center", bbox_to_anchor=(0.52, 1.2), ncols=2)
+    
+    plt.tight_layout()
     is_log_plot_path = "log_" if log_scale else ""
-    filename = f"plots/{dir_name}/{is_log_plot_path}{dir_name}_plot.pdf"
+    filename = f"plots/{dir_name}/{is_log_plot_path}{dir_name}_diff_percentile_plot.pdf"
     print(f"Plotting {filename}")
 
     plt.savefig(filename, dpi=400, bbox_inches="tight")
@@ -96,11 +124,12 @@ def plot_data(path):
 
     _plot_distribution_group(groups,
                         dir_name,
-                        log_scale=True)
-    _plot_distribution_group(groups,
-                        dir_name,
                         log_scale=False)
+    #_plot_distribution_group(groups,
+    #                    dir_name,
+    #                    log_scale=False)
  
 
 if __name__ == "__main__":
-    plot_data("results/filter_diff_percentile.log")
+    #plot_data("results/filter_diff_percentile.log")
+    plot_data("results/skylake/diff_percentile.log")

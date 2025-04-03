@@ -48,9 +48,9 @@ uint64_t benchmarks::util::run_join_return_median_time(ASOFJoin &asof_op, size_t
 }
 
 void benchmarks::run_benchmark(Prices &prices, OrderBook &order_book, size_t num_runs) {
-    PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto right_partitioning_time = util::run_join_return_best_time(right_partitioning, num_runs);
-    std::cout << fmt::format("{}: {}", right_partitioning.get_strategy_name(), right_partitioning_time) << std::endl;
+    //PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
+    //auto right_partitioning_time = util::run_join_return_best_time(right_partitioning, num_runs);
+    //std::cout << fmt::format("{}: {}", right_partitioning.get_strategy_name(), right_partitioning_time) << std::endl;
 
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     auto left_partitioning_time =

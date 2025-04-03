@@ -4,7 +4,7 @@ import math
 import os
 
 from benchmark_plotter import style, texify, colors
-#texify.latexify(6, 4)
+texify.latexify(fig_width=3.39, fig_height=1.5)
 style.set_custom_style()
 
 
@@ -29,7 +29,6 @@ class StrategyRun:
     def __repr__(self):
         return (f"StrategyRun({self.label}, num_threads={self.num_threads}, total_time={self.total_time}, "
                 f"phases_times={self.phases_times})")
-
 
 
 def _read_data(path):
@@ -130,40 +129,62 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     subplots_square_length = math.ceil(math.sqrt(num_phases))
     print(subplots_square_length)
 
-    fig, axs = plt.subplots(num_phases, 1)
+    cols = 2
+    rows = (num_phases + 1) // 2
+
+    fig, axs = plt.subplots(rows, cols, sharey=True)
+    axs = axs.flatten()
+
+    #x_ticks = num_threads[0::5]
+    x_ticks = [1, 5, 10, 15, 20]
+    y_ticks = [10, 20]
+
     plot_idx = 0
-
-    x_ticks = num_threads[1::2]
-    y_ticks = [0, 10, 20]
-
     for label, times in phases_times.items():
-        single_thread_time = times[0]
         perfect_scale = [i for i in num_threads]
         axs[plot_idx].plot(num_threads, [times[0] / x for x in times], label=competitor_label)
         axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical")
 
         if plot_idx == 0:
-            axs[plot_idx].legend(loc="upper right")
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.08))
+        #    axs[plot_idx].legend(loc="upper right")
 
-        axs[plot_idx].set_title(label.title(), y=0.65)
-
+        axs[plot_idx].set_title(label.title(), y=0.63)
         axs[plot_idx].set_xticks(x_ticks)
-        axs[plot_idx].set_ylabel("Speedup")
-        axs[plot_idx].set_yticks(y_ticks)
+        #axs[plot_idx].set_xticklabels([str(x) for x in x_ticks])  # Ensures tick labels appear
+        #axs[plot_idx].tick_params(axis='x', which='both', labelbottom=True)  # Forces x-label visibility
 
-        if plot_idx == num_phases - 1:
-            axs[plot_idx].set_xlabel("Number of Threads")
+        # Left Column
+        if plot_idx % 2 == 0:
+            axs[plot_idx].set_ylabel("Speedup")
+            axs[plot_idx].set_yticks(y_ticks)
+            axs[plot_idx].set_yticklabels(y_ticks)
         else:
-            axs[plot_idx].set_xticklabels([])
+            axs[plot_idx].yaxis.set_ticks_position("none")
+
+        # Bottom Row
+        if plot_idx >= num_phases - 2:
+            print(f"Phase {label} at {plot_idx}")
+            axs[plot_idx].set_xlabel("Number of Threads")
+            axs[plot_idx].set_xticks(x_ticks)
+            axs[plot_idx].set_xticklabels(x_ticks)
+        else:
+            print(f"Phase {label} at {plot_idx} - no label")
             axs[plot_idx].xaxis.set_ticks_position("none")
+            axs[plot_idx].set_xticklabels([])
         
         plot_idx += 1
-    
+
+    if num_phases % 2 != 0:
+        axs[-1].axis("off")
+
+    #plt.tight_layout()
+
     competitor_name_file = competitor_label.replace(" ", "_").lower()
-    filename = f"plots/{dir_name}/{competitor_name_file}_phases_breakup_plot.pdf"
+    filename = f"plots/{dir_name}/{competitor_name_file}_phases_breakup_plot_threads.pdf"
     print(f"Plotting {filename}")
 
-    plt.savefig(filename, dpi=400)
+    plt.savefig(filename, dpi=400, bbox_inches="tight")
     os.system(f"pdfcrop {filename} {filename}")
 
     plt.close()

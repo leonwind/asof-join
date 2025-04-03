@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm, ListedColormap, BoundaryNorm, Normalize
+from matplotlib.colors import LogNorm, ListedColormap, BoundaryNorm, Normalize, SymLogNorm
 from matplotlib.ticker import FuncFormatter
 
 
@@ -358,18 +358,25 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
     vmax = max(log_theo_cost.max(), log_actual_cost.max())
     max_abs = max(abs(log_theo_cost).max(), abs(log_actual_cost).max())
     vmin, vmax = -max_abs, max_abs
+
+    #norm = SymLogNorm(linthresh=0.1, linscale=0.5, vmin=vmin, vmax=vmax)
     
     top_left = axes[0, 0].imshow(theo_min, origin="lower", cmap="seismic")
     axes[0, 0].set_title("Theoretical Fastest")
 
-    top_ight = axes[0, 1].imshow(actual_min, origin="lower", cmap="seismic")
+    top_right = axes[0, 1].imshow(actual_min, origin="lower", cmap="seismic")
     axes[0, 1].set_title("Actual Fastest")
 
-    bottom_left = axes[1, 0].imshow(log_theo_cost, origin="lower", cmap="seismic", vmin=vmin, vmax=vmax)
+    bottom_left = axes[1, 0].imshow(log_theo_cost, origin="lower", cmap="seismic", 
+                                    vmin=vmin, vmax=vmax)
     axes[1, 0].set_title("Theoretical Cost")
-
-    bottom_right = axes[1, 1].imshow(log_actual_cost, origin="lower", cmap="seismic", vmin=vmin, vmax=vmax)
+    
+    bottom_right = axes[1, 1].imshow(log_actual_cost, origin="lower", cmap="seismic", 
+                                     vmin=vmin, vmax=vmax)
     axes[1, 1].set_title("Actual Cost")
+
+    #axes[1, 0].contour(log_theo_cost)#, levels=10, colors='black', linewidths=0.5)
+    #axes[1, 1].contour(log_actual_cost)#, levels=10, colors='black', linewidths=0.5)
 
     xticks = axes[1, 0].get_xticks()
     yticks = axes[1, 0].get_yticks()
@@ -393,7 +400,10 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
     fig.text(0.001, 0.55, "Left Relation Size [log]", va='center', rotation=90)
 
     def positive_label(x, pos):
-        return f"{int(abs(x))}"
+        actual_val = 2**x
+        if actual_val < 1:
+            return f"{int(actual_val**(-1))}$\\times$"
+        return f"{int(actual_val)}$\\times$"
 
     cbar = fig.colorbar(bottom_right, ax=axes, orientation="horizontal", fraction=0.033, pad=0.15)
     cbar.ax.xaxis.set_major_formatter(FuncFormatter(positive_label))

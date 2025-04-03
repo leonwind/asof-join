@@ -3,7 +3,7 @@ import regex as re
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify()
+texify.latexify(3.39, 2.5)
 style.set_custom_style()
 
 #TOTAL_L1 = L1_SIZE * NUM_CORES
@@ -38,7 +38,7 @@ def milli_to_seconds(milli):
 
 def _parse_data_into_groups(data):
     groups = {}
-    group_pattern = r'\[(\w+)-(\d+)\]'
+    group_pattern = r'\[(\w+)-(\d+)\.csv\]'
 
     curr_distribution = None
     curr_num_positions = None
@@ -79,7 +79,7 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
     plt.xlabel(f"Num positions {log_label_prefix}")
     plt.ylabel(f"Time [s]")
 
-    plt.title(distribution_name)
+    #plt.title(distribution_name)
     plt.legend(loc="upper left")#, bbox_to_anchor=(1, 0.5))
 
     #plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.3),
@@ -95,20 +95,69 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
     plt.close()
 
 
+def _plot_all_distribution_groups(distribution_groups, dir_name):
+    markers = ['*','o','x','^','s','D']
+    fig, axs = plt.subplots(2, 2, sharex=True, sharey=True)
+    axs = axs.flatten()
+
+    plot_idx = 0
+    for i, (distribution_name, distribution_group) in enumerate(distribution_groups.items()):
+        if distribution_name == "uniform":
+            continue
+
+        for j, (strategy, exec_times) in enumerate(distribution_group.strategy_exec_times.items()):
+            #if "sorted" in strategy.lower():
+            #    continue
+            exec_times.sort(key=lambda x: x[0])
+            axs[plot_idx].plot(*zip(*exec_times), label=strategy.title())
+
+        axs[plot_idx].set_xscale("log") 
+        if plot_idx == 0:
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.49, 1.15))
+        
+
+        if plot_idx < 2:
+            axs[plot_idx].set_xticklabels([])
+            axs[plot_idx].xaxis.set_ticks_position("none")
+
+        if plot_idx % 2 == 0:
+            axs[plot_idx].set_ylabel("Time [s]")
+        else:
+            axs[plot_idx].yaxis.set_ticks_position("none")
+
+        title = distribution_name.title().replace("_", " ", 1).replace("_", ".")
+        axs[plot_idx].set_title(title)
+
+        plot_idx += 1
+
+    fig.align_ylabels()
+    plt.subplots_adjust(hspace=0.3, wspace=0.25)
+
+    filename = f"plots/{dir_name}/all_zipf_skews.pdf"
+    print(f"Plotting {filename}")
+
+    plt.savefig(filename, dpi=400, bbox_inches="tight")
+    os.system(f"pdfcrop {filename} {filename}")
+
+    plt.close()
+
+
 def plot_data(path):
     raw_data = _read_data(path)
     groups = _parse_data_into_groups(raw_data)
     dir_name = path.split("/")[1].split(".")[0]
 
-    for distribution_name, distribution_group in groups.items():
-        _plot_distribution_group(distribution_name,
-                           distribution_group.strategy_exec_times,
-                           dir_name,
-                           log_scale=True)
-        _plot_distribution_group(distribution_name,
-                           distribution_group.strategy_exec_times,
-                           dir_name,
-                           log_scale=False)
+    _plot_all_distribution_groups(groups, dir_name)
+
+    #for distribution_name, distribution_group in groups.items():
+    #    _plot_distribution_group(distribution_name,
+    #                       distribution_group.strategy_exec_times,
+    #                       dir_name,
+    #                       log_scale=True)
+    #    _plot_distribution_group(distribution_name,
+    #                       distribution_group.strategy_exec_times,
+    #                       dir_name,
+    #                       log_scale=False)
     
 
 if __name__ == "__main__":
@@ -128,5 +177,5 @@ if __name__ == "__main__":
 
     #plot_data("results/2025-02-05/uniform_zipf.log")
 
-    #plot_data("results/skylake/diff_zipf_skews.log")
-    plot_data("results/skylake/uniform_both_sides_phases_breakdown.log")
+    plot_data("results/skylake/diff_zipf_skews.log")
+    #plot_data("results/skylake/uniform_both_sides_phases_breakdown.log")

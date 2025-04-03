@@ -7,6 +7,8 @@
 #include <iostream>
 #include <cstdint>
 
+#include "tuple_buffer.hpp"
+
 #include "tbb/enumerable_thread_specific.h"
 
 struct Relation {
@@ -83,13 +85,20 @@ struct ResultRelation : Relation {
     uint64_t value_sum;
 
     struct OutputData {
-        std::vector<uint64_t> prices_timestamps;
-        std::vector<std::string> prices_stock_ids;
-        std::vector<uint64_t> prices;
-        std::vector<uint64_t> order_book_timestamps;
-        std::vector<std::string> order_book_stock_ids;
-        std::vector<uint64_t> amounts;
-        std::vector<uint64_t> values;
+        //std::vector<uint64_t> prices_timestamps;
+        //std::vector<std::string> prices_stock_ids;
+        //std::vector<uint64_t> prices;
+        //std::vector<uint64_t> order_book_timestamps;
+        //std::vector<std::string> order_book_stock_ids;
+        //std::vector<uint64_t> amounts;
+        //std::vector<uint64_t> values;
+        TupleBuffer<uint64_t> prices_timestamps;
+        TupleBuffer<std::string> prices_stock_ids;
+        TupleBuffer<uint64_t> prices;
+        TupleBuffer<uint64_t> order_book_timestamps;
+        TupleBuffer<std::string> order_book_stock_ids;
+        TupleBuffer<uint64_t> amounts;
+        TupleBuffer<uint64_t> values;
     };
 
     tbb::enumerable_thread_specific<OutputData> thread_data;
@@ -104,15 +113,24 @@ struct ResultRelation : Relation {
 
         auto& data = thread_data.local();
 
-        data.prices_timestamps.push_back(price_timestamp);
-        data.prices_stock_ids.push_back(price_stock_id);
-        data.prices.push_back(price);
+        //data.prices_timestamps.push_back(price_timestamp);
+        //data.prices_stock_ids.push_back(price_stock_id);
+        //data.prices.push_back(price);
 
-        data.order_book_timestamps.push_back(order_book_timestamp);
-        data.order_book_stock_ids.push_back(order_book_stock_id);
-        data.amounts.push_back(amount);
+        //data.order_book_timestamps.push_back(order_book_timestamp);
+        //data.order_book_stock_ids.push_back(order_book_stock_id);
+        //data.amounts.push_back(amount);
 
-        data.values.push_back(price * amount);
+        //data.values.push_back(price * amount);
+        data.prices_timestamps.store_tuple(price_timestamp);
+        data.prices_stock_ids.store_tuple(price_stock_id);
+        data.prices.store_tuple(price);
+
+        data.order_book_timestamps.store_tuple(order_book_timestamp);
+        data.order_book_stock_ids.store_tuple(order_book_stock_id);
+        data.amounts.store_tuple(amount);
+
+        data.values.store_tuple(price * amount);
     }
 
     void finalize() {

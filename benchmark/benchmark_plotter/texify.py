@@ -54,7 +54,7 @@ def latexify(fig_width=None, fig_height=None, columns=1, width_heigth_ratio=None
               'legend.labelspacing': 0.3,  # was 0.1
               'legend.columnspacing': 0.3,
               'legend.borderpad': 0.3,
-              'xtick.labelsize': 5,
+              'xtick.labelsize': 9,
               'ytick.labelsize': 9,
               'grid.linewidth': 0.5,
               'text.usetex': True,

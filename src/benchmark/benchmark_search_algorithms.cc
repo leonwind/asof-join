@@ -171,26 +171,36 @@ void benchmark_left_partition_search(Prices& prices, OrderBook& order_book) {
     });
 
     size_t matches = 0;
-    PerfEventBlock e(prices.size);
-    for (size_t i = 0; i < prices.size; ++i) {
-        const auto& stock_id = prices.stock_ids[i];
-        if (!order_book_lookup.contains(stock_id)) {
-            continue;
-        }
+    size_t best = 99999999999;
+    for (size_t n = 0; n < 5; ++n) {
+        Timer timer;
+        timer.start();
+        //PerfEventBlock e(prices.size);
+        for (size_t i = 0; i < 10; ++i) {
+            const auto& stock_id = prices.stock_ids[i];
+            if (!order_book_lookup.contains(stock_id)) {
+                continue;
+            }
 
-        auto& partition_bin = order_book_lookup[stock_id];
-        auto timestamp = prices.timestamps[i];
-        auto* match= Search::Interpolation::greater_equal_than(
-            /* data= */ partition_bin,
-            /* target= */ timestamp);
+            auto& partition_bin = order_book_lookup[stock_id];
+            auto timestamp = prices.timestamps[i];
+            auto* match= Search::Interpolation::greater_equal_than(
+                /* data= */ partition_bin,
+                /* target= */ timestamp);
 
-        if (match != nullptr) {
-            uint64_t diff = match->timestamp - timestamp;
-            match->lock_compare_swap_diffs(diff, i);
-            ++matches;
+            if (match != nullptr) {
+                uint64_t diff = match->timestamp - timestamp;
+                match->lock_compare_swap_diffs(diff, i);
+                ++matches;
+            }
+            //break;
         }
+        auto dur = timer.stop();
+        best = std::min(dur, best);
+
+        //std::cout << "Timer: " << dur << timer.unit() << std::endl;
     }
-
+    std::cout << "Timer: " << best << std::endl;
     std::cout << "LP num matches: " << matches << std::endl;
 }
 
@@ -202,37 +212,53 @@ void benchmark_right_partition_search(Prices& prices, OrderBook& order_book) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
 
+    size_t best = 99999999999999;
     size_t matches = 0;
-    PerfEventBlock e(order_book.size);
-    for (size_t i = 0; i < order_book.size; ++i) {
-        auto& stock_id = order_book.stock_ids[i];
-        if (!prices_lookup.contains(stock_id)) {
-           continue;
+    for (size_t n = 0; n < 5; ++n) {
+        //PerfEventBlock e(order_book.size);
+        Timer timer;
+        timer.start();
+        for (size_t i = 0; i < 10; ++i) {
+            auto &stock_id = order_book.stock_ids[i];
+            if (!prices_lookup.contains(stock_id)) {
+                continue;
+            }
+
+            auto &partition_bin = prices_lookup[stock_id];
+            auto timestamp = order_book.timestamps[i];
+            auto *match = Search::Interpolation::less_equal_than(
+                    /* data= */ partition_bin,
+                    /* target= */ timestamp);
+
+            if (match != nullptr) {
+                ++matches;
+            }
         }
 
-        auto& partition_bin = prices_lookup[stock_id];
-        auto timestamp = order_book.timestamps[i];
-        auto* match = Search::Interpolation::less_equal_than(
-            /* data= */ partition_bin,
-            /* target= */ timestamp);
-
-        if (match != nullptr) {
-            ++matches;
-        }
+        auto dur = timer.stop();
+        best = std::min(dur, best);
+        //std::cout << "Timer: " << dur << timer.unit() << std::endl;
     }
-
+    std::cout << "Timer: " << best << std::endl;
     std::cout << "RP num matches: " << matches << std::endl;
 }
 
 
 void benchmarks::benchmark_partitioning_search_part() {
-    size_t l_r_size = 100'000'000;
+    size_t l_r_size = 2'000'000;
     size_t max_timestamp = 50 * l_r_size;
-    size_t num_partitions = 30;
+    size_t num_partitions = 1;
+
+    std::vector<double> percentiles = {0, 0.999};
 
     Prices prices = generate_uniform_prices(l_r_size, max_timestamp, num_partitions);
-    OrderBook order_book = generate_uniform_orderbook(l_r_size, max_timestamp, num_partitions);
 
-    benchmark_left_partition_search(prices, order_book);
-    benchmark_right_partition_search(prices, order_book);
+    for (auto p : percentiles) {
+        size_t min_timestamp = p * max_timestamp;
+        OrderBook order_book = generate_uniform_orderbook(10000, min_timestamp, max_timestamp, num_partitions);
+
+        benchmark_left_partition_search(prices, order_book);
+        benchmark_right_partition_search(prices, order_book);
+    }
+
 }

@@ -165,8 +165,6 @@ namespace Search::Interpolation {
             pos = interpolate(target, data[0].get_key(), data[n - 1].get_key(), n);
         }
 
-        //std::cout << "Pos: " << pos << ": " << data[pos].get_key() << std::endl;
-
         // Perform exponential search from the interpolated position.
         bool overestimated;
         size_t bound = 1;
@@ -194,7 +192,7 @@ namespace Search::Interpolation {
             left = is_valid_value ? left : middle + 1;
             right = is_valid_value ? middle : right;
         }
-        //std::cout << "Found: " << right << std::endl;
+
         return (right < n && data[right].get_key() >= target) ? &data[right] : nullptr;
     }
 } // namespace Search::Interpolation

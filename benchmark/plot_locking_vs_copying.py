@@ -3,7 +3,7 @@ import regex as re
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(5, 1.8)
+texify.latexify(fig_width=3.39, fig_height=1.5)
 style.set_custom_style()
 
 L1_SIZE = 320 << 10 # 320 KiB
@@ -95,48 +95,67 @@ def _find_num_positions_fitting_cache(num_positions, cache_size):
 
 
 def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, log_scale=True):
-    markers = ['*','o','x','^','s','D']
+    markers = ['*', 'o', 'x', '^', 's', 'D']
     l1_pos = _find_num_positions_fitting_cache(NUM_POSITIONS, L1_SIZE)
     l2_pos = _find_num_positions_fitting_cache(NUM_POSITIONS, L2_SIZE)
-    print(l1_pos, l2_pos)
 
-    plt.axvline(x=l1_pos, linewidth=1, ls='--', color=colors.colors["blue"])
-    plt.axvline(x=l2_pos, linewidth=1, ls='--', color=colors.colors["blue"])
+    fig, axes = plt.subplots(1, 2) 
 
-    plt.text(l1_pos, 0.4, "L1",
-              ha="center",
-              size=8,
-              bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
-    
-    plt.text(l2_pos, 0.4, "L2",
-              ha="center",
-              size=8,
-              bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
+    for (ax, ypos) in zip(axes, [0.4, 4]):
+        ax.axvline(x=l1_pos, linewidth=1, ls='--', color=colors.colors["blue"])
+        ax.axvline(x=l2_pos, linewidth=1, ls='--', color=colors.colors["blue"])
 
+        ax.text(l1_pos, ypos, "L1", ha="center", size=8,
+                bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
+
+        ax.text(l2_pos, ypos, "L2", ha="center", size=8,
+                bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
+
+    first = None
+    ratio = None
     for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
-        # Sort by num positions
-        exec_times.sort(key = lambda x: x[0])
-        plt.plot(*zip(*exec_times), marker=markers[i], label=strategy.title())
+        exec_times.sort(key=lambda x: x[0])
+        pos, times = zip(*exec_times)
+        print(times)
+        if first is None:
+            first = times
+        else:
+            ratio = [first[j] / times[j] for j in range(len(exec_times))]
+            axes[1].plot(pos, ratio, label="Ratio", color="black", markevery=2, linestyle="--")
+        axes[0].plot(pos, times, marker=markers[i], label=strategy.title(), markevery=2)
 
     if log_scale:
-        plt.xscale("log")
-        #plt.yscale("log")
+        axes[0].set_xscale("log")
+        #axes[0].set_yscale("log")
+        axes[1].set_xscale("log")
+        #axes[1].set_yscale("log")
+
+    axes[0].set_yticks([0.2, 0.4])
+    axes[0].set_yticklabels([0.2, 0.4])
+
+
+    axes[1].set_yticks([1, 3, 5])
+    axes[1].set_yticklabels([1, 3, 5])
 
     log_label_prefix = "[log]" if log_scale else ""
-    plt.xlabel(f"Num positions {log_label_prefix}")
-    plt.ylabel(f"Time [s] {log_label_prefix}")
+    axes[0].set_xlabel(f"Num positions {log_label_prefix}")
+    axes[0].set_ylabel(f"Time [s]")
+    axes[1].set_xlabel(f"Num positions {log_label_prefix}")
+    axes[1].set_ylabel(f"Ratio")
 
-    plt.title(distribution_name)
-    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    fig.legend(loc="upper center", ncols=3, bbox_to_anchor=(0.55, 1.1))
+
+    plt.tight_layout()
 
     is_log_plot_path = "log_" if log_scale else ""
-    filename = f"plots/{dir_name}/{is_log_plot_path}{distribution_name}_plot.pdf"
+    filename = f"plots/{dir_name}/{is_log_plot_path}{distribution_name}_copying_vs_locking_plot.pdf"
     print(f"Plotting {filename}")
 
     plt.savefig(filename, dpi=400, bbox_inches="tight")
     os.system(f"pdfcrop {filename} {filename}")
 
     plt.close()
+
 
 
 def plot_data(path):
