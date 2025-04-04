@@ -230,7 +230,6 @@ def plot_two_competitors_together(groups, comp_a_label, comp_b_label, dir_name):
         phases_times_a, phases_times_b = phases_times_b, phases_times_a
     num_phases = len(phases_times_a)
 
-    markers = ['*', 'o', 'x', '^', 's', 'D']
     fig, axs = plt.subplots(num_phases, 1, sharex=True)
 
     j = 0
@@ -259,7 +258,7 @@ def plot_two_competitors_together(groups, comp_a_label, comp_b_label, dir_name):
             fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.04))
         
         if i == num_phases - 1:
-            axs[i].set_xlabel("Num Positions [log]")
+            axs[i].set_xlabel("Left Relation Size [log]")
         else:
             axs[i].xaxis.set_ticks_position("none")
 
@@ -295,4 +294,6 @@ def plot_data(path):
  
 if __name__ == "__main__":
     #plot_data("results/skylake/diff_zipf_skews_phase_breakdown_new.log")
-    plot_data("results/skylake/uniform_both_sides_phases_breakdown.log")
+    #plot_data("results/skylake/uniform_both_sides_phases_breakdown.log")
+    plot_data("results/skylake_final/uniform_both_sides.log")
+
