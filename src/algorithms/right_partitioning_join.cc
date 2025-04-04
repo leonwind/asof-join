@@ -42,15 +42,15 @@ void PartitioningRightASOFJoin::join() {
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
             auto& stock_id = order_book.stock_ids[i];
-            if (!prices_lookup.contains(stock_id)) {
-               continue;
+            auto bin_ptr = prices_lookup.find(stock_id);
+            if (bin_ptr == nullptr) {
+                continue;
             }
 
-            auto& partition_bin = prices_lookup[stock_id];
             auto timestamp = order_book.timestamps[i];
             auto* match = Search::Interpolation::less_equal_than(
-                /* data= */ partition_bin,
-                /* target= */ timestamp);
+                    /* data= */ *bin_ptr,
+                    /* target= */ timestamp);
 
             if (match != nullptr) {
                 result.insert(

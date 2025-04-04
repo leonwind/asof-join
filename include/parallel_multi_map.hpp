@@ -173,6 +173,16 @@ public:
         return maps_per_partition[partition_idx].contains(key);
     }
 
+    [[nodiscard]] inline std::vector<Entry>* find(MapKey key) {
+        unsigned partition_idx = get_partition_index(key);
+        auto& map = maps_per_partition[partition_idx];
+        auto it = map.find(key);
+        if (it == map.end()) {
+            return nullptr;
+        }
+        return &it->second;
+    }
+
     [[nodiscard]] inline size_t size() const {
         return -1;
         //return partitioned_map.size();

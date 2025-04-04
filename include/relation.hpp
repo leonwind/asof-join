@@ -167,7 +167,8 @@ struct ResultRelation : Relation {
     std::vector<uint64_t> collect_values() {
         std::vector<uint64_t> all_values;
         for (auto& data : thread_data) {
-            all_values.insert(all_values.end(), data.values.begin(), data.values.end());
+            auto count = std::min(data.size, data.batch_size);
+            all_values.insert(all_values.end(), data.values.begin(), data.values.begin() + count);
         }
         return all_values;
     }

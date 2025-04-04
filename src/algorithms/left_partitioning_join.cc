@@ -40,15 +40,15 @@ void PartitioningLeftASOFJoin::join() {
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
-            const auto& stock_id = prices.stock_ids[i];
-            if (!order_book_lookup.contains(stock_id)) {
+            auto& stock_id = prices.stock_ids[i];
+            auto bin_ptr = order_book_lookup.find(stock_id);
+            if (bin_ptr == nullptr) {
                 continue;
             }
 
-            auto& partition_bin = order_book_lookup[stock_id];
             auto timestamp = prices.timestamps[i];
-            auto* match= Search::Interpolation::greater_equal_than(
-                /* data= */ partition_bin,
+            auto* match = Search::Interpolation::greater_equal_than(
+                /* data= */ *bin_ptr,
                 /* target= */ timestamp);
 
             if (match != nullptr) {
