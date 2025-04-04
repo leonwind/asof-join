@@ -27,14 +27,15 @@ void PartitioningRightASOFJoin::join() {
     log(e.getReport(prices.size));
     log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
+    e.startCounters();
     tbb::parallel_for_each(prices_lookup.begin(), prices_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
     e.stopCounters();
-    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
     log("\n\nSorting Perf: ");
     log(e.getReport(prices.size));
+    log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     e.startCounters();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, order_book.size, MORSEL_SIZE),

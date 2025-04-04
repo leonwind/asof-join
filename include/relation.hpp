@@ -85,33 +85,60 @@ struct ResultRelation : Relation {
     uint64_t value_sum;
 
     struct OutputData {
-        //std::vector<uint64_t> prices_timestamps;
-        //std::vector<std::string> prices_stock_ids;
-        //std::vector<uint64_t> prices;
-        //std::vector<uint64_t> order_book_timestamps;
-        //std::vector<std::string> order_book_stock_ids;
-        //std::vector<uint64_t> amounts;
-        //std::vector<uint64_t> values;
-        TupleBuffer<uint64_t> prices_timestamps;
-        TupleBuffer<std::string> prices_stock_ids;
-        TupleBuffer<uint64_t> prices;
-        TupleBuffer<uint64_t> order_book_timestamps;
-        TupleBuffer<std::string> order_book_stock_ids;
-        TupleBuffer<uint64_t> amounts;
-        TupleBuffer<uint64_t> values;
+        size_t batch_size = 1024;
+
+        std::vector<uint64_t> prices_timestamps;
+        std::vector<std::string_view> prices_stock_ids;
+        std::vector<uint64_t> prices;
+        std::vector<uint64_t> order_book_timestamps;
+        std::vector<std::string_view> order_book_stock_ids;
+        std::vector<uint64_t> amounts;
+        std::vector<uint64_t> values;
+        size_t batch_idx;
+        size_t size;
+        size_t value_sum;
+
+        OutputData():
+            prices_timestamps(batch_size),
+            prices_stock_ids(batch_size),
+            prices(batch_size),
+            order_book_timestamps(batch_size),
+            order_book_stock_ids(batch_size),
+            amounts(batch_size),
+            values(batch_size),
+            batch_idx(0),
+            size(0),
+            value_sum(0) {}
     };
 
     tbb::enumerable_thread_specific<OutputData> thread_data;
 
+
     inline void insert(
         uint64_t price_timestamp,
-        std::string& price_stock_id,
+        std::string_view price_stock_id,
         uint64_t price,
         uint64_t order_book_timestamp,
-        std::string& order_book_stock_id,
+        std::string_view order_book_stock_id,
         uint64_t amount) {
 
         auto& data = thread_data.local();
+        size_t idx = data.batch_idx & (data.batch_size - 1);
+
+        //data.prices_timestamps[idx] = price_timestamp;
+        //data.prices_stock_ids[idx] = price_stock_id;
+        //data.prices[idx] = price;
+
+        data.order_book_timestamps[idx] = order_book_timestamp;
+        data.order_book_stock_ids[idx] = order_book_stock_id;
+        //data.amounts[idx] = amount;
+
+        size_t value = price * amount;
+        data.values[idx] = value;
+        data.value_sum += value;
+
+        ++data.size;
+        ++data.batch_idx;
 
         //data.prices_timestamps.push_back(price_timestamp);
         //data.prices_stock_ids.push_back(price_stock_id);
@@ -122,24 +149,13 @@ struct ResultRelation : Relation {
         //data.amounts.push_back(amount);
 
         //data.values.push_back(price * amount);
-        data.prices_timestamps.store_tuple(price_timestamp);
-        data.prices_stock_ids.store_tuple(price_stock_id);
-        data.prices.store_tuple(price);
-
-        data.order_book_timestamps.store_tuple(order_book_timestamp);
-        data.order_book_stock_ids.store_tuple(order_book_stock_id);
-        data.amounts.store_tuple(amount);
-
-        data.values.store_tuple(price * amount);
     }
 
     void finalize() {
         size_t total_size = 0;
         for (auto& data : thread_data) {
-            total_size += data.values.size();
-            for (auto value : data.values) {
-                value_sum += value;
-            }
+            total_size += data.size;
+            value_sum += data.value_sum;
         }
         size = total_size;
     }

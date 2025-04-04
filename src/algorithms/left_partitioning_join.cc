@@ -19,21 +19,21 @@ void PartitioningLeftASOFJoin::join() {
     Timer<milliseconds> timer;
     timer.start();
 
-    //e.startCounters();
+    e.startCounters();
     MultiMapTB<LeftEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
-    //e.stopCounters();
+    e.stopCounters();
     log("Partitioning Perf");
-    //e.printReport(std::cout, order_book.size);
+    log(e.getReport(order_book.size));
     log(fmt::format("Partitioning in {}{}", timer.lap(), timer.unit()));
 
-    //e.startCounters();
+    e.startCounters();
     tbb::parallel_for_each(order_book_lookup.begin(), order_book_lookup.end(),
             [&](auto& iter) {
         tbb::parallel_sort(iter.second.begin(), iter.second.end());
     });
-    //e.stopCounters();
+    e.stopCounters();
     log("\n\nSorting Perf: ");
-    //e.printReport(std::cout, prices.size);
+    log(e.getReport(order_book.size));
     log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
     e.startCounters();
