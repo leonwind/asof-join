@@ -88,9 +88,8 @@ int main() {
     PartitioningLeftASOFJoin left_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
     //auto left_duration = run_join(left_partitioning, input_size);
 
-    tbb::global_control control(tbb::global_control::max_allowed_parallelism, 1);
     PartitioningRightASOFJoin right_partitioning(prices, order_book, LESS_EQUAL_THAN, INNER);
-    auto right_duration = run_join(right_partitioning, input_size);
+    //auto right_duration = run_join(right_partitioning, input_size);
 
     //PartitioningBothSortLeftASOFJoin partitioning_both(prices, order_book, LESS_EQUAL_THAN, INNER);
     //auto both_duration = run_join(partitioning_both, input_size);

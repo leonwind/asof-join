@@ -39,7 +39,7 @@ namespace {
         }
     };
 
-    std::vector<TestEntry> generate_random_price_list(size_t num_prices) {
+    std::vector<TestEntry> generate_uniform_price_list(size_t num_prices) {
         std::vector<TestEntry> data;
 
         for (size_t i = 0; i < num_prices; ++i) {
@@ -50,7 +50,7 @@ namespace {
         return data;
     }
 
-    std::vector<TestEntry> generate_zipfian_price_list(size_t num_prices, double zipf_skew) {
+    std::vector<TestEntry> generate_zipf_price_list(size_t num_prices, double zipf_skew) {
         std::mt19937 rng(std::random_device{}());
         Zipf zipf_gen(num_prices, zipf_skew);
         std::vector<TestEntry> data;
@@ -63,9 +63,27 @@ namespace {
         return data;
     }
 
-    std::vector<TestEntry> generate_random_orderbook_list(size_t num_orders, size_t max_timestamp) {
-        std::vector<TestEntry> data;
+    std::vector<TestEntry> generate_normal_orderbook_list(size_t num_orders) {
+        std::mt19937 rng(std::random_device{}());
+        auto mean = num_orders * PRICE_SAMPLING_RATE * 3 / 4;
+        auto variance = num_orders * PRICE_SAMPLING_RATE / 8;
 
+        std::normal_distribution<double> normal_gen(mean, variance);
+        auto random_normal_int = [&normal_gen, &rng] {
+            return static_cast<size_t>(std::llround(normal_gen(rng)));
+        };
+
+        std::vector<TestEntry> data;
+        for (size_t i = 0; i < num_orders; ++i) {
+            data.emplace_back(random_normal_int());
+        }
+
+        tbb::parallel_sort(data.begin(), data.end());
+        return data;
+    }
+
+    std::vector<TestEntry> generate_uniform_orderbook_list(size_t num_orders, size_t max_timestamp) {
+        std::vector<TestEntry> data;
         for (size_t i = 0; i < num_orders; ++i) {
             data.emplace_back(uniform::gen_int(max_timestamp));
         }
@@ -73,29 +91,11 @@ namespace {
         tbb::parallel_sort(data.begin(), data.end());
         return data;
     }
-
-    std::vector<TestEntry> generate_zipfian_orderbook_list(size_t num_orders, double zipf_skew) {
-        std::mt19937 rng(std::random_device{}());
-        Zipf<uint64_t, double> zipf_gen(num_orders, zipf_skew);
-        std::vector<TestEntry> data;
-
-        for (size_t i = 0; i < num_orders; ++i) {
-            data.emplace_back(zipf_gen(rng));
-
-            if (i < 20) {
-                std::cout << data[i].get_key() << ",";
-            }
-            std::cout << std::endl;
-        }
-
-        tbb::parallel_sort(data.begin(), data.end());
-        return data;
-    }
-
 } // namespace
 
-void benchmark_search_left(std::vector<TestEntry>& prices, std::vector<TestEntry>& order_book,
-                           const fn& search, std::string_view label, size_t num_runs) {
+
+void benchmark_search(std::vector<TestEntry>& data, std::vector<TestEntry>& targets,
+                      const fn& search, std::string_view label, size_t num_runs) {
     std::vector<uint64_t> times(num_runs);
 
     //PerfEventBlock e(prices.size() * num_runs);
@@ -104,8 +104,8 @@ void benchmark_search_left(std::vector<TestEntry>& prices, std::vector<TestEntry
         Timer timer;
 
         timer.start();
-        for (auto& timestamp_target : prices) {
-            auto* match = search(order_book, timestamp_target.key);
+        for (auto& target : targets) {
+            auto* match = search(data, target.key);
             matches += match != nullptr;
         }
         times[i] = timer.stop();
@@ -117,101 +117,51 @@ void benchmark_search_left(std::vector<TestEntry>& prices, std::vector<TestEntry
     }
 
     std::sort(times.begin(), times.end());
-    std::cout << fmt::format("Left {}: {}[us]", label, times[0]) << std::endl;
-}
-
-
-void benchmark_search_right(std::vector<TestEntry>& prices, std::vector<TestEntry>& order_book,
-                            const fn& search, std::string_view label, size_t num_runs) {
-    std::vector<uint64_t> times(num_runs);
-
-    //PerfEventBlock e(order_book.size() * num_runs);
-    size_t matches = 0;
-    for (size_t i = 0; i < num_runs; ++i) {
-        Timer timer;
-
-        timer.start();
-        for (auto& timestamp_target : order_book) {
-            auto* match = search(prices, timestamp_target.key);
-            matches += match != nullptr;
-        }
-        times[i] = timer.stop();
-    }
-
-    /// To avoid optimization removing.
-    if (matches == 0) {
-        return;
-    }
-
-    std::sort(times.begin(), times.end());
-    std::cout << fmt::format("Right {}: {}[us]", label, times[0]) << std::endl;
+    std::cout << fmt::format("{}: {}[us]", label, times[0]) << std::endl;
 }
 
 
 void benchmarks::run_different_search_algorithms() {
     size_t num_runs = 3;
 
-    size_t num_prices = 10'000'000;
-    size_t num_positions = 10'000'000;
+    size_t data_size = 100'000'000;
+    size_t num_targets = 10'000'000;
 
-    auto prices = generate_random_price_list(num_prices);
-    auto order_book = generate_random_orderbook_list(num_positions, num_prices * PRICE_SAMPLING_RATE);
-
-    std::vector<std::pair<fn, std::string_view>> left_search_algos = {
-         {Search::Binary::greater_equal_than<TestEntry>, "Binary"},
-         {Search::Exponential::greater_equal_than<TestEntry>, "Exponential"},
-         {Search::Interpolation::greater_equal_than<TestEntry>, "Interpolation"}
+    std::vector<std::pair<std::vector<TestEntry>, std::string_view>> data_dists = {
+            {generate_uniform_price_list(data_size), "Uniform"},
+            {generate_zipf_price_list(data_size, 1), "Zipf 1"},
+            {generate_normal_orderbook_list(data_size), "Normal"},
     };
 
-    std::vector<std::pair<fn, std::string_view>> right_search_algos = {
-         {Search::Binary::less_equal_than<TestEntry>, "Binary"},
-         {Search::Exponential::less_equal_than<TestEntry>, "Exponential"},
-         {Search::Interpolation::less_equal_than<TestEntry>, "Interpolation"}
+    auto uniform_targets =
+            generate_uniform_orderbook_list(num_targets, data_size * PRICE_SAMPLING_RATE);
+
+    std::vector<std::pair<fn, std::string_view>> search_algos = {
+         {Search::Binary::less_equal_than<TestEntry>, "Binary LE"},
+         {Search::Exponential::less_equal_than<TestEntry>, "Exponential LE"},
+         {Search::Interpolation::less_equal_than<TestEntry>, "Interpolation LE"},
+         {Search::Binary::greater_equal_than<TestEntry>, "Binary GE"},
+         {Search::Exponential::greater_equal_than<TestEntry>, "Exponential GE"},
+         {Search::Interpolation::greater_equal_than<TestEntry>, "Interpolation GE"}
     };
 
-    std::cout << "Uniform:" << std::endl;
-    for (auto& left_search_algo : left_search_algos) {
-        benchmark_search_left(
-            prices,
-            order_book,
-            left_search_algo.first,
-            left_search_algo.second,
-            num_runs);
-    }
-
-    for (auto& right_search_algo : right_search_algos) {
-        benchmark_search_right(
-            prices,
-            order_book,
-            right_search_algo.first,
-            right_search_algo.second,
-            num_runs);
-    }
-
-    std::cout << "Zipfian 1.5" << std::endl;
-    auto zipf_prices = generate_zipfian_price_list(num_prices, 1);
-    auto zipf_order_book = generate_zipfian_orderbook_list(num_positions, 1);
-    for (auto& left_search_algo : left_search_algos) {
-        benchmark_search_left(
-            prices,
-            zipf_order_book,
-            left_search_algo.first,
-            left_search_algo.second,
-            num_runs);
-    }
-
-    for (auto& right_search_algo : right_search_algos) {
-        benchmark_search_right(
-            zipf_prices,
-            order_book,
-            right_search_algo.first,
-            right_search_algo.second,
-            num_runs);
+    for (auto& [data, dist_label] : data_dists) {
+        std::cout << dist_label << ":" << std::endl;
+        for (auto &[search_fn, search_label]: search_algos) {
+            benchmark_search(
+                data,
+                uniform_targets,
+                search_fn,
+                search_label,
+                num_runs);
+        }
     }
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
+
 
 void benchmark_left_partition_search(Prices& prices, OrderBook& order_book) {
     MultiMapTB<ASOFJoin::LeftEntry> order_book_lookup(order_book.stock_ids, order_book.timestamps);
