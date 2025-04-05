@@ -17,12 +17,12 @@ int main(int argc, const char* argv[]) {
     //benchmarks::run_left_partitioning_filtering_diff_percentile();
     //benchmarks::run_different_num_threads();
 
-    benchmarks::run_different_search_algorithms();
+    //benchmarks::run_different_search_algorithms();
     //benchmarks::benchmark_partitioning_search_part();
 
     //benchmarks::run_runtime_l_vs_r();
 
-    //benchmarks::run_uniform_both_sides_benchmark();
+    benchmarks::run_uniform_both_sides_benchmark();
 
     return 0;
 }
