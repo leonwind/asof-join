@@ -57,16 +57,17 @@ def calculate_res_matrix():
 
 
 def calculate_res_matrix_doubling():
-    l_r_end = 100_000_000
-    num_values = int(np.log2(l_r_end))
+    #num_values = int(np.log2(l_r_end))
+    num_values = 29
+    l_r_end = 2**(num_values - 1)#100_000_000
 
     min_values = np.zeros((num_values, num_values))
     cost_values = np.ones((num_values, num_values))
 
     i, j = 0, 0
-    l, r = 2, 2
-    while l < l_r_end:
-        while r < l_r_end:
+    l, r = 1, 1
+    while l <= l_r_end:
+        while r <= l_r_end:
             #print(l, r)
             rp_val = rp(l, r)
             lp_val = lp(l, r)
@@ -77,7 +78,7 @@ def calculate_res_matrix_doubling():
             j += 1
             r *= 2
 
-        r = 2
+        r = 1
         j = 0 
         i += 1
         l *= 2
@@ -218,8 +219,8 @@ def parse_res_matrix_log(num_values, data):
             l = int(parts[0].split("=")[1])
             r = int(parts[1].split("=")[1])
             
-            l_idx = int(np.log2(l)) - 1
-            r_idx = int(np.log2(r)) - 1
+            l_idx = int(np.log2(l))
+            r_idx = int(np.log2(r))
             #print(l_idx, r_idx)
         
         elif "LEFT" in row:
@@ -340,7 +341,8 @@ def plot_theo_and_actual(actual_path):
 
 
 def plot_doubling_all(path):
-    num_values = int(np.log2(100_000_000))
+    #num_values = int(np.log2(100_000_000))
+    num_values = 29
     data = _read_data(path)
     actual_min, actual_cost = parse_res_matrix_log(num_values, data)
     theo_min, theo_cost = calculate_res_matrix_doubling()
@@ -356,8 +358,15 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
 
     vmin = min(log_theo_cost.min(), log_actual_cost.min())
     vmax = max(log_theo_cost.max(), log_actual_cost.max())
+
+    vmin = min(abs(log_theo_cost).min(), abs(log_actual_cost).min())
     max_abs = max(abs(log_theo_cost).max(), abs(log_actual_cost).max())
+
+    max_abs = abs(log_actual_cost.max())
+
+    vmax = max_abs
     vmin, vmax = -max_abs, max_abs
+
 
     #norm = SymLogNorm(linthresh=0.1, linscale=0.5, vmin=vmin, vmax=vmax)
     
@@ -380,9 +389,12 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
 
     xticks = axes[1, 0].get_xticks()
     yticks = axes[1, 0].get_yticks()
+    print(xticks, yticks)
 
     xtick_labels = [f"$2^{{{int(i)}}}$" for i in xticks]
     ytick_labels = [f"$2^{{{int(i)}}}$" for i in yticks]
+
+    print(xtick_labels, ytick_labels)
 
     for ax in axes[0, :]:  
         ax.set_xticklabels([])
@@ -410,7 +422,7 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
     cbar.ax.text(-0.03, 0.5, "LP", va="center", ha="right", transform=cbar.ax.transAxes)
     cbar.ax.text(1.03, 0.5, "RP", va="center", ha="left", transform=cbar.ax.transAxes)
 
-    filename = "plots/skylake/l_vs_r_doubling.pdf"
+    filename = "plots/skylake_final/l_vs_r_doubling.pdf"
 
     print(f"Plotting {filename}")
 
@@ -424,4 +436,6 @@ if __name__ == "__main__":
     #plot_theo_runtime()
     #plot_actual_runtime("results/skylake/l_vs_r_doubling.log")
     #plot_theo_and_actual("results/skylake/l_vs_r.log")
-    plot_doubling_all("results/skylake/l_vs_r_doubling.log")
+    #plot_doubling_all("results/skylake/l_vs_r_doubling.log")
+    plot_doubling_all("results/skylake_final/l_vs_r.log")
+
