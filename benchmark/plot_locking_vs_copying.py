@@ -123,19 +123,23 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
             ratio = [first[j] / times[j] for j in range(len(exec_times))]
             axes[1].plot(pos, ratio, label="Ratio", color="black", markevery=2, linestyle="--")
         axes[0].plot(pos, times, marker=markers[i], label=strategy.title(), markevery=2)
-
+        
     if log_scale:
         axes[0].set_xscale("log")
         #axes[0].set_yscale("log")
         axes[1].set_xscale("log")
         #axes[1].set_yscale("log")
-
+    
+    axes[0].set_xticks([10, 1000, 100000])
+    axes[0].set_xticklabels(["$10^1$", "$10^3$", "$10^5$"])
     axes[0].set_yticks([0.2, 0.4])
     axes[0].set_yticklabels([0.2, 0.4])
 
 
     axes[1].set_yticks([1, 3, 5])
     axes[1].set_yticklabels([1, 3, 5])
+    axes[1].set_xticks([10, 1000, 100000])
+    axes[1].set_xticklabels(["$10^1$", "$10^3$", "$10^5$"])
 
     log_label_prefix = "[log]" if log_scale else ""
     axes[0].set_xlabel(f"Num positions {log_label_prefix}")
@@ -143,7 +147,7 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
     axes[1].set_xlabel(f"Num positions {log_label_prefix}")
     axes[1].set_ylabel(f"Ratio")
 
-    fig.legend(loc="upper center", ncols=3, bbox_to_anchor=(0.55, 1.1))
+    fig.legend(loc="upper center", ncols=3, bbox_to_anchor=(0.5, 1.2))
 
     plt.tight_layout()
 

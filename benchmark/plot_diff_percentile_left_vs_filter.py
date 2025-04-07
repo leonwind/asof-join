@@ -71,7 +71,7 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
         exec_times.sort(key = lambda x: x[0])
         percentiles, times = zip(*exec_times)
         axes[0].plot(percentiles, times, marker=markers[i], label=strategy.title())
-
+        axes[0].set_xticks([0, 0.5, 1])
 
     for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
         if "right" in strategy.lower():
@@ -83,6 +83,7 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
 
         axes[1].plot(percentiles, ratio_times, linestyle="--", color=cs[i],
                     label='_nolegend_')
+        axes[1].set_xticks([0, 0.5, 1])
 
         #if "filter" in strategy.lower():
         #    theo_times = [ratio_times[0] / (1 - percentiles[i]) for i in range(len(percentiles))]
@@ -101,7 +102,7 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
     axes[1].set_ylabel("Improvement Ratio")
 
     #plt.title(dir_name.replace("_", " ").title())
-    fig.legend(loc="upper center", bbox_to_anchor=(0.52, 1.2), ncols=2)
+    fig.legend(loc="upper center", bbox_to_anchor=(0.52, 1.225), ncols=2)
     
     plt.tight_layout()
     is_log_plot_path = "log_" if log_scale else ""

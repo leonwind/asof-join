@@ -38,7 +38,7 @@ def milli_to_seconds(milli):
 
 def _parse_data_into_groups(data):
     groups = {}
-    group_pattern = r'\[(\w+)-(\d+)\.csv\]'
+    group_pattern = r'\[([A-Za-z0-9.\-_]+)-(\d+)\]'
 
     curr_distribution = None
     curr_num_positions = None
@@ -113,20 +113,23 @@ def _plot_all_distribution_groups(distribution_groups, dir_name):
 
         axs[plot_idx].set_xscale("log") 
         if plot_idx == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.49, 1.15))
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.51, 1.09))
         
 
         if plot_idx < 2:
             axs[plot_idx].set_xticklabels([])
             axs[plot_idx].xaxis.set_ticks_position("none")
+        else:
+            axs[plot_idx].set_xlabel("Left Relation Size [log]")
 
         if plot_idx % 2 == 0:
             axs[plot_idx].set_ylabel("Time [s]")
         else:
             axs[plot_idx].yaxis.set_ticks_position("none")
 
-        title = distribution_name.title().replace("_", " ", 1).replace("_", ".")
-        axs[plot_idx].set_title(title)
+        zipf_skew = distribution_name.split("-")[1]
+        #title = distribution_name.title().replace("-", " ", 1).replace("_", ".")
+        axs[plot_idx].set_title(f"$k = {zipf_skew}$")
 
         plot_idx += 1
 
@@ -177,5 +180,7 @@ if __name__ == "__main__":
 
     #plot_data("results/2025-02-05/uniform_zipf.log")
 
-    plot_data("results/skylake/diff_zipf_skews.log")
+    #plot_data("results/skylake/diff_zipf_skews.log")
     #plot_data("results/skylake/uniform_both_sides_phases_breakdown.log")
+    plot_data("results/skylake_final/diff_zipf_skews.log")
+

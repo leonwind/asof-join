@@ -79,6 +79,8 @@ OrderBook generate_uniform_orderbook(
         size_t num_orders, size_t min_timestamp, size_t max_timestamp, size_t num_diff_stocks);
 OrderBook generate_zipf_uniform_orderbook(
         size_t num_orders, size_t max_timestamp, size_t num_diff_stocks, double zipf_skew);
+OrderBook generate_zipf_uniform_orderbook_parallel(
+        size_t num_orders, size_t max_timestamp, size_t num_diff_stocks, double zipf_skew);
 OrderBook select_first_n_orders(OrderBook& order_book, size_t n);
 
 struct ResultRelation : Relation {

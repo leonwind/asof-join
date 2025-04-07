@@ -122,16 +122,16 @@ Prices generate_equal_distributed_prices(size_t num_prices, size_t price_samplin
 
 
 Prices generate_uniform_prices(size_t num_prices, size_t max_timestamp, size_t num_diff_stocks) {
-    std::vector<uint64_t> timestamps;
-    std::vector<uint64_t> prices;
-    std::vector<std::string> stock_ids;
+    std::vector<uint64_t> timestamps(num_prices);
+    std::vector<uint64_t> prices(num_prices);
+    std::vector<std::string> stock_ids(num_prices);
 
     const size_t max_price = 100;
 
     for (size_t i = 0; i < num_prices; ++i) {
-        timestamps.emplace_back(uniform::gen_int(max_timestamp));
-        prices.emplace_back(uniform::gen_int(max_price));
-        stock_ids.emplace_back(uniform::gen_stock_id(num_diff_stocks));
+        timestamps[i] = uniform::gen_int(max_timestamp);
+        prices[i] = uniform::gen_int(max_price);
+        stock_ids[i] = uniform::gen_stock_id(num_diff_stocks);
     }
 
     return /* Prices= */ {
@@ -144,16 +144,16 @@ Prices generate_uniform_prices(size_t num_prices, size_t max_timestamp, size_t n
 
 
 OrderBook generate_uniform_orderbook(size_t num_orders, size_t max_timestamp, size_t num_diff_stocks) {
-    std::vector<uint64_t> timestamps;
-    std::vector<uint64_t> amounts;
-    std::vector<std::string> stock_ids;
+    std::vector<uint64_t> timestamps(num_orders);
+    std::vector<uint64_t> amounts(num_orders);
+    std::vector<std::string> stock_ids(num_orders);
 
     const size_t max_amount = 100;
 
     for (size_t i = 0; i < num_orders; ++i) {
-        timestamps.emplace_back(uniform::gen_int(max_timestamp));
-        amounts.emplace_back(uniform::gen_int(max_amount));
-        stock_ids.emplace_back(uniform::gen_stock_id(num_diff_stocks));
+        timestamps[i] = uniform::gen_int(max_timestamp);
+        amounts[i] = uniform::gen_int(max_amount);
+        stock_ids[i] = uniform::gen_stock_id(num_diff_stocks);
     }
 
     return /* OrderBook= */ {
@@ -184,6 +184,39 @@ OrderBook generate_uniform_orderbook(size_t num_orders, size_t min_timestamp, si
         /* size= */ timestamps.size()
     };
 }
+
+OrderBook generate_zipf_uniform_orderbook_parallel(
+        size_t num_orders, size_t max_timestamp, size_t num_diff_stocks, double zipf_skew) {
+    std::vector<uint64_t> timestamps(num_orders);
+    std::vector<uint64_t> amounts(num_orders);
+    std::vector<std::string> stock_ids(num_orders);
+
+    const size_t max_amount = 100;
+
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_orders),
+            [&](auto& range) {
+        std::mt19937 rng(std::random_device{}());
+        Zipf zipf_gen(num_diff_stocks + 1, zipf_skew);
+        auto zipf_stock_id = [&zipf_gen, &rng] {
+            size_t stock_id = zipf_gen(rng) - 1;
+            return fmt::format("s-{}", stock_id);
+        };
+
+        for (size_t i = range.begin(); i < range.end(); ++i) {
+            timestamps[i] = uniform::gen_int(max_timestamp);
+            amounts[i] = uniform::gen_int(max_amount);
+            stock_ids[i] = zipf_stock_id();
+        }
+    });
+
+    return /* OrderBook= */ {
+        /* timestamps= */ timestamps,
+        /* stock_ids= */ stock_ids,
+        /* amounts= */ amounts,
+        /* size= */ timestamps.size()
+    };
+}
+
 
 OrderBook generate_zipf_uniform_orderbook(
         size_t num_orders, size_t max_timestamp, size_t num_diff_stocks, double zipf_skew) {
