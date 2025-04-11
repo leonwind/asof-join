@@ -4,7 +4,7 @@ import math
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(fig_width=3.39, fig_height=1.9)
+texify.latexify(fig_width=3.39, fig_height=1.9) # 1.3 for RP
 style.set_custom_style()
 
 
@@ -136,7 +136,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     axs = axs.flatten()
 
     #x_ticks = num_threads[0::5]
-    x_ticks = [1, 5, 10, 15, 20]
+    x_ticks = [1, 5, 10, 15, 20, 24]
     y_ticks = [10, 20]
 
     plot_idx = 0
@@ -146,7 +146,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
         axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical")
 
         if plot_idx == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.07))
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.07)) # 1.15 for RP
         #    axs[plot_idx].legend(loc="upper right")
 
         if label == "Binary Search":
@@ -162,7 +162,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
 
         # Left Column
         if plot_idx % 2 == 0:
-            axs[plot_idx].set_ylabel("Speedup")
+            #axs[plot_idx].set_ylabel("Speedup")
             axs[plot_idx].set_yticks(y_ticks)
             axs[plot_idx].set_yticklabels(y_ticks)
         else:
@@ -171,19 +171,25 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
         # Bottom Row
         if plot_idx >= num_phases - 2:
             print(f"Phase {label} at {plot_idx}")
-            axs[plot_idx].set_xlabel("Number of Threads")
+            axs[plot_idx].set_xlabel("")
             axs[plot_idx].set_xticks(x_ticks)
             axs[plot_idx].set_xticklabels(x_ticks)
+            axs[plot_idx].set_xlabel("Number of Threads")
         else:
             print(f"Phase {label} at {plot_idx} - no label")
             axs[plot_idx].xaxis.set_ticks_position("none")
             axs[plot_idx].set_xticklabels([])
         
+        xlim = axs[plot_idx].get_xlim()
+        axs[plot_idx].axvspan(12, xlim[1], facecolor="grey", alpha=0.25)
+        axs[plot_idx].margins(0)
         plot_idx += 1
 
     if num_phases % 2 != 0:
         axs[-1].axis("off")
-
+    
+    #fig.text(0.5, -0.15, "Number of Threads", ha='center')
+    fig.text(0.001, 0.51, "Speed Up", va='center', rotation=90)
     #plt.tight_layout()
 
     competitor_name_file = competitor_label.replace(" ", "_").lower()

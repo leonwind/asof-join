@@ -121,8 +121,8 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
             first = times
         else:
             ratio = [first[j] / times[j] for j in range(len(exec_times))]
-            axes[1].plot(pos, ratio, label="Ratio", color="black", markevery=2, linestyle="--")
-        axes[0].plot(pos, times, marker=markers[i], label=strategy.title(), markevery=2)
+            axes[1].plot(pos, ratio, label="Ratio", color="black", linestyle="--")
+        axes[0].plot(pos, times, label=strategy.title())
         
     if log_scale:
         axes[0].set_xscale("log")
@@ -142,10 +142,12 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
     axes[1].set_xticklabels(["$10^1$", "$10^3$", "$10^5$"])
 
     log_label_prefix = "[log]" if log_scale else ""
-    axes[0].set_xlabel(f"Num positions {log_label_prefix}")
+    #axes[0].set_xlabel(f"Left Relation Size {log_label_prefix}")
+    #axes[1].set_xlabel(f"Left Relation Size {log_label_prefix}")
     axes[0].set_ylabel(f"Time [s]")
-    axes[1].set_xlabel(f"Num positions {log_label_prefix}")
-    axes[1].set_ylabel(f"Ratio")
+    axes[1].set_ylabel(f"Speed Up")
+
+    fig.text(0.56, 0, f"Left Relation Size {log_label_prefix}", ha='center')
 
     fig.legend(loc="upper center", ncols=3, bbox_to_anchor=(0.5, 1.2))
 

@@ -70,7 +70,7 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
         # Sort by percentile
         exec_times.sort(key = lambda x: x[0])
         percentiles, times = zip(*exec_times)
-        axes[0].plot(percentiles, times, marker=markers[i], label=strategy.title())
+        axes[0].plot(percentiles, times, label=strategy.title())
         axes[0].set_xticks([0, 0.5, 1])
 
     for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
@@ -96,10 +96,12 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
         #plt.yscale("log")
 
     log_label_prefix = "[log]" if log_scale else ""
-    axes[0].set_xlabel(f"Percentile {log_label_prefix}")
-    axes[1].set_xlabel(f"Percentile {log_label_prefix}")
+    #axes[0].set_xlabel(f"Percentile {log_label_prefix}")
+    #axes[1].set_xlabel(f"Percentile {log_label_prefix}")
     axes[0].set_ylabel(f"Time [s] {log_label_prefix}")
-    axes[1].set_ylabel("Improvement Ratio")
+    axes[1].set_ylabel("Speed Up")
+
+    fig.text(0.57, 0, f"Percentile $p$ {log_label_prefix}", ha='center')
 
     #plt.title(dir_name.replace("_", " ").title())
     fig.legend(loc="upper center", bbox_to_anchor=(0.52, 1.225), ncols=2)

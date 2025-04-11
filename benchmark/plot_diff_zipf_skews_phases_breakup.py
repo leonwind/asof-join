@@ -252,7 +252,8 @@ def plot_two_competitors_together(groups, comp_a_label, comp_b_label, dir_name):
             axs[i].plot(num_positions, times_b, label=comp_b_label)
         
         axs[i].set_xscale("log")
-        axs[i].set_ylabel("Time [s]")
+        if i == num_phases // 2:
+            axs[i].set_ylabel("Time [s]")
 
         if i == 0:
             fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.04))

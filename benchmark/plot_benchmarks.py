@@ -120,7 +120,8 @@ def _plot_all_distribution_groups(distribution_groups, dir_name):
             axs[plot_idx].set_xticklabels([])
             axs[plot_idx].xaxis.set_ticks_position("none")
         else:
-            axs[plot_idx].set_xlabel("Left Relation Size [log]")
+            pass
+            #axs[plot_idx].set_xlabel("Left Relation Size [log]")
 
         if plot_idx % 2 == 0:
             axs[plot_idx].set_ylabel("Time [s]")
@@ -135,6 +136,8 @@ def _plot_all_distribution_groups(distribution_groups, dir_name):
 
     fig.align_ylabels()
     plt.subplots_adjust(hspace=0.3, wspace=0.25)
+
+    fig.text(0.5, -0.04, f"Left Relation Size [log]", ha='center')
 
     filename = f"plots/{dir_name}/all_zipf_skews.pdf"
     print(f"Plotting {filename}")
