@@ -27,6 +27,8 @@ namespace benchmarks {
 
     void run_runtime_l_vs_r();
 
+    void run_increasing_partitions();
+
     void run_all();
 
     void run_benchmark(Prices& prices, OrderBook& order_book, size_t num_runs);

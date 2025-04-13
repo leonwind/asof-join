@@ -22,7 +22,9 @@ int main(int argc, const char* argv[]) {
 
     //benchmarks::run_runtime_l_vs_r();
 
-    benchmarks::run_uniform_both_sides_benchmark();
+    //benchmarks::run_uniform_both_sides_benchmark();
+
+    benchmarks::run_increasing_partitions();
 
     return 0;
 }
