@@ -163,7 +163,6 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
     plt.close()
 
 
-
 def plot_data(path):
     raw_data = _read_data(path)
     groups = _parse_data_into_groups(raw_data)
