@@ -60,6 +60,17 @@ def _parse_data_into_groups(data):
     return groups
 
 
+def fix_label(label):
+    if label == "Partition Left":
+        return "Left Partition Join"
+    elif label == "Partition Right":
+        return "Right Partition Join"
+    elif label ==  "Partition + Copy Left":
+        return "Left Partition Join + Copy"
+    elif label == "Partition Left + Filter Min":
+        return "Left Partition + Filter"
+    return label
+
 def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
     markers = ['*','o','x','^','s','D']
     cs=[colors.colors["blue"], colors.colors["orange"], colors.colors["green"]]
@@ -70,7 +81,7 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
         # Sort by percentile
         exec_times.sort(key = lambda x: x[0])
         percentiles, times = zip(*exec_times)
-        axes[0].plot(percentiles, times, label=strategy.title())
+        axes[0].plot(percentiles, times, label=fix_label(strategy.title()))
         axes[0].set_xticks([0, 0.5, 1])
 
     for i, (strategy, exec_times) in enumerate(strategy_exec_times.items()):
@@ -104,7 +115,23 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
     fig.text(0.57, 0, f"Percentile $p$ {log_label_prefix}", ha='center')
 
     #plt.title(dir_name.replace("_", " ").title())
-    fig.legend(loc="upper center", bbox_to_anchor=(0.52, 1.225), ncols=2)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    print(handles, labels)
+    order = [0,2,1]
+    #fig.legend([handles[idx] for idx in order],[labels[idx] for idx in order], 
+    #            loc="upper center", bbox_to_anchor=(0.5, 1.225))
+    
+    fig.legend(
+        [handles[idx] for idx in order],
+        [labels[idx] for idx in order],
+        loc="upper center",
+        bbox_to_anchor=(0.51, 1.225),
+        ncols=2
+    )
+
+
+    #fig.legend(loc="upper center", bbox_to_anchor=(0.52, 1.225), ncols=2)
     
     plt.tight_layout()
     is_log_plot_path = "log_" if log_scale else ""

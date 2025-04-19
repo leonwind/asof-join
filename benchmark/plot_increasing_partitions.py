@@ -49,11 +49,10 @@ def plot(lp_data, rp_data):
         lp_speedup.append((num_part, lp_head_speed / lp_data[i][1]))
         rp_speedup.append((num_part, rp_head_speed / rp_data[i][1]))
 
-
     fig, axes = plt.subplots(1, 2) 
 
-    axes[0].plot(*zip(*lp_data), label="Left Partiton")
-    axes[0].plot(*zip(*rp_data), label="Right Partition")
+    axes[0].plot(*zip(*lp_data), label="Left Partiton Join")
+    axes[0].plot(*zip(*rp_data), label="Right Partition Join")
 
     axes[1].plot(*zip(*lp_speedup))
     axes[1].plot(*zip(*rp_speedup))
@@ -88,5 +87,10 @@ def plot_increasing_partitons(path):
     plot(lp_data, rp_data)
 
 
+def plot_increasing_partitions_increasing_positions(path):
+    raw_data = _read_data(path)
+
+
 if __name__ == "__main__":
-    plot_increasing_partitons("results/skylake_final/increasing_partitions.log")
+    #plot_increasing_partitons("results/skylake_final/increasing_partitions.log")
+    plot_increasing_partitions_increasing_positions("results/skylake_final/inc_partitions_inc_positions.log")

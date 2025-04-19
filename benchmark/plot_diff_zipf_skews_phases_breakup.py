@@ -218,6 +218,14 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     plt.close()
 
 
+def fix_label(label):
+    if label == "Partition Left":
+        return "Left Partition Join"
+    elif label == "Partition Right":
+        return "Right Partition Join"
+    return "SOMETHING WRONG"
+
+
 def plot_two_competitors_together(groups, comp_a_label, comp_b_label, dir_name):
     phases_times_a = get_phases_times_of_competitor(groups, comp_a_label)
     phases_times_b = get_phases_times_of_competitor(groups, comp_b_label)
@@ -247,16 +255,16 @@ def plot_two_competitors_together(groups, comp_a_label, comp_b_label, dir_name):
 
         print(num_positions, times_a)
 
-        axs[i].plot(num_positions, times_a, label=comp_a_label)
+        axs[i].plot(num_positions, times_a, label=fix_label(comp_a_label))
         if times_b is not None:
-            axs[i].plot(num_positions, times_b, label=comp_b_label)
+            axs[i].plot(num_positions, times_b, label=fix_label(comp_b_label))
         
         axs[i].set_xscale("log")
         if i == num_phases // 2:
             axs[i].set_ylabel("Time [s]")
 
         if i == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.04))
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1.04))
         
         if i == num_phases - 1:
             axs[i].set_xlabel("Left Relation Size [log]")

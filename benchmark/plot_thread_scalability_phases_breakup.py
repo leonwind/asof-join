@@ -4,7 +4,7 @@ import math
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(fig_width=3.39, fig_height=1.9) # 1.3 for RP
+texify.latexify(fig_width=3.39, fig_height=1.3) # 1.9 for LP
 style.set_custom_style()
 
 
@@ -95,6 +95,14 @@ def _parse_data_into_groups(data):
     return groups
 
 
+def fix_label(label):
+    if label == "Partition Left":
+        return "Left Partition Join"
+    elif label == "Partition Right":
+        return "Right Partition Join"
+    return "SOMETHING WRONG"
+
+
 def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name):
     num_threads = []
     phases_times = {}
@@ -142,11 +150,11 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
     plot_idx = 0
     for label, times in phases_times.items():
         perfect_scale = [i for i in num_threads]
-        axs[plot_idx].plot(num_threads, [times[0] / x for x in times], label=competitor_label)
+        axs[plot_idx].plot(num_threads, [times[0] / x for x in times], label=fix_label(competitor_label))
         axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical")
 
         if plot_idx == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.07)) # 1.15 for RP
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.15)) # 1.07 for LP
         #    axs[plot_idx].legend(loc="upper right")
 
         if label == "Binary Search":

@@ -94,6 +94,16 @@ def _find_num_positions_fitting_cache(num_positions, cache_size):
     return None
 
 
+def fix_label(label):
+    if label == "Partition Left":
+        return "Left Partition Join"
+    elif label == "Partition Right":
+        return "Right Partition Join"
+    elif label ==  "Partition + Copy Left":
+        return "Left Partition Join + Copy"
+    return label
+
+
 def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, log_scale=True):
     markers = ['*', 'o', 'x', '^', 's', 'D']
     l1_pos = _find_num_positions_fitting_cache(NUM_POSITIONS, L1_SIZE)
@@ -121,8 +131,8 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
             first = times
         else:
             ratio = [first[j] / times[j] for j in range(len(exec_times))]
-            axes[1].plot(pos, ratio, label="Ratio", color="black", linestyle="--")
-        axes[0].plot(pos, times, label=strategy.title())
+            axes[1].plot(pos, ratio,  color="black")
+        axes[0].plot(pos, times, label=fix_label(strategy.title()))
         
     if log_scale:
         axes[0].set_xscale("log")

@@ -95,6 +95,16 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
     plt.close()
 
 
+def fix_label(label):
+    if label == "Partition Left":
+        return "Left Partition Join"
+    elif label == "Partition Right":
+        return "Right Partition Join"
+    elif label ==  "Partition + Copy Left":
+        return "Left Partition Join + Copy"
+    return label
+
+
 def _plot_all_distribution_groups(distribution_groups, dir_name):
     markers = ['*','o','x','^','s','D']
     fig, axs = plt.subplots(2, 2, sharex=True, sharey=True)
@@ -109,11 +119,11 @@ def _plot_all_distribution_groups(distribution_groups, dir_name):
             #if "sorted" in strategy.lower():
             #    continue
             exec_times.sort(key=lambda x: x[0])
-            axs[plot_idx].plot(*zip(*exec_times), label=strategy.title())
+            axs[plot_idx].plot(*zip(*exec_times), label=fix_label(strategy.title()))
 
         axs[plot_idx].set_xscale("log") 
         if plot_idx == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.51, 1.09))
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1.09))
         
 
         if plot_idx < 2:

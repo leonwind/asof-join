@@ -473,8 +473,12 @@ def plot_smj_speed_up_and_binary(smj_data, smj_theo):
     fig.text(0.5, 0.16, "Right Relation Size [log]", ha='center')
 
     cbar = fig.colorbar(actual_overhead, ax=axs, orientation="horizontal", fraction=0.033, pad=0.15)
-    cbar.set_ticks([0, 2, 4, 5.9])
+    
+    ticks = [0, 2, 4, 5.908]
+    cbar.set_ticks(ticks)
+    cbar.ax.xaxis.set_major_formatter(FuncFormatter(positive_label))
     cbar.set_label("SMJ Overhead")
+
 
     filename = "plots/skylake_final/smj_l_vs_r.pdf"
 
@@ -523,10 +527,10 @@ def plot_smj_speed_up(smj_speedup):
 
     # Force some custom ticks
     print(vmin, vmax)
+    ticks = [0, 2, 4, 5.9]
 
-    cbar.set_ticks([0, 2, 4, 5.9])
-    #cbar.ax.text(-0.03, 0.5, "SMJ", va="center", ha="right", transform=cbar.ax.transAxes)
-    #cbar.ax.text(1.15, 0.5, "min\n LP, RP", va="center", ha="center", transform=cbar.ax.transAxes)
+    cbar.set_ticks(ticks)
+    cbar.ax.xaxis.set_major_formatter(FuncFormatter(positive_label))
     cbar.set_label("SMJ Overhead")
 
     filename = "plots/skylake_final/smj_l_vs_r.pdf"
@@ -617,8 +621,8 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
 
     cbar = fig.colorbar(bottom_right, ax=axes, orientation="horizontal", fraction=0.033, pad=0.15)
     cbar.ax.xaxis.set_major_formatter(FuncFormatter(positive_label))
-    cbar.ax.text(-0.03, 0.5, "LP", va="center", ha="right", transform=cbar.ax.transAxes)
-    cbar.ax.text(1.03, 0.5, "RP", va="center", ha="left", transform=cbar.ax.transAxes)
+    cbar.ax.text(-0.03, 0.5, "LPJ", va="center", ha="right", transform=cbar.ax.transAxes)
+    cbar.ax.text(1.02, 0.5, "RPJ", va="center", ha="left", transform=cbar.ax.transAxes)
 
     filename = "plots/skylake_final/l_vs_r_doubling.pdf"
 
