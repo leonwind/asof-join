@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(fig_width=3.39, fig_height=1.5)
+texify.latexify(fig_width=3.39, fig_height=5)
 style.set_custom_style()
 
 
@@ -36,6 +36,39 @@ def parse_data(data):
             rp_inc_part_times.append((num_partitions, exec_time))
 
     return lp_inc_part_times, rp_inc_part_times
+
+
+def parse_data_inc_partitions_inc_positions(raw_data):
+    data = {}
+
+    lp_data = None
+    rp_data = None
+    curr_num_positions = None
+    curr_num_partitions = None
+
+    for row in raw_data:
+        if row.startswith("Num Positions:"):
+            if lp_data is not None:
+                data[curr_num_positions] = (lp_data, rp_data)
+            curr_num_positions = int(row.split("Num Positions: ")[1])
+            lp_data = []
+            rp_data = []
+            continue
+
+        if row.startswith("Num Partitions:"):
+            curr_num_partitions = int(row.split(": ")[1])
+            continue
+
+        parts = row.split(": ")
+        exec_time = micro_to_seconds(int(parts[1]))
+
+        if "LEFT" in row:
+            lp_data.append((curr_num_partitions, exec_time))
+        else:
+            rp_data.append((curr_num_partitions, exec_time))
+
+    data[curr_num_positions] = (lp_data, rp_data)
+    return data
 
 
 def plot(lp_data, rp_data):
@@ -89,6 +122,35 @@ def plot_increasing_partitons(path):
 
 def plot_increasing_partitions_increasing_positions(path):
     raw_data = _read_data(path)
+    parsed_data = parse_data_inc_partitions_inc_positions(raw_data)
+    print(parsed_data)
+    plot_all_positions(parsed_data)
+
+
+def plot_all_positions(all_data):
+    print(len(all_data))
+    fig, axes_grid = plt.subplots(3, 2)
+    axes = axes_grid.flatten()
+
+    for i, (num_positions, data) in enumerate(all_data.items()):
+        lp_data, rp_data = data
+        print(lp_data)
+        print(rp_data)
+
+        axes[i].set_title(f"Num Positions: {num_positions}")
+        axes[i].plot(*zip(*lp_data))
+        axes[i].plot(*zip(*rp_data))
+
+        axes[i].set_xscale("log")
+
+    plt.tight_layout()
+    filename = f"plots/skylake_final/inc_partitions_inc_positions.pdf"
+    print(f"Plotting {filename}")
+
+    plt.savefig(filename, dpi=400, bbox_inches="tight")
+    os.system(f"pdfcrop {filename} {filename}")
+
+    plt.close()
 
 
 if __name__ == "__main__":
