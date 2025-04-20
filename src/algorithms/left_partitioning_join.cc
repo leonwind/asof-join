@@ -36,6 +36,8 @@ void PartitioningLeftASOFJoin::join() {
     log(e.getReport(order_book.size));
     log(fmt::format("Sorting in {}{}", timer.lap(), timer.unit()));
 
+    //std::cout << "Size: " << order_book_lookup.total_size_bytes() + order_book.total_size() << std::endl;
+
     e.startCounters();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prices.size, MORSEL_SIZE),
             [&](tbb::blocked_range<size_t>& range) {

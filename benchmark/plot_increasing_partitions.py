@@ -1,9 +1,32 @@
 import matplotlib.pyplot as plt
 import os
+import matplotlib.transforms as mtransforms
+
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(fig_width=3.39, fig_height=5)
+texify.latexify(fig_width=3.39, fig_height=4)
 style.set_custom_style()
+
+
+LP_SIZES = [
+    99000272, # 1M
+    247500288,
+    495000272, # 5M
+    990000272, # 10M
+    4950000272, # 50M
+    9900000272 # 100M
+]
+
+RP_SIZE = 7500000272
+
+L1_SIZE = 384 << 10 # 384 KiB
+L2_SIZE = 12 << 20 # 12 MiB
+L3_SIZE = 19.3 * 10**20 # 19.3 MIB
+
+NUM_CORES = 12
+TOTAL_L1 = L1_SIZE * NUM_CORES
+TOTAL_L2 = L2_SIZE * NUM_CORES
+TOTAL_CACHE = TOTAL_L1 + TOTAL_L2 + L3_SIZE
 
 
 def micro_to_seconds(micro):
@@ -127,21 +150,67 @@ def plot_increasing_partitions_increasing_positions(path):
     plot_all_positions(parsed_data)
 
 
+def _find_num_partitions_fitting_caches(data_size, cache_size):
+    return data_size / cache_size
+
+
 def plot_all_positions(all_data):
     print(len(all_data))
-    fig, axes_grid = plt.subplots(3, 2)
+    fig, axes_grid = plt.subplots(3, 2, sharex=True)
     axes = axes_grid.flatten()
+
+    rp_l1_pos = _find_num_partitions_fitting_caches(RP_SIZE, L1_SIZE)
+    rp_l2_pos = _find_num_partitions_fitting_caches(RP_SIZE, L2_SIZE)
 
     for i, (num_positions, data) in enumerate(all_data.items()):
         lp_data, rp_data = data
         print(lp_data)
         print(rp_data)
 
-        axes[i].set_title(f"Num Positions: {num_positions}")
-        axes[i].plot(*zip(*lp_data))
-        axes[i].plot(*zip(*rp_data))
+        print(f"LP Fitting Partitions in L1 for {num_positions} Tuples: \
+              {_find_num_partitions_fitting_caches(LP_SIZES[i], L1_SIZE)}")
+        print(f"LP Fitting Partitions in L2 for {num_positions} Tuples: \
+              {_find_num_partitions_fitting_caches(LP_SIZES[i], L2_SIZE)}")
+
+        lp_l1_pos = _find_num_partitions_fitting_caches(LP_SIZES[i], L1_SIZE)
+        lp_l2_pos = _find_num_partitions_fitting_caches(LP_SIZES[i], L2_SIZE)
+
+        axes[i].axvline(x=lp_l1_pos, linewidth=1, ls='--', color=colors.colors["blue"])
+        #axes[i].axvline(x=lp_l2_pos, linewidth=1, ls='--', color=colors.colors["blue"])
+
+        axes[i].axvline(x=rp_l1_pos, linewidth=1, ls='--', color=colors.colors["orange"])
+        #axes[i].axvline(x=rp_l2_pos, linewidth=1, ls='--', color=colors.colors["orange"])
+
+        axes[i].text(lp_l1_pos, 0.8, "L1", ha="center", size=8,
+                transform=mtransforms.blended_transform_factory(axes[i].transData, axes[i].transAxes),
+                bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
+
+        axes[i].text(rp_l1_pos, 0.8, "L1", ha="center", size=8,
+                transform=mtransforms.blended_transform_factory(axes[i].transData, axes[i].transAxes),
+                bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["orange"]))
+
+        axes[i].set_title(f"Left Rel. Size: {(num_positions/1000000):g}M")
+        axes[i].plot(*zip(*lp_data), label="Left Partition Join")
+        axes[i].plot(*zip(*rp_data), label="Right Partition Join")
 
         axes[i].set_xscale("log")
+
+        axes[i].set_xticks([10, 1000, 100000])
+        axes[i].set_xticklabels(["$10^1$", "$10^3$", "$10^5$"])
+
+        if i == 0:
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.55, 1.04), frameon=False)
+
+        # Middle on the left column
+        if i == 2:
+            axes[i].set_ylabel("Time [s]")
+
+        # Bottom Row
+        if i < 4:
+            axes[i].xaxis.set_ticks_position("none")
+
+    fig.text(0.56, 0, f"Number of Partitions [log]", ha='center')
+
 
     plt.tight_layout()
     filename = f"plots/skylake_final/inc_partitions_inc_positions.pdf"
@@ -155,4 +224,4 @@ def plot_all_positions(all_data):
 
 if __name__ == "__main__":
     #plot_increasing_partitons("results/skylake_final/increasing_partitions.log")
-    plot_increasing_partitions_increasing_positions("results/skylake_final/inc_partitions_inc_positions.log")
+    plot_increasing_partitions_increasing_positions("results/skylake_final/inc_partitions_inc_positions_new.log")

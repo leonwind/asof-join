@@ -13,6 +13,7 @@ void benchmarks::run_increasing_partitions() {
 
     std::vector<size_t> positions_sizes = {
             1'000'000,
+            2'500'000,
             5'000'000,
             10'000'000,
             50'000'000,
@@ -20,7 +21,7 @@ void benchmarks::run_increasing_partitions() {
     };
 
     for (size_t num_positions : positions_sizes) {
-        std::cout << "Num positions: " << num_positions << std::endl;
+        std::cout << "Num Positions: " << num_positions << std::endl;
         size_t price_sampling_rate = 50;
         size_t max_timestamp = num_prices * price_sampling_rate;
 

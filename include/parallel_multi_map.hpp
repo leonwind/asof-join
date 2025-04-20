@@ -197,6 +197,13 @@ public:
 
     [[nodiscard]] size_t total_size_bytes() const {
         size_t total_size = sizeof(MultiMapTB);
+        size_t entry_size = sizeof(Entry);
+        for (auto& curr_map : maps_per_partition) {
+            for (auto& [k, v] : curr_map) {
+                total_size += sizeof(k);
+                total_size += v.size() * entry_size;
+            }
+        }
         //for (auto& [k, v] : partitioned_map) {
         //    total_size += sizeof(k);
         //    total_size += v.size() * sizeof(Entry);
