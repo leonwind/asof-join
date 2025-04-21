@@ -454,6 +454,31 @@ def plot_smj_speed_up_and_binary(smj_data, smj_theo):
                  vmin=0, vmax=vmax)
     axs[1].set_title("Actual Overhead", fontsize=10)
 
+    axs[1].text(0.1, 0.9, 'B1',
+        color="white",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axs[1].transAxes)
+    
+    axs[1].text(0.9, 0.1, 'B2',
+        color="white",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axs[1].transAxes)
+    
+    axs[1].text(0.5, 0.5, 'B3',
+        color="black",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axs[1].transAxes)
+    
+    axs[1].text(0.9, 0.9, 'B4',
+        color="black",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axs[1].transAxes)
+
+
     all_powers_of_10 = [0, 3.32, 6.64, 9.97, 13.29, 16.61, 19.93, 23.25, 26.57]
     all_labels = [r"$10^{{{}}}$".format(i) for i in range(len(all_powers_of_10))]
     
@@ -577,6 +602,30 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
     bottom_right = axes[1, 1].imshow(log_actual_cost, origin="lower", cmap="seismic", 
                                      vmin=vmin, vmax=vmax)
     axes[1, 1].set_title("Actual Speed Up", fontsize=10)
+
+    axes[1, 1].text(0.1, 0.9, 'A1',
+        color="white",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axes[1,1].transAxes)
+    
+    axes[1, 1].text(0.9, 0.1, 'A2',
+        color="white",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axes[1,1].transAxes)
+    
+    axes[1, 1].text(0.5, 0.5, 'A3',
+        color="black",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axes[1,1].transAxes)
+    
+    axes[1, 1].text(0.9, 0.9, 'A4',
+        color="black",
+        horizontalalignment='center',
+        verticalalignment='center',
+        transform = axes[1,1].transAxes)
 
     #axes[1, 0].contour(log_theo_cost)#, levels=10, colors='black', linewidths=0.5)
     #axes[1, 1].contour(log_actual_cost)#, levels=10, colors='black', linewidths=0.5)
