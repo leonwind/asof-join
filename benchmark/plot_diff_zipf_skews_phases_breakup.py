@@ -264,7 +264,7 @@ def plot_two_competitors_together(groups, comp_a_label, comp_b_label, dir_name):
             axs[i].set_ylabel("Time [s]")
 
         if i == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1.04))
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1.04), frameon=False)
         
         if i == num_phases - 1:
             axs[i].set_xlabel("Left Relation Size [log]")

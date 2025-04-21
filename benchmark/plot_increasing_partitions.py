@@ -162,7 +162,7 @@ def plot_all_positions(all_data):
     rp_l1_pos = _find_num_partitions_fitting_caches(RP_SIZE, L1_SIZE)
     rp_l2_pos = _find_num_partitions_fitting_caches(RP_SIZE, L2_SIZE)
 
-    for i, (num_positions, data) in enumerate(all_data.items()):
+    for i, (num_positions, data) in enumerate(sorted(all_data.items())):
         lp_data, rp_data = data
         print(lp_data)
         print(rp_data)

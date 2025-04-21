@@ -264,7 +264,7 @@ def plot_diff_search_algos(path):
     handles, labels = axs[0].get_legend_handles_labels()
     print(handles, labels)
     fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.56, -0.12),
-        ncols=3)
+        ncols=3, frameon=False)
 
     filename = f"plots/skylake_final/diff_search_algos_side_by_side.pdf"
     print(f"Plotting {filename}")

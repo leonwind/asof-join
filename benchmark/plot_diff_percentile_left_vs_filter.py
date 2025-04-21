@@ -92,7 +92,7 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
         percentiles, times = zip(*exec_times)
         ratio_times = [times[0] / times[i] for i in range(len(times))]
 
-        axes[1].plot(percentiles, ratio_times, linestyle="--", color=cs[i],
+        axes[1].plot(percentiles, ratio_times, color=cs[i],
                     label='_nolegend_')
         axes[1].set_xticks([0, 0.5, 1])
 
@@ -127,7 +127,8 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
         [labels[idx] for idx in order],
         loc="upper center",
         bbox_to_anchor=(0.51, 1.225),
-        ncols=2
+        ncols=2,
+        frameon=False
     )
 
 

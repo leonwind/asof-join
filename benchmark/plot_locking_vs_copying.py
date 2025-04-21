@@ -159,7 +159,7 @@ def _plot_distribution_group(distribution_name, strategy_exec_times, dir_name, l
 
     fig.text(0.56, 0, f"Left Relation Size {log_label_prefix}", ha='center')
 
-    fig.legend(loc="upper center", ncols=3, bbox_to_anchor=(0.5, 1.2))
+    fig.legend(loc="upper center", ncols=3, bbox_to_anchor=(0.5, 1.15), frameon=False)
 
     plt.tight_layout()
 

@@ -123,7 +123,7 @@ def _plot_all_distribution_groups(distribution_groups, dir_name):
 
         axs[plot_idx].set_xscale("log") 
         if plot_idx == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1.09))
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1.09), frameon=False)
         
 
         if plot_idx < 2:
