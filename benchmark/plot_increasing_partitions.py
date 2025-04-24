@@ -21,7 +21,7 @@ RP_SIZE = 7500000272
 
 L1_SIZE = 384 << 10 # 384 KiB
 L2_SIZE = 12 << 20 # 12 MiB
-L3_SIZE = 19.3 * 10**20 # 19.3 MIB
+L3_SIZE = 19.3 * 2**20 # 19.3 MIB
 
 NUM_CORES = 12
 TOTAL_L1 = L1_SIZE * NUM_CORES
@@ -161,6 +161,10 @@ def plot_all_positions(all_data):
 
     rp_l1_pos = _find_num_partitions_fitting_caches(RP_SIZE, L1_SIZE)
     rp_l2_pos = _find_num_partitions_fitting_caches(RP_SIZE, L2_SIZE)
+    rp_l3_pos = _find_num_partitions_fitting_caches(RP_SIZE, L2_SIZE + L3_SIZE)
+
+    rel_cache_text_pos = 0.18
+
 
     for i, (num_positions, data) in enumerate(sorted(all_data.items())):
         lp_data, rp_data = data
@@ -179,13 +183,13 @@ def plot_all_positions(all_data):
         #axes[i].axvline(x=lp_l2_pos, linewidth=1, ls='--', color=colors.colors["blue"])
 
         axes[i].axvline(x=rp_l1_pos, linewidth=1, ls='--', color=colors.colors["orange"])
-        #axes[i].axvline(x=rp_l2_pos, linewidth=1, ls='--', color=colors.colors["orange"])
+        #axes[i].axvline(x=rp_l3_pos, linewidth=1, ls='--', color=colors.colors["orange"])
 
-        axes[i].text(lp_l1_pos, 0.8, "L1", ha="center", size=8,
+        axes[i].text(lp_l1_pos, rel_cache_text_pos, "L1", ha="center", size=8,
                 transform=mtransforms.blended_transform_factory(axes[i].transData, axes[i].transAxes),
                 bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["blue"]))
 
-        axes[i].text(rp_l1_pos, 0.8, "L1", ha="center", size=8,
+        axes[i].text(rp_l1_pos, rel_cache_text_pos, "L1", ha="center", size=8,
                 transform=mtransforms.blended_transform_factory(axes[i].transData, axes[i].transAxes),
                 bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=colors.colors["orange"]))
 
@@ -198,8 +202,10 @@ def plot_all_positions(all_data):
         axes[i].set_xticks([10, 1000, 100000])
         axes[i].set_xticklabels(["$10^1$", "$10^3$", "$10^5$"])
 
+        axes[i].set_ylim(ymin=0)
+
         if i == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.55, 1.04), frameon=False)
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.58, 1.04), frameon=False)
 
         # Middle on the left column
         if i == 2:

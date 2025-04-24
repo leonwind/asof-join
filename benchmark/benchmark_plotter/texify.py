@@ -42,26 +42,32 @@ def latexify(fig_width=None, fig_height=None, columns=1, width_heigth_ratio=None
 
     print(f'fig width={fig_width}, fig height={fig_height}')
     #mpl.use('pgf')
-    params = {#'backend': 'pgf',
-              'pgf.rcfonts': False,
-              'pgf.texsystem': 'xelatex',
-              'axes.labelsize': 10,  # fontsize for x and y labels (was 10)
-              'axes.titlesize': 10,
-              'font.size': 10,  # was 10
-              'legend.fontsize': 10,  # was 10
-              'legend.handlelength': 1.5,
-              'legend.handletextpad': 0.3,
-              'legend.labelspacing': 0.3,  # was 0.1
-              'legend.columnspacing': 0.3,
-              'legend.borderpad': 0.3,
-              'xtick.labelsize': 9,
-              'ytick.labelsize': 9,
-              'grid.linewidth': 0.5,
-              'text.usetex': True,
-              'figure.figsize': [fig_width, fig_height],
-              'font.family': 'serif',
-              #'pgf.preamble': [r'\usepackage{xcolor}', r'\usepackage{xfrac}', r'\usepackage{tikz}', r'\usepackage{amssymb}']
-              }
+    params = {
+        'pgf.texsystem': 'xelatex',
+        #'backend': 'ps',
+        'pgf.rcfonts': False,
+        'figure.labelsize': 8,
+        'figure.titlesize': 9,
+        'axes.labelsize': 8,  # fontsize for x and y labels
+        'axes.titlesize': 8,
+        'font.size': 8,
+        'legend.fontsize': 8,
+        'legend.handlelength': 1,
+        'legend.handletextpad': 0.5,
+        'legend.labelspacing': 0.1,  # was 0.1
+        'legend.columnspacing': 1.5,
+        'legend.borderpad': 0.3,
+        'xtick.labelsize': 8,
+        'ytick.labelsize': 8,
+        'axes.labelpad': 3,
+        'axes.titlepad': 3,
+        'text.usetex': True,
+        'font.family': 'serif',
+        'grid.linewidth': 0.5,
+        'figure.figsize': [fig_width, fig_height],
+        #'pgf.preamble': [r'\usepackage{xcolor}', r'\usepackage{xfrac}', r'\usepackage{tikz}', r'\usepackage{amssymb}']
+    }
+
     if custom_params is not None:
         for k, v in custom_params.items():
             params[k] = v

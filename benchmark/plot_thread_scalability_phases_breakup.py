@@ -4,7 +4,7 @@ import math
 import os
 
 from benchmark_plotter import style, texify, colors
-texify.latexify(fig_width=3.39, fig_height=1.9) # 1.3 for RP
+texify.latexify(fig_width=3.39, fig_height=1.3) # 1.9 for LP
 style.set_custom_style()
 
 
@@ -154,7 +154,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
         axs[plot_idx].plot(num_threads, perfect_scale, "--", label="Theoretical")
 
         if plot_idx == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.07), # 1.15 for RP
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.515, 1.08), # 1.03 for LP
                        frameon=False)
 
         if label == "Binary Search":
@@ -163,7 +163,7 @@ def _plot_all_phases_of_competitor_separately(groups, competitor_label, dir_name
         if label == "Finding match":
             label = "Find Match"
 
-        axs[plot_idx].set_title(label.title(), y=0.555)
+        axs[plot_idx].set_title(label.title(), y=0.7) # was 0.555
         axs[plot_idx].set_xticks(x_ticks)
         #axs[plot_idx].set_xticklabels([str(x) for x in x_ticks])  # Ensures tick labels appear
         #axs[plot_idx].tick_params(axis='x', which='both', labelbottom=True)  # Forces x-label visibility

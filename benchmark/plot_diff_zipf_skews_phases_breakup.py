@@ -264,14 +264,14 @@ def plot_two_competitors_together(groups, comp_a_label, comp_b_label, dir_name):
             axs[i].set_ylabel("Time [s]")
 
         if i == 0:
-            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1.04), frameon=False)
+            fig.legend(loc="upper center", ncols=2, bbox_to_anchor=(0.48, 1), frameon=False)
         
         if i == num_phases - 1:
             axs[i].set_xlabel("Left Relation Size [log]")
         else:
             axs[i].xaxis.set_ticks_position("none")
 
-        axs[i].set_title(label.title(), y=0.83)
+        axs[i].set_title(label.title(), y=1)
 
     fig.align_ylabels()
     plt.subplots_adjust(hspace=0.5)

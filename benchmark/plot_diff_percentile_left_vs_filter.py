@@ -126,7 +126,7 @@ def _plot_distribution_group(strategy_exec_times, dir_name, log_scale=True):
         [handles[idx] for idx in order],
         [labels[idx] for idx in order],
         loc="upper center",
-        bbox_to_anchor=(0.51, 1.225),
+        bbox_to_anchor=(0.54, 1.15),
         ncols=2,
         frameon=False
     )
