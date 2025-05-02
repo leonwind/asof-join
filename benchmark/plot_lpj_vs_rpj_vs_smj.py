@@ -1,15 +1,12 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm, ListedColormap, BoundaryNorm, Normalize, TwoSlopeNorm 
 from matplotlib.ticker import FuncFormatter
 import matplotlib.colors as mcolors
 from matplotlib import cm
 
-
-import os
-
 from benchmark_plotter import style, texify, colors
-texify.latexify(fig_width=3.39, fig_height=4)
+texify.latexify(fig_width=3.39, fig_height=4) # fig_height = 3 for presentation
 style.set_custom_style()
 
 
@@ -40,9 +37,8 @@ def positive_label(x, pos):
 
 
 def calculate_res_matrix_doubling():
-    #num_values = int(np.log2(l_r_end))
     num_values = 29
-    l_r_end = 2**(num_values - 1)#100_000_000
+    l_r_end = 2**(num_values - 1)
 
     min_values = np.zeros((num_values, num_values))
     cost_values = np.ones((num_values, num_values))
@@ -95,17 +91,19 @@ def calculate_theo_smj_overhead(num_values):
     return overhead
 
 
-def parse_res_matrix_log(num_values, data):
+def parse_lpj_rpj(num_values, data, use_argmin = True):
     min_values = np.zeros((num_values, num_values))
     cost_values = np.ones((num_values, num_values))
 
     lp_time, rp_time = None, None
     l_idx, r_idx = None, None
 
+    arg_min_min_fn = np.argmin if use_argmin else min
+
     for row in data:
         if row.startswith("l="):
             if l_idx is not None:
-                min_values[l_idx, r_idx] = np.argmin([lp_time, rp_time]) # use min for smj vs (lpj, rpj)
+                min_values[l_idx, r_idx] = arg_min_min_fn([lp_time, rp_time]) # use min for smj vs (lpj, rpj)
                 cost_values[l_idx, r_idx] = lp_time / rp_time
 
             parts = row.split(", ")
@@ -125,7 +123,7 @@ def parse_res_matrix_log(num_values, data):
             rp_time = int(parts[1])
     
     # Add last one
-    min_values[l_idx, r_idx] = np.argmin([lp_time, rp_time]) # use min for smj vs (lpj, rpj)
+    min_values[l_idx, r_idx] = arg_min_min_fn([lp_time, rp_time]) # use min for smj vs (lpj, rpj)
     cost_values[l_idx, r_idx] = lp_time / rp_time
     
     return min_values, cost_values
@@ -148,7 +146,6 @@ def parse_smj_speedup(num_values, smj_data):
             
             l_idx = int(np.log2(l))
             r_idx = int(np.log2(r))
-            print(l_idx, r_idx)
         
         else:
             parts = row.split(": ")
@@ -198,10 +195,9 @@ def parse_res_matrix(num_values, data):
 
 
 def plot_doubling_all(path):
-    #num_values = int(np.log2(100_000_000))
     num_values = 29
     data = _read_data(path)
-    actual_min, actual_cost = parse_res_matrix_log(num_values, data)
+    actual_min, actual_cost = parse_lpj_rpj(num_values, data)
     theo_min, theo_cost = calculate_res_matrix_doubling()
 
     plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost)
@@ -211,12 +207,10 @@ def plot_smj_vs_lp_rp(smj_path, p_path):
     num_values = 29
     smj_data = _read_data(smj_path)
     lp_rp_data = _read_data(p_path)
-    lp_rp_min, _ = parse_res_matrix_log(num_values, lp_rp_data)
+    lp_rp_min, _ = parse_lpj_rpj(num_values, lp_rp_data, use_argmin=False)
     smj_speed_up = parse_smj_speedup(num_values, smj_data)
     theo_smj_speed_up = calculate_theo_smj_overhead(num_values)
-    print(smj_speed_up)
-    print(np.sum(smj_speed_up >= 0))
-    print(np.sum(smj_speed_up < 0))
+    #print(smj_speed_up)
     plot_smj_speed_up_and_binary(smj_speed_up / lp_rp_min, theo_smj_speed_up)
 
 
@@ -240,8 +234,7 @@ def plot_smj_speed_up_and_binary(smj_data, smj_theo):
     axs[0].set_title("Theoretical Overhead", fontsize=10)
 
     seismic_red = mcolors.LinearSegmentedColormap.from_list(
-        "seismic_red_only", cm.seismic(np.linspace(0.5, 1.0, 256))
-    )
+        "seismic_red_only", cm.seismic(np.linspace(0.5, 1.0, 256)))
 
     actual_overhead = axs[1].imshow(speedup, origin="lower", cmap=seismic_red,
                  vmin=0, vmax=vmax)
@@ -323,6 +316,7 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
 
     vmax = max_abs
     vmin, vmax = -max_abs, max_abs
+    print(f"Min: {vmin}, Max: {vmax}")
 
 
     #norm = SymLogNorm(linthresh=0.1, linscale=0.5, vmin=vmin, vmax=vmax)
@@ -413,6 +407,13 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
     cbar.ax.text(-0.03, 0.5, "LPJ", va="center", ha="right", transform=cbar.ax.transAxes)
     cbar.ax.text(1.02, 0.5, "RPJ", va="center", ha="left", transform=cbar.ax.transAxes)
 
+    # For the presentation: move the colorbar to the side
+    #cbar = fig.colorbar(bottom_right, ax=axes, orientation="vertical", fraction=0.046, pad=0.08, extend="neither")
+    #cbar.set_ticks(np.array([-5.8, -4, -2, 0, 2, 4, 5.8], dtype=float))
+    #cbar.ax.yaxis.set_major_formatter(FuncFormatter(positive_label))
+    #cbar.ax.text(0.5, -0.03, "LPJ", va="top", ha="center", transform=cbar.ax.transAxes, rotation=0)
+    #cbar.ax.text(0.5, 1.03, "RPJ", va="bottom", ha="center", transform=cbar.ax.transAxes, rotation=0)
+
     filename = "plots/skylake_final/l_vs_r_doubling.pdf"
 
     print(f"Plotting {filename}")
@@ -422,10 +423,104 @@ def plot_4_matrices_square(theo_min, theo_cost, actual_min, actual_cost):
     plt.close()
 
 
+def plot_lpj_rpj_smj_presentation(lp_rp_argmin, lp_rp_cost, smj_speed_up):
+    fig, axes = plt.subplots(1, 3, sharex=True, sharey=True)
+    axes = axes.flatten()
+
+    log_lp_rp_cost = np.log2(lp_rp_cost)
+    log_smj_speedup = np.log2(smj_speed_up)
+
+    lp_rp_vmin = log_lp_rp_cost.min()
+    lp_rp_vmax = log_lp_rp_cost.max()
+
+    smj_speedup_vmin = log_smj_speedup.min()
+    smj_speedup_vmax = log_smj_speedup.max()
+    abs_max = max(abs(smj_speedup_vmin), abs(smj_speedup_vmax))
+    smj_speedup_vmin = -abs_max
+    smj_speedup_vmax = abs_max
+
+    axes[1].set_title("Actual Fastest")
+    axes[1].imshow(lp_rp_argmin, origin="lower", cmap="seismic",
+                   vmin=-0.2, vmax=1.2)
+
+    axes[0].set_title("LPJ vs RPJ")
+    middle = axes[0].imshow(log_lp_rp_cost, origin="lower", cmap="seismic",
+                   vmin=-lp_rp_vmax, vmax=lp_rp_vmax)
+
+    axes[2].set_title("SMJ Overhead")
+    seismic_red = mcolors.LinearSegmentedColormap.from_list(
+        "seismic_red_only", ["white", cm.Purples(0.99)])#cm.seismic(np.linspace(0.5, 1.0, 256)))
+    right = axes[2].imshow(log_smj_speedup, origin="lower", cmap=seismic_red,
+                   vmin=0, vmax=smj_speedup_vmax)
+
+    all_powers_of_10 = [0, 3.32, 6.64, 9.97, 13.29, 16.61, 19.93, 23.25, 26.57]
+    all_labels = [r"$10^{{{}}}$".format(i) for i in range(len(all_powers_of_10))]
+
+    powers_of_10 = all_powers_of_10[::4]
+    labels = all_labels[::4]
+
+    for ax in axes:
+        ax.set_xticks(powers_of_10)
+        ax.set_yticks(powers_of_10)
+        ax.set_xticklabels(labels)
+        ax.set_yticklabels(labels)
+
+    axes[1].yaxis.set_ticks_position("none")
+    axes[2].yaxis.set_ticks_position("none")
+
+    # Colorbars
+    fig.text(0.001, 0.42, "Left Relation Size [log]", va="center", rotation=90)
+    axes[1].set_xlabel("Right Relation Size [log]")
+
+    lpj_rpj_cbar = fig.colorbar(middle, ax=[axes[0], axes[1]], orientation="horizontal", pad=0.14,
+                                shrink=0.44)
+    lpj_rpj_cbar.ax.xaxis.set_major_formatter(FuncFormatter(positive_label))
+    lpj_rpj_cbar.ax.text(-0.03, 0.2, "LPJ", va="center", ha="right", transform=lpj_rpj_cbar.ax.transAxes)
+    lpj_rpj_cbar.ax.text(1.02, 0.2, "RPJ", va="center", ha="left", transform=lpj_rpj_cbar.ax.transAxes)
+
+    smj_cbar = fig.colorbar(right, ax=axes[2], orientation="horizontal", pad=0.14)
+    smj_cbar.ax.xaxis.set_major_formatter(FuncFormatter(positive_label))
+    smj_cbar.ax.text(-0.03, 0.2, "SMJ", va="center", ha="right", transform=smj_cbar.ax.transAxes)
+    smj_cbar.ax.text(1.05, 0.2, "LPJ\nRPJ", va="center", ha="left", transform=smj_cbar.ax.transAxes)
+
+    cbar = lpj_rpj_cbar
+    pos = cbar.ax.get_position()
+    shift = 0.14
+    new_pos = [pos.x0 - shift, pos.y0, pos.width, pos.height]
+    cbar.ax.set_position(new_pos)
+
+    filename = "plots/presentation/lp_vs_rp_vs_smj.pdf"
+    print(f"Plotting {filename}")
+
+    plt.savefig(filename, dpi=400, bbox_inches="tight")
+    os.system(f"pdfcrop {filename} {filename}")
+    plt.close()
+
+
+
+def plot_both_together_for_presentation(smj_data, lp_vs_rp_data):
+    num_values = 29
+    raw_data_smj = _read_data(smj_data)
+    raw_data_lp_rp = _read_data(lp_vs_rp_data)
+
+    lp_rp_arg_min, lp_rp_cost = parse_lpj_rpj(num_values, raw_data_lp_rp)
+    lp_rp_time_min, _ = parse_lpj_rpj(num_values, raw_data_lp_rp, use_argmin=False)
+    smj_time = parse_smj_speedup(num_values, raw_data_smj)
+    smj_speed_up = smj_time / lp_rp_time_min
+
+    plot_lpj_rpj_smj_presentation(lp_rp_arg_min, lp_rp_cost, smj_speed_up)
+
+
+
 if __name__ == "__main__":
-    plot_doubling_all("results/skylake_final/l_vs_r.log")
+    #plot_doubling_all("results/skylake_final/l_vs_r.log")
 
     #plot_smj_vs_lp_rp(
     #    "results/skylake_final/smj/smj_all.log",
     #    "results/skylake_final/l_vs_r.log"
     #)
+
+    plot_both_together_for_presentation(
+        "results/skylake_final/smj/smj_all.log",
+        "results/skylake_final/l_vs_r.log"
+    )
